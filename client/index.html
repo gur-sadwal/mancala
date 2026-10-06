@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <!--
+    user-scalable=no wird bewusst NICHT gesetzt: Das Sperren des Zooms ist ein
+    bekannter Barrierefreiheitsfehler. Stattdessen sind die Klickziele von
+    vornherein gross genug (Konzept 8.9).
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Mancala (Kalaha) – verteiltes 2-Personen-Webspiel nach den BrainKing-Regeln. Studienprojekt von Gursharan S. Sadwal." />
+  <meta name="author" content="Gursharan S. Sadwal" />
+  <!-- Nur ein helles Farbschema, auch bei Dunkelmodus des Systems (css/02-tokens.css). -->
+  <meta name="color-scheme" content="light" />
+  <title>Mancala (Kalaha) – Gursharan S. Sadwal</title>
+  <link rel="stylesheet" href="css/haupt.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <!--
+    Sprungmarke: erste Station der Tabulatortaste, damit Tastaturnutzende die
+    Kopfzeile ueberspringen koennen (WCAG 2.4.1).
+  -->
+  <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
+
+  <header class="kopf">
+    <h1 class="kopf__titel">Mancala</h1>
+    <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>
+    <p class="kopf__autor">von Gursharan S. Sadwal</p>
+    <!-- commandfor/command: Der Knopf oeffnet den Dialog ohne JavaScript
+         (Invoker Commands; Fallback fuer aeltere Browser in js/einstellungen.js). -->
+    <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf"
+            commandfor="dialog-einstellungen" command="show-modal">
+      Einstellungen
+    </button>
+  </header>
+
+  <main id="ansichten" class="ansichten">
+
+    <!--
+      Ladehinweis: steht im HTML und wird erst von js/main.js ausgeblendet,
+      wenn wirklich alles geladen ist. Scheitert irgendetwas beim Laden
+      (Skript nicht gefunden, Server nicht erreichbar, JavaScript
+      ausgeschaltet), bleibt dieser Hinweis einfach stehen – dafuer braucht es
+      keinen eigenen Fehlercode.
+    -->
+    <div id="ladehinweis" class="ladehinweis">
+      <p>Das Spiel wird geladen…</p>
+      <p>
+        Bleibt diese Meldung stehen, lade die Seite bitte neu und pruefe, ob
+        JavaScript im Browser eingeschaltet ist.
+      </p>
+    </div>
+
+    <!-- ===================================================================
+         Ansicht 1: ANMELDEN
+         =================================================================== -->
+    <section id="ansicht-anmelden" class="ansicht" hidden>
+      <h2 id="t-anmelden" class="ansicht__titel" tabindex="-1">Spiel beitreten</h2>
+
+      <form id="form-anmelden" class="formular" novalidate>
+        <div class="feld">
+          <label class="feld__beschriftung" for="feld-name">Dein Spielername</label>
+          <input
+            id="feld-name"
+            class="feld__eingabe"
+            name="name"
+            type="text"
+            maxlength="20"
+            autocomplete="nickname"
+            required
+          />
+          <p id="hinweis-name" class="feld__hinweis">
+            Hoechstens 20 Zeichen. Der Name ist nur eine Anzeige – es gibt kein Konto.
+          </p>
+        </div>
+
+        <!--
+          Spielart als zwei Radiobuttons: Pfeiltasten, Tab und Klick
+          funktionieren damit vom Browser aus, ohne eigenen Code.
+        -->
+        <fieldset id="spielart" class="umschalter">
+          <legend class="feld__beschriftung">Spielart</legend>
+
+          <label class="umschalter__option">
+            <input type="radio" name="spielart" value="schnell" checked />
+            Schnelles Spiel
+          </label>
+
+          <label class="umschalter__option">
+            <input type="radio" name="spielart" value="privat" />
+            Privates Spiel mit Link
+          </label>
+        </fieldset>
+
+        <!-- Nur sichtbar, wenn die Seite ueber einen Einladungslink geoeffnet wurde. -->
+        <p id="einladung" class="meldung meldung--info" hidden>
+          Du wurdest zu einem privaten Spiel eingeladen. Gib deinen Namen ein und tritt bei.
+        </p>
+
+        <button type="submit" id="knopf-anmelden" class="knopf knopf--haupt">Gegner suchen</button>
+
+        <!-- Fehlermeldungen des Formulars -->
+        <p id="anmelden-fehler" class="meldung meldung--fehler" hidden></p>
+      </form>
+
+      <details class="anleitung">
+        <summary>Kurz erklaert: So wird gespielt</summary>
+        <ol class="anleitung__liste">
+          <li>Waehle eine deiner sechs Mulden. Sie muss mindestens eine Kugel enthalten.</li>
+          <li>Die Kugeln werden einzeln gegen den Uhrzeigersinn verteilt – auch in dein
+            eigenes Haus rechts, aber niemals in das Haus des Gegners.</li>
+          <li>Landet die letzte Kugel in deinem Haus, bist du sofort noch einmal am Zug.</li>
+          <li>Landet die letzte Kugel in einer leeren eigenen Mulde, bekommst du sie und
+            alle Kugeln der gegenueberliegenden Mulde.</li>
+          <li>Sobald eine Reihe leer ist, endet das Spiel. Wer mehr Kugeln im Haus hat,
+            gewinnt.</li>
+          <li>Mit der Tastatur: Tab waehlt eine Mulde, Enter oder Leertaste spielt sie.
+            Schneller geht es mit den Tasten 1 bis 6.</li>
+        </ol>
+      </details>
+    </section>
+
+    <!-- ===================================================================
+         Ansicht 2: WARTEN (Wartebildschirm – vom Dozenten ausdruecklich
+         gefordert, Regelwerk 4.1 Folie 3)
+         =================================================================== -->
+    <section id="ansicht-warten" class="ansicht" hidden>
+      <h2 id="t-warten" class="ansicht__titel" tabindex="-1">Warte auf Gegenspieler…</h2>
+
+      <!-- Der Ladeindikator ist rein dekorativ; die Information steckt im Text daneben. -->
+      <div class="lader">
+        <span class="lader__kugel"></span>
+        <span class="lader__kugel"></span>
+        <span class="lader__kugel"></span>
+        <span class="lader__kugel"></span>
+      </div>
+
+      <p class="warten__status">
+        Du spielst als <strong id="warten-name">…</strong>.
+        <span id="warten-position"></span>
+      </p>
+
+      <!-- Nur beim privaten Spiel: der Link zum Weitergeben. -->
+      <div id="warten-privat" class="einladungslink" hidden>
+        <label class="feld__beschriftung" for="feld-link">
+          Schicke diesen Link an deinen Mitspieler:
+        </label>
+        <input id="feld-link" class="feld__eingabe" type="text" readonly />
+        <button type="button" id="knopf-kopieren" class="knopf knopf--haupt">
+          Link kopieren
+        </button>
+        <p id="kopier-status" class="feld__hinweis"></p>
+      </div>
+
+      <p class="warten__hinweis">
+        Sobald dein Gegner beitritt, startet die Partie automatisch.
+        Du kannst dieses Fenster offen lassen.
+      </p>
+
+      <button type="button" id="knopf-abbrechen" class="knopf knopf--zweit">
+        Suche abbrechen
+      </button>
+    </section>
+
+    <!-- ===================================================================
+         Ansicht 3: SPIEL
+         =================================================================== -->
+    <section id="ansicht-spiel" class="ansicht ansicht--spiel" hidden>
+
+      <!-- Punktestaende und Zuganzeige -->
+      <div class="stand">
+        <p class="stand__spieler stand__spieler--gegner" id="stand-gegner">
+          <span class="stand__name" id="name-gegner">Gegner</span>
+          <span class="stand__punkte" id="punkte-gegner">0</span>
+        </p>
+
+        <p class="stand__spieler stand__spieler--eigen" id="stand-eigen">
+          <span class="stand__name" id="name-eigen">Du</span>
+          <span class="stand__punkte" id="punkte-eigen">0</span>
+        </p>
+      </div>
+
+      <!-- Wer ist am Zug? Dazu kurze Hinweise auf Extrazug und Klauen. -->
+      <p id="zuganzeige" class="zuganzeige">Die Partie beginnt…</p>
+
+      <!--
+        Das Brett ist eine geordnete Liste, weil es TATSAECHLICH eine
+        Reihenfolge ist: die Laufrichtung der Kugeln. Die 14 Zellen werden
+        einmalig von js/spiel.js erzeugt und danach nur noch
+        aktualisiert – kein innerHTML, kein Neuaufbau (Konzept 8.3).
+      -->
+      <ol id="brett" class="brett"></ol>
+
+      <!--
+        Tastaturhilfe: Die Nummern 1 bis 6 stehen zusaetzlich auf den eigenen
+        Mulden. Beides ist immer sichtbar – nur auf Handys blendet
+        css/07-zustaende.css es aus.
+      -->
+      <p class="tastaturhinweis">
+        Tastatur: <kbd>1</kbd> bis <kbd>6</kbd> spielt die Mulde mit dieser Nummer ·
+        <kbd>Tab</kbd> springt zur nächsten Mulde ·
+        <kbd>Enter</kbd> oder <kbd>Leertaste</kbd> spielt sie
+      </p>
+
+      <div class="spiel__aktionen">
+        <!-- Oeffnet die Rueckfrage #dialog-aufgeben ohne JavaScript
+             (Invoker Commands; Fallback fuer aeltere Browser in js/spiel.js). -->
+        <button type="button" id="knopf-aufgeben" class="knopf knopf--still"
+                commandfor="dialog-aufgeben" command="show-modal">
+          Partie aufgeben
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       Ansicht 4: ENDE – als <dialog>, damit Fokusfalle und Esc vom Browser
+       kommen und nicht nachgebaut werden muessen (Konzept 8.8).
+       ===================================================================== -->
+  <dialog id="dialog-ende" class="dialog">
+    <h2 id="t-ende" class="dialog__titel">Partie beendet</h2>
+
+    <p id="ende-grund" class="dialog__grund"></p>
+
+    <p class="dialog__stand">
+      <span class="dialog__zahl" id="ende-punkte-eigen">0</span>
+      <span class="dialog__doppelpunkt">:</span>
+      <span class="dialog__zahl" id="ende-punkte-gegner">0</span>
+    </p>
+
+    <p id="ende-text" class="dialog__text"></p>
+
+    <!-- Bilanz dieser Sitzung ("Siege-Niederlagen | Remis"), gezaehlt von js/ende.js -->
+    <p id="ende-bilanz" class="dialog__bilanz"></p>
+
+    <!-- Revanche: nach jedem echten Spielende, 15 Sekunden lang (js/ende.js).
+         Der Satz darunter zeigt die Restzeit. -->
+    <p id="revanche-hinweis" class="dialog__hinweis" hidden></p>
+
+    <div class="dialog__aktionen">
+      <button type="button" id="knopf-revanche" class="knopf knopf--haupt" hidden>
+        Revanche
+      </button>
+      <button type="button" id="knopf-erneut" class="knopf knopf--haupt">
+        Neues Spiel suchen
+      </button>
+      <button type="button" id="knopf-abmelden" class="knopf knopf--zweit">
+        Abmelden
+      </button>
+    </div>
+  </dialog>
+
+  <!-- =====================================================================
+       Rueckfrage "Partie aufgeben?" – ein <dialog> statt window.confirm():
+       confirm() haelt das gesamte JavaScript an, auch Socket.io (js/spiel.js).
+       method="dialog": Jeder Knopf schliesst den Dialog, sein value landet in
+       dialog.returnValue. "Weiterspielen" steht zuerst und hat autofocus,
+       damit ein schnelles Enter nicht aus Versehen aufgibt.
+       ===================================================================== -->
+  <dialog id="dialog-aufgeben" class="dialog">
+    <form class="formular" method="dialog">
+      <h2 class="dialog__titel">Partie aufgeben?</h2>
+
+      <p class="dialog__grund">
+        Der Gegner gewinnt dann. Das lässt sich nicht rückgängig machen.
+      </p>
+
+      <div class="dialog__aktionen">
+        <button type="submit" value="weiter" class="knopf knopf--zweit" autofocus>
+          Weiterspielen
+        </button>
+        <button type="submit" value="aufgeben" class="knopf knopf--haupt">
+          Ja, aufgeben
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- =====================================================================
+       Einstellungen – beim ersten Besuch automatisch, spaeter ueber den Knopf
+       in der Kopfzeile (js/einstellungen.js).
+       method="dialog": "Übernehmen" schliesst den Dialog ohne eigenes
+       JavaScript; gespeichert wird beim Schliessen.
+       ===================================================================== -->
+  <dialog id="dialog-einstellungen" class="dialog">
+    <form id="form-einstellungen" class="formular" method="dialog">
+      <h2 class="dialog__titel">Einstellungen</h2>
+
+      <p class="dialog__grund">
+        Gespeichert wird nur in diesem Browser. Du kannst alles jederzeit über
+        „Einstellungen“ oben ändern.
+      </p>
+
+      <fieldset class="umschalter umschalter--spalte">
+        <legend class="feld__beschriftung">Anzeige</legend>
+
+        <label class="umschalter__option">
+          <input type="checkbox" name="grosseSchrift" />
+          Größere Schrift
+        </label>
+
+        <label class="umschalter__option">
+          <input type="checkbox" name="wenigerAnimation" />
+          Weniger Animation
+        </label>
+      </fieldset>
+
+      <div class="dialog__aktionen">
+        <button type="submit" class="knopf knopf--haupt">Übernehmen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Verbindungshinweis: erscheint, wenn die WebSocket-Verbindung wegbricht. -->
+  <p id="verbindungshinweis" class="verbindungshinweis" hidden>
+    Keine Verbindung zum Server. Es wird automatisch erneut versucht…
+  </p>
+
+  <!-- Urheberschaft: Wer hat das Spiel gebaut, in welchem Rahmen? -->
+  <footer class="fuss">
+    <p>Mancala (Kalaha) – entwickelt von <strong>Gursharan S. Sadwal</strong></p>
+    <ul class="fuss__liste">
+      <li>DHBW · 3. Semester</li>
+      <li>Web-Entwicklung (W3WI_110.2) bei Prof. Dr. Michael Eichberg</li>
+    </ul>
+    <p>Studienprojekt</p>
+  </footer>
+
+  <!--
+    Einziger Einstiegspunkt: ein ES-Modul. Auch Socket.io wird als Modul
+    importiert (js/kern.js) – es gibt kein klassisches Skript und kein
+    globales `io` mehr.
+  -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

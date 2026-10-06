@@ -1,0 +1,205 @@
+/**
+ * Seitengeruest und Ansichten (Ebene: layout).
+ */
+
+/*
+ * Kopfzeile in den hessischen Landesfarben: rotes Band mit weisser Schrift,
+ * darunter ein weisser und ein blauer Streifen (Rot-Weiss wie die Flagge,
+ * Blau wie das Wappen). Weiss auf Rot ergibt 5,5:1.
+ *
+ * Beide Streifen liegen INNERHALB der Kopfzeile, ohne zusaetzliches
+ * HTML-Element: Blau ist der untere Rand, Weiss ein nach innen gelegter
+ * Schatten direkt darueber. Ein Schatten nach aussen wuerde unter der
+ * Kopfzeile liegen und koennte von der naechsten Karte verdeckt werden.
+ */
+.kopf {
+  padding-block: var(--abstand);
+  padding-inline: var(--abstand);
+  text-align: center;
+
+  background-color: var(--farbe-hessen-rot);
+  color: var(--farbe-hessen-weiss);
+  border-block-end: 0.4rem solid var(--farbe-hessen-blau);
+  box-shadow: inset 0 -0.4rem 0 var(--farbe-hessen-weiss);
+
+  & .kopf__untertitel {
+    margin-inline: auto;
+    font-size: 1rem;
+  }
+
+  /* Der blaue Fokusring haette auf Rot nur 1,5:1 – hier deshalb weiss. */
+  & :focus-visible {
+    outline-color: var(--farbe-hessen-weiss);
+  }
+}
+
+.kopf__autor {
+  margin-inline: auto;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Der Hinweis, solange das Spiel noch laedt – siehe index.html. */
+.ladehinweis {
+  display: grid;
+  gap: var(--abstand-klein);
+  margin-inline: auto;
+  padding: var(--abstand);
+  text-align: center;
+}
+
+.ansichten {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding-inline: var(--abstand);
+  padding-block-end: var(--abstand);
+}
+
+/*
+ * Eine Ansicht ist ein zentrierter Block. Gewechselt wird ueber das
+ * `hidden`-Attribut, nicht durch Neuladen (Konzept 8.1) – deshalb duerfen
+ * hier keine Regeln stehen, die `hidden` ueberschreiben.
+ */
+.ansicht {
+  inline-size: 100%;
+  max-inline-size: 34rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand);
+  align-items: center;
+  text-align: center;
+
+  padding: var(--abstand-gross) var(--abstand);
+  background-color: var(--farbe-karte);
+  border-radius: var(--radius-gross);
+  box-shadow: var(--schatten);
+}
+
+/* Die Spielansicht ist breiter als die anderen und nicht als Karte gerahmt. */
+.ansicht--spiel {
+  max-inline-size: min(100%, calc(var(--brett-max) + 2 * var(--abstand)));
+  background-color: transparent;
+  box-shadow: none;
+  padding-inline: 0;
+  padding-block: var(--abstand);
+}
+
+.fuss {
+  padding: var(--abstand);
+  text-align: center;
+  color: var(--farbe-text-leise);
+  font-size: 1rem;
+
+  /* Roter Strich oben: dieselbe Landesfarbe wie die Kopfzeile. */
+  border-block-start: 0.25rem solid var(--farbe-hessen-rot);
+
+  & p {
+    margin-inline: auto;
+  }
+}
+
+.fuss__liste {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem var(--abstand);
+}
+
+/* ---------------------------------------------------------------------------
+   Warten
+   --------------------------------------------------------------------------- */
+
+.warten__hinweis {
+  color: var(--farbe-text-leise);
+  font-size: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Punktestand
+   --------------------------------------------------------------------------- */
+
+/*
+ * Im Querformat neben dem Brett, im Hochformat als kompakte Zeile darueber –
+ * umgesetzt mit flex-wrap, also ohne einen weiteren Umbruchpunkt
+ * (Konzept 8.9).
+ */
+.stand {
+  inline-size: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-klein);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stand__spieler {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-klein);
+
+  padding: var(--abstand-klein) var(--abstand);
+  border-radius: var(--radius-rund);
+  border: 2px solid transparent;
+  background-color: var(--farbe-karte);
+}
+
+.stand__name {
+  font-weight: 600;
+  /* Lange Namen duerfen das Layout nicht sprengen. */
+  max-inline-size: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stand__punkte {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-inline-size: 2.5ch;
+}
+
+.zuganzeige {
+  inline-size: 100%;
+  max-inline-size: none;
+  text-align: center;
+  font-weight: 600;
+  min-block-size: 1.5lh;   /* haelt die Hoehe, auch wenn der Text wechselt */
+}
+
+/* Hinweiszeile der Tastaturhilfe unter dem Brett. */
+.tastaturhinweis {
+  margin-inline: auto;
+  text-align: center;
+  color: var(--farbe-text-leise);
+}
+
+.spiel__aktionen {
+  display: flex;
+  gap: var(--abstand-klein);
+  justify-content: center;
+}
+
+/*
+ * Telefon im Querformat: wenig Hoehe. Kopf- und Fussbereich werden flacher,
+ * damit das Brett vollstaendig sichtbar bleibt, ohne dass gescrollt werden
+ * muss (Konzept 8.9).
+ */
+@media (max-height: 480px) {
+  .kopf {
+    padding-block: var(--abstand-klein);
+
+    & .kopf__titel { font-size: 1.1rem; }
+    & .kopf__untertitel,
+    & .kopf__autor { display: none; }
+  }
+
+  .fuss { display: none; }
+
+  .ansicht--spiel { gap: var(--abstand-klein); }
+}

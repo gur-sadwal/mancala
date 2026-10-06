@@ -1,0 +1,91 @@
+/**
+ * Gestaltungsmarken (Ebene: tokens).
+ *
+ * Eine einzige Quelle fuer Farben und Masse. Kein anderer Wert im Projekt
+ * wird hartkodiert – das ist die Voraussetzung dafuer, dass das Umschalten
+ * zwischen Hoch- und Querformat nur wenige Zeilen kostet (Konzept 8.6).
+ *
+ * Es gibt bewusst nur EIN Farbschema, das helle – auch wenn das
+ * Betriebssystem auf Dunkelmodus steht (siehe color-scheme in 03-basis.css).
+ *
+ * Farben in oklch(): gleichmaessige Helligkeitswahrnehmung, dadurch laesst
+ * sich das Kontrastverhaeltnis von 4,5:1 ueber den ersten Wert steuern,
+ * statt es je Farbe nachzumessen.
+ */
+
+:root {
+  /* ----- Landesfarben Hessen -----
+   * HEX statt oklch, damit die Werte unveraendert nachlesbar bleiben.
+   *
+   * Rot und Weiss: Web-Werte der Landesflagge. Weiss auf Rot: 5,5:1.
+   * Blau: auf Kontrast abgestimmt. Weiss darauf 8,3:1, als Link auf dem
+   * Seitenhintergrund 7,6:1, als Kugel auf der Mulde 3,3:1.
+   */
+  --farbe-hessen-rot: #D40011;
+  --farbe-hessen-weiss: #FFFFFF;
+  --farbe-hessen-blau: #00508C;
+
+  /* ----- Farben: Flaechen ----- */
+  --farbe-grund: oklch(97% 0.012 85);        /* Seitenhintergrund */
+  --farbe-karte: oklch(99% 0.006 85);        /* Karten, Formulare, Dialog */
+  --farbe-brett: oklch(38% 0.045 60);        /* Holzton des Bretts */
+  --farbe-mulde: oklch(72% 0.055 75);        /* Mulden */
+  --farbe-haus: oklch(66% 0.06 75);          /* Haeuser, etwas dunkler */
+
+  /* ----- Farben: Schrift ----- */
+  --farbe-text: oklch(25% 0.02 85);          /* auf --farbe-grund: > 12:1 */
+  --farbe-text-leise: oklch(45% 0.02 85);    /* auf --farbe-grund: > 6:1 */
+  --farbe-text-hell: oklch(98% 0.01 85);     /* auf --farbe-brett */
+
+  /* ----- Farben: Bedeutung ----- */
+  --farbe-kugel: var(--farbe-hessen-blau);   /* Akzent: Links, Fokusring, eigene Kugeln */
+  --farbe-aktiv: oklch(52% 0.15 145);        /* "du bist am Zug", Gruen */
+  --farbe-warnung: oklch(45% 0.12 40);       /* Fehler, rotbraun – bewusst anders als das Hessen-Rot */
+  --farbe-beute: oklch(62% 0.17 65);         /* Diebstahl-Hervorhebung */
+  --farbe-extrazug: oklch(50% 0.16 300);     /* Extrazug-Hervorhebung, als Text > 4,5:1 */
+  /* Rahmen von Eingabefeld, Spielart-Feldern und zweitem Knopf: mindestens
+     3:1 gegen Karte und Seitengrund (WCAG 1.4.11, Kontrast von Bedienelementen). */
+  --farbe-rand: oklch(62% 0.02 85);
+
+  /* ----- Masse ----- */
+  /*
+   * Die Mulde ist nie kleiner als 44 px – die Mindestzielgroesse aus
+   * WCAG 2.5.5 und ausdrueckliche Vorgabe des Dozenten (NFA-05).
+   * 2.75rem = 44px bei 16px Grundschrift.
+   */
+  --mulde-min: clamp(2.75rem, 11vw, 5.5rem);
+  --abstand-brett: clamp(0.35rem, 1.4vw, 0.9rem);
+  --brett-max: 60rem;
+  --zeile-max: 68ch;
+
+  --abstand-klein: 0.5rem;
+  --abstand: 1rem;
+  --abstand-gross: 1.75rem;
+
+  --radius-klein: 0.375rem;
+  --radius: 0.75rem;
+  --radius-gross: 1.25rem;
+  --radius-rund: 999px;
+
+  /* ----- Schrift ----- */
+  /* Jost zuerst (siehe @font-face in 03-basis.css). Fehlt die Datei oder laedt
+     sie noch, nimmt der Browser die erste vorhandene Schrift dahinter: auf
+     Apple-Geraeten die vorinstallierte Futura (das Vorbild von Jost), sonst
+     die Systemschrift. */
+  --schrift: 'Jost', Futura, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Mindestens 16 px (NFA-05); im Eingabefeld verhindert das zugleich den
+     automatischen Zoom von Safari.
+     REGEL fuer das ganze Projekt: keine font-size unter 1rem (= 16 px bei
+     Standardeinstellung). Wer im Browser groessere Schrift einstellt,
+     bekommt mit rem automatisch mehr – deshalb rem statt px. */
+  --schrift-basis: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+  --zeilenhoehe: 1.5;
+
+  /* ----- Bewegung ----- */
+  --dauer-kugel: 110ms;      /* eine Kugel im Saepfad (Konzept 8.4) */
+  --dauer-kurz: 160ms;
+  --dauer-mittel: 320ms;
+
+  --schatten: 0 1px 2px oklch(0% 0 0 / 0.08), 0 4px 12px oklch(0% 0 0 / 0.06);
+  --schatten-tief: inset 0 2px 5px oklch(0% 0 0 / 0.28);
+}

@@ -1,0 +1,50 @@
+/**
+ * Sparsamer Reset (Ebene: reset).
+ *
+ * Bewusst kein vollstaendiger Reset wie Normalize: Was der Browser
+ * vernuenftig macht, bleibt stehen. Entfernt werden nur Vorgaben, die dem
+ * Layout im Weg sind.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Abstaende werden ausschliesslich bewusst gesetzt. */
+body,
+h1, h2, h3,
+p,
+ol, ul,
+figure {
+  margin: 0;
+}
+
+ol, ul {
+  padding: 0;
+  list-style: none;
+}
+
+/* Medien verlassen nie ihren Container. */
+img,
+picture,
+svg {
+  display: block;
+  max-inline-size: 100%;
+}
+
+/* Formularelemente erben die Schrift des Dokuments statt der des Systems. */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/*
+ * Die Regel "Bewegung reduzieren" steht NICHT hier, sondern in
+ * 08-bewegung.css (letzte Ebene): In dieser ersten Ebene haette sie gegen jede
+ * spaeter definierte Animation verloren.
+ */

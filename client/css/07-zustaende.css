@@ -1,0 +1,211 @@
+/**
+ * Zustaende (Ebene: zustaende) – die vorletzte Ebene. Nach ihr kommt nur noch
+ * `bewegung` (08-bewegung.css).
+ *
+ * Deshalb gewinnen diese Regeln gegen die Komponentenregeln, auch wenn ihr
+ * Selektor schwaecher ist. Genau dafuer ist @layer da, und genau deshalb
+ * kommt das Projekt ohne ein einziges `!important` aus (NFA-06).
+ */
+
+/* ---------------------------------------------------------------------------
+   Sichtbarkeit – muss ganz oben in dieser Ebene stehen
+   ---------------------------------------------------------------------------
+   Das `hidden`-Attribut wirkt nur ueber eine `display: none`-Regel im
+   Standard-Stylesheet des Browsers. Diese Regel hat die schwaechste
+   Spezifitaet ueberhaupt – JEDE eigene display-Angabe schlaegt sie. Weil
+   `.ansicht` in der Ebene `layout` ein `display: flex` setzt, blieben
+   versteckte Ansichten sichtbar: Der Wartebildschirm stand noch da, waehrend
+   das Spiel schon lief.
+
+   Behoben wird das NICHT mit `!important` (NFA-06), sondern mit der
+   Ebenenreihenfolge: `zustaende` steht in haupt.css hinter `layout` und
+   gewinnt deshalb, obwohl der Selektor hier schwaecher ist.
+   Genau dafuer ist @layer da – das ist die Stelle, an der sich die
+   CSS-Architektur bezahlt macht.
+
+   Gilt bewusst fuer alle Elemente, nicht nur fuer `.ansicht`: Auch die
+   Fehlermeldung im Formular und der Verbindungshinweis werden ueber `hidden`
+   geschaltet.
+   --------------------------------------------------------------------------- */
+
+[hidden] {
+  display: none;
+}
+
+/*
+ * Tastaturhilfe (Tastennummern auf den Mulden, Hinweiszeile unter dem Brett):
+ * immer an – auf PC, Mac, Laptop und Tablet, also auch auf dem iPad mit
+ * Tastatur. Deshalb gibt es dafuer keine Einstellung.
+ *
+ * Ausgeblendet wird sie nur auf Handys. Erkennungszeichen: reine
+ * Touch-Bedienung (keine Maus: hover none, grober Zeiger: pointer coarse) UND
+ * wenig Platz – schmal im Hochformat oder niedrig im Querformat. Ein iPad ist
+ * fuer beide Grenzen zu gross und zeigt die Hilfe deshalb immer: Ob gerade
+ * eine Tastatur angesteckt ist, kann eine Webseite nicht sicher erkennen.
+ */
+@media (hover: none) and (pointer: coarse) and (max-width: 599px),
+       (hover: none) and (pointer: coarse) and (max-height: 500px) {
+  .mulde__taste,
+  .tastaturhinweis {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Muldenzustaende (Konzept 8.3)
+   ---------------------------------------------------------------------------
+     spielbar    eigene Mulde, ich bin am Zug, mind. 1 Kugel
+     gesperrt    eigene Mulde, aber leer oder Gegner am Zug
+     gegnerisch  Mulde der Gegenseite
+   --------------------------------------------------------------------------- */
+
+/*
+ * Spielbar = dicker dunkler Rand statt gruenem Rand. Gruen auf Holz hatte nur
+ * etwa 2:1 und ist bei Rot-Gruen-Schwaeche kaum zu erkennen. Gruen bleibt
+ * trotzdem am Brettrahmen, und der Text "Du bist am Zug" sagt es zusaetzlich.
+ */
+.mulde--spielbar {
+  cursor: pointer;
+  border-width: 3px;
+  border-color: var(--farbe-text);
+
+  @media (hover: hover) {
+    &:hover {
+      /* Hover- und Fokusfarben werden aus der Grundfarbe abgeleitet, statt
+         als eigener Wert gepflegt zu werden. */
+      background-color: color-mix(in oklch, var(--farbe-mulde) 80%, var(--farbe-aktiv));
+      transform: translateY(-3px) scale(1.03);
+    }
+  }
+
+  /* Auf Touch-Geraeten ersetzt der Druckzustand den Hover. */
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Nur die Kugelpunkte verblassen – die Zahl bleibt voll lesbar. */
+.mulde--gesperrt {
+  cursor: not-allowed;
+
+  & .kugeln {
+    opacity: 0.6;
+  }
+}
+
+/*
+ * `.mulde--eigen` hat bewusst KEINE Gestaltungsregel. Die Klasse ist allein
+ * ein Haken fuer das JavaScript (querySelectorAll in js/spiel.js).
+ * Das Aussehen einer eigenen Mulde ergibt sich aus --spielbar / --gesperrt.
+ */
+
+/* .mulde--gegnerisch: bewusst ohne Regel. Kein Cursor-Wechsel (kein
+   Bedienelement) und keine Transparenz (Zahl soll voll lesbar bleiben). */
+
+/* Gegnerische Kugeln in einer anderen Farbe – die Zuordnung darf nicht allein
+   an der Position haengen. Dunkel statt Blau: 6,4:1 auf der Mulde (Grafiken
+   brauchen mindestens 3:1, WCAG 1.4.11); das leise Grau lag mit 2,98:1 knapp
+   darunter. Haeuser zeigen nur die Zahl, keine Kugelpunkte. */
+.zelle--mulde-gegner .kugel {
+  background-color: var(--farbe-text);
+}
+
+/* ---------------------------------------------------------------------------
+   Wer ist am Zug
+   --------------------------------------------------------------------------- */
+
+/*
+ * :has() als Elternselektor: Enthaelt das Brett mindestens eine spielbare
+ * Mulde, bin ich dran – dann bekommt das ganze Brett einen Rahmen. Das spart
+ * eine zusaetzliche Klasse, die im JS gepflegt werden muesste (Konzept 8.6).
+ */
+.brett:has(.mulde--spielbar) {
+  outline: 3px solid var(--farbe-aktiv);
+  outline-offset: 4px;
+}
+
+/* Punktestand-Karte des Spielers, der gerade zieht. */
+.stand__spieler--dran {
+  border-color: var(--farbe-aktiv);
+  /* Nicht nur Farbe: zusaetzlich fett (WCAG 1.4.1). */
+  font-weight: 700;
+}
+
+.zuganzeige--ich {
+  color: var(--farbe-aktiv);
+}
+
+.zuganzeige--gegner {
+  color: var(--farbe-text-leise);
+}
+
+/* ---------------------------------------------------------------------------
+   Rueckmeldung auf Ereignisse (Konzept 8.4)
+   --------------------------------------------------------------------------- */
+
+/* Eine Kugel faellt in diese Zelle. */
+.zelle--saat .mulde,
+.zelle--saat .haus {
+  animation: aufleuchten var(--dauer-kurz) ease-out;
+}
+
+@keyframes aufleuchten {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+
+/* Diebstahl: beide beteiligten Mulden blinken. */
+.zelle--beute .mulde {
+  animation: beute var(--dauer-mittel) ease-in-out 2;
+  border-color: var(--farbe-beute);
+}
+
+/*
+ * Die Blinkfarben sind mit Weiss aufgehellt, damit Zahl und Kugeln auch mitten
+ * im Blinken lesbar bleiben. Text auf dem hellen Orange: 6,5:1 (auf dem vollen
+ * Orange waeren es 4,2:1). Text auf dem hellen Lila: 8,4:1 (statt 2,5:1).
+ * Die vollen Farben bleiben fuer den Hinweistext ueber dem Brett.
+ */
+@keyframes beute {
+  0%, 100% { background-color: var(--farbe-mulde); }
+  50%      { background-color: color-mix(in oklch, var(--farbe-beute) 70%, white); }
+}
+
+/* Extrazug: das eigene Haus leuchtet. */
+.zelle--extrazug .haus {
+  animation: extrazug var(--dauer-mittel) ease-in-out 2;
+}
+
+@keyframes extrazug {
+  0%, 100% { background-color: var(--farbe-haus); }
+  50%      { background-color: color-mix(in oklch, var(--farbe-extrazug) 40%, white); }
+}
+
+/* Abgelehnter Zug (z. B. leere Mulde): kurzes Ruetteln statt einer Meldung. */
+.mulde--abgelehnt {
+  animation: ruetteln 260ms ease-in-out;
+}
+
+@keyframes ruetteln {
+  0%, 100%  { transform: translateX(0); }
+  25%       { transform: translateX(-4px); }
+  75%       { transform: translateX(4px); }
+}
+
+/* Hinweisbanner fuer Extrazug und Beute. */
+.zuganzeige--hinweis {
+  color: var(--farbe-extrazug);
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------
+   Eingabesperre waehrend der Animation (Konzept 8.5)
+   ---------------------------------------------------------------------------
+   Reine Bequemlichkeit – die eigentliche Absicherung bleibt die Pruefung auf
+   dem Server.
+   --------------------------------------------------------------------------- */
+
+.brett--gesperrt {
+  pointer-events: none;
+}

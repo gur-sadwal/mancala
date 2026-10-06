@@ -1,0 +1,401 @@
+/**
+ * Wiederverwendbare Bausteine (Ebene: komponenten).
+ */
+
+/* ---------------------------------------------------------------------------
+   Schaltflaechen
+   --------------------------------------------------------------------------- */
+
+.knopf {
+  /* Auch Schaltflaechen halten die Mindestzielgroesse von 44 px (NFA-05). */
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--abstand-klein);
+
+  padding-inline: var(--abstand-gross);
+  padding-block: var(--abstand-klein);
+
+  border: 2px solid transparent;
+  border-radius: var(--radius-rund);
+
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+
+  transition:
+    background-color var(--dauer-kurz) ease,
+    border-color var(--dauer-kurz) ease,
+    transform var(--dauer-kurz) ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /*
+   * Hover-Regeln stehen ausnahmslos in @media (hover: hover). Auf dem Telefon
+   * wuerde ein Hover-Zustand sonst nach dem Tippen "kleben" bleiben
+   * (Konzept 8.9).
+   */
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/*
+ * Hauptknopf in den hessischen Landesfarben: Weiss auf Rot (#D40011) ergibt
+ * 5,5:1.
+ */
+.knopf--haupt {
+  background-color: var(--farbe-hessen-rot);
+  color: var(--farbe-hessen-weiss);
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-color: color-mix(in oklch, var(--farbe-hessen-rot) 85%, black);
+    }
+  }
+}
+
+.knopf--zweit {
+  background-color: transparent;
+  border-color: var(--farbe-rand);
+  color: var(--farbe-text);
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      border-color: var(--farbe-kugel);
+    }
+  }
+}
+
+.knopf--still {
+  background-color: transparent;
+  color: var(--farbe-text-leise);
+  padding-inline: var(--abstand);
+  font-weight: 500;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      color: var(--farbe-warnung);
+    }
+  }
+}
+
+/* Knopf auf der roten Kopfzeile: weiss umrandet statt gefuellt.
+   Weiss auf Hessen-Rot ergibt 5,5:1. */
+.knopf--kopf {
+  margin-block-start: var(--abstand-klein);
+  background-color: transparent;
+  border-color: var(--farbe-hessen-weiss);
+  color: var(--farbe-hessen-weiss);
+}
+
+/* ---------------------------------------------------------------------------
+   Formular
+   --------------------------------------------------------------------------- */
+
+.formular {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand);
+  align-items: stretch;
+}
+
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: start;
+}
+
+.feld__beschriftung {
+  font-weight: 600;
+}
+
+.feld__eingabe {
+  min-block-size: 2.75rem;
+  padding-inline: var(--abstand);
+  padding-block: var(--abstand-klein);
+
+  border: 2px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background-color: var(--farbe-grund);
+
+  /* Mindestens 16 px, sonst zoomt Safari beim Hineintippen automatisch
+     hinein (Konzept 8.9). */
+  font-size: max(1rem, var(--schrift-basis));
+
+  &:focus-visible {
+    border-color: var(--farbe-kugel);
+  }
+}
+
+.feld__hinweis {
+  font-size: 1rem;
+  color: var(--farbe-text-leise);
+}
+
+.meldung {
+  padding: var(--abstand-klein) var(--abstand);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  text-align: start;
+}
+
+.meldung--fehler {
+  /* Nicht nur Farbe: Der Rahmen links traegt die Information mit (WCAG 1.4.1). */
+  border-inline-start: 4px solid var(--farbe-warnung);
+  background-color: color-mix(in oklch, var(--farbe-warnung) 12%, transparent);
+  color: var(--farbe-text);
+}
+
+/* Hinweis ohne Fehler, z. B. "Du wurdest eingeladen". Rand wie bei Fehlern,
+   aber in der Akzentfarbe. */
+.meldung--info {
+  border-inline-start: 4px solid var(--farbe-kugel);
+  background-color: color-mix(in oklch, var(--farbe-kugel) 10%, transparent);
+  color: var(--farbe-text);
+}
+
+/* ---------------------------------------------------------------------------
+   Umschalter "Schnelles Spiel / Privates Spiel"
+   ---------------------------------------------------------------------------
+   Zwei ganz normale Radiobuttons, nur als nebeneinanderliegende Felder
+   gestaltet. Die Radiokreise bleiben bewusst sichtbar: Man sieht sofort,
+   was gewaehlt ist – auch ohne Farbe (WCAG 1.4.1).
+   --------------------------------------------------------------------------- */
+
+.umschalter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-klein);
+
+  margin: 0;
+  padding: 0;
+  border: none;
+  text-align: start;
+
+  & legend {
+    padding: 0;
+    margin-block-end: 0.35rem;
+  }
+}
+
+.umschalter__option {
+  /* Beide Felder gleich breit, auf dem Telefon untereinander. */
+  flex: 1 1 12rem;
+  min-block-size: 2.75rem;
+
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-klein);
+
+  padding: var(--abstand-klein) var(--abstand);
+  border: 2px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  cursor: pointer;
+
+  & input {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    accent-color: var(--farbe-kugel);
+  }
+
+  /* Gewaehltes Feld: Rand in der Akzentfarbe und fette Schrift. Dazu der
+     gefuellte Radiopunkt – so ist die Wahl auch ohne Farbe erkennbar. */
+  &:has(:checked) {
+    border-color: var(--farbe-kugel);
+    font-weight: 700;
+  }
+}
+
+/*
+ * Untereinander statt nebeneinander – z. B. im Einstellungsdialog.
+ * `flex: none`, weil in einer Spalte `flex-basis: 12rem` sonst die HOEHE jedes
+ * Feldes festlegen wuerde.
+ */
+.umschalter--spalte {
+  flex-direction: column;
+
+  & .umschalter__option {
+    flex: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Einladungslink auf dem Wartebildschirm
+   --------------------------------------------------------------------------- */
+
+.einladungslink {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-klein);
+  text-align: start;
+}
+
+/* ---------------------------------------------------------------------------
+   Ladeanzeige des Wartebildschirms
+   --------------------------------------------------------------------------- */
+
+.lader {
+  display: flex;
+  gap: var(--abstand-klein);
+  justify-content: center;
+  padding-block: var(--abstand);
+}
+
+.lader__kugel {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  border-radius: var(--radius-rund);
+  background-color: var(--farbe-kugel);
+
+  /* Vier Kugeln, die nacheinander huepfen – wie beim Saeen. */
+  animation: huepfen 1.2s ease-in-out infinite;
+
+  &:nth-child(2) { animation-delay: 0.15s; }
+  &:nth-child(3) { animation-delay: 0.3s; }
+  &:nth-child(4) { animation-delay: 0.45s; }
+}
+
+@keyframes huepfen {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+  30%           { transform: translateY(-0.6rem); opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+   Anleitung
+   --------------------------------------------------------------------------- */
+
+.anleitung {
+  inline-size: 100%;
+  text-align: start;
+  font-size: 1rem;
+  color: var(--farbe-text-leise);
+
+  /*
+   * Der Aufklapp-Text ist eine Klickflaeche und braucht deshalb 44 px Hoehe:
+   * 16 px Schrift x 1,5 Zeilenhoehe = 24 px, plus 2 x 10 px Innenabstand.
+   * min-block-size sichert das zusaetzlich ab. Bewusst kein display: flex –
+   * das wuerde in Chrome das Aufklapp-Dreieck entfernen.
+   */
+  & summary {
+    cursor: pointer;
+    min-block-size: 2.75rem;
+    padding-block: 0.625rem;
+    font-weight: 600;
+  }
+}
+
+.anleitung__liste {
+  list-style: decimal;
+  padding-inline-start: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Ergebnisdialog
+   --------------------------------------------------------------------------- */
+
+.dialog {
+  inline-size: min(92vw, 26rem);
+  padding: var(--abstand-gross);
+
+  border: none;
+  border-radius: var(--radius-gross);
+  background-color: var(--farbe-karte);
+  color: var(--farbe-text);
+  box-shadow: var(--schatten);
+
+  text-align: center;
+
+  /* Der Hintergrund hinter dem modalen Dialog. */
+  &::backdrop {
+    background-color: oklch(20% 0.02 85 / 0.55);
+    backdrop-filter: blur(2px);
+  }
+}
+
+.dialog__titel {
+  margin-block-end: var(--abstand-klein);
+}
+
+.dialog__grund {
+  margin-inline: auto;
+  color: var(--farbe-text-leise);
+}
+
+.dialog__stand {
+  margin-inline: auto;
+  margin-block: var(--abstand);
+
+  display: flex;
+  gap: var(--abstand-klein);
+  align-items: baseline;
+  justify-content: center;
+
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dialog__text {
+  margin-inline: auto;
+  margin-block-end: var(--abstand);
+  font-weight: 600;
+}
+
+.dialog__bilanz {
+  margin-inline: auto;
+  margin-block-end: var(--abstand);
+  color: var(--farbe-text-leise);
+}
+
+/* Stand der Revanche ("Dein Gegner möchte eine Revanche!"): kraeftiger als die
+   Bilanz, weil man darauf reagieren soll. */
+.dialog__hinweis {
+  margin-inline: auto;
+  margin-block-end: var(--abstand);
+  font-weight: 600;
+}
+
+.dialog__aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-klein);
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------------------
+   Verbindungshinweis
+   --------------------------------------------------------------------------- */
+
+.verbindungshinweis {
+  position: fixed;
+  inset-block-end: var(--abstand);
+  inset-inline: var(--abstand);
+  z-index: 20;
+
+  margin-inline: auto;
+  max-inline-size: 30rem;
+  padding: var(--abstand-klein) var(--abstand);
+
+  border-radius: var(--radius);
+  background-color: var(--farbe-warnung);
+  /* Die helle Seitenfarbe als Schrift auf der dunklen Warnfarbe: 7,2:1. */
+  color: var(--farbe-grund);
+  text-align: center;
+  box-shadow: var(--schatten);
+}

@@ -1,0 +1,30 @@
+/**
+ * Einstiegspunkt des Stylesheets (Konzept 8.6).
+ *
+ * Diese Datei enthaelt bewusst KEINE eigenen Regeln, sondern nur die
+ * Ebenenreihenfolge und die Importe. Wer wissen will, welche Regel gewinnt,
+ * liest genau eine Zeile: die Ebenenliste.
+ *
+ * Die Reihenfolge der Ebenen loest die Kaskade auf, ohne dass jemals
+ * `!important` noetig wird (NFA-06): Zustandsregeln stehen weit hinten und
+ * gewinnen deshalb gegen Komponentenregeln, selbst wenn ihr Selektor
+ * schwaecher ist. Ganz am Ende steht `bewegung` – "Bewegung reduzieren" muss
+ * JEDE Animation schlagen, auch die aus `zustaende`.
+ */
+
+/* Zuerst die Reihenfolge festlegen – spaeter Genanntes gewinnt. */
+@layer reset, tokens, basis, layout, brett, komponenten, zustaende, bewegung;
+
+/*
+ * Die Ebene wird beim Import zugewiesen. Damit steht in den Einzeldateien
+ * kein @layer-Block, und ihre Regeln ruecken nicht um eine Einrueckungsebene
+ * ein – das haelt sie lesbar.
+ */
+@import url('01-reset.css') layer(reset);
+@import url('02-tokens.css') layer(tokens);
+@import url('03-basis.css') layer(basis);
+@import url('04-layout.css') layer(layout);
+@import url('05-brett.css') layer(brett);
+@import url('06-komponenten.css') layer(komponenten);
+@import url('07-zustaende.css') layer(zustaende);
+@import url('08-bewegung.css') layer(bewegung);

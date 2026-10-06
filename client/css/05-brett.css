@@ -1,0 +1,287 @@
+/**
+ * Das Spielbrett (Ebene: brett).
+ *
+ * KERNPROBLEM (Konzept 8.9): Ein Mancala-Brett ist acht Spalten breit – zwei
+ * Haeuser plus sechs Mulden. Bei einer Mindestzielgroesse von 44 px zuzueglich
+ * Abstaenden braucht die waagerechte Anordnung rund 600 px. Ein Telefon im
+ * Hochformat hat 360 bis 430 px. Blosses Verkleinern wuerde die Zielgroesse
+ * unterschreiten und damit NFA-05 verletzen – also wird nicht verkleinert,
+ * sondern UMGEORDNET.
+ *
+ * Umgesetzt ohne zweites DOM: dieselben 14 Elemente, nur andere
+ * Rasterplatzierung. Das ist der entscheidende Punkt, denn ein Umbau des DOM
+ * wuerde Tastaturfokus, Tabulatorreihenfolge und laufende Animationen
+ * zerstoeren.
+ *
+ *   Querformat (ab 600 px)                 Hochformat (unter 600 px)
+ *   +---+---+---+---+---+---+---+---+          +-------+
+ *   |   | 12| 11| 10| 9 | 8 | 7 |   |          | HAUS  |  Gegner
+ *   | H |---+---+---+---+---+---| H |          +---+---+
+ *   | G | 1 | 2 | 3 | 4 | 5 | 6 | S |          |12 | 1 |
+ *   +---+---+---+---+---+---+---+---+          |11 | 2 |
+ *                                              |10 | 3 |
+ *   eigenes Haus rechts                        | 9 | 4 |
+ *   eigene Reihe unten                         | 8 | 5 |
+ *                                              | 7 | 6 |
+ *                                              +---+---+
+ *                                              | HAUS  |  ich
+ *                                              +-------+
+ *
+ * ABWEICHUNG vom Konzept: Die Skizze in Konzept 8.9 zeigt die eigene Spalte
+ * von 6 (oben) nach 1 (unten). Das waere gegen die Laufrichtung: Das eigene
+ * Haus liegt unten, also muss die letzte Mulde vor dem Haus (Loch 6) auch
+ * unten liegen. Hier steht deshalb 1 oben und 6 unten – so bleibt der
+ * Rundlauf geschlossen: eigene Spalte abwaerts ins eigene Haus, gegnerische
+ * Spalte aufwaerts in dessen Haus.
+ */
+
+.brett {
+  display: grid;
+  gap: var(--abstand-brett);
+
+  inline-size: 100%;
+  max-inline-size: var(--brett-max);
+  margin-inline: auto;
+
+  padding: var(--abstand-brett);
+  background-color: var(--farbe-brett);
+  border-radius: var(--radius-gross);
+  box-shadow: var(--schatten);
+
+  /* ----- Hochformat: 2 Spalten, 8 Zeilen (Haus, 6 Mulden, Haus) ----- */
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto repeat(6, minmax(var(--mulde-min), 1fr)) auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Platzierung im Hochformat
+   --------------------------------------------------------------------------- */
+
+.zelle--haus-gegner { grid-area: 1 / 1 / 2 / 3; }
+.zelle--haus-eigen  { grid-area: 8 / 1 / 9 / 3; }
+
+/*
+ * Eigene Mulden: rechte Spalte, Nummer 0 oben bis 5 unten (am Haus).
+ * Gegnerische Mulden: linke Spalte, aus dessen Sicht 0 unten bis 5 oben.
+ *
+ * Die sechs Regeln stehen ausgeschrieben statt in einer Schleife, weil CSS
+ * keine hat – und weil die Tabelle im Review direkt mit der Skizze oben
+ * vergleichbar ist.
+ */
+.zelle--mulde-eigen[data-pos="0"] { grid-column: 2; grid-row: 2; }
+.zelle--mulde-eigen[data-pos="1"] { grid-column: 2; grid-row: 3; }
+.zelle--mulde-eigen[data-pos="2"] { grid-column: 2; grid-row: 4; }
+.zelle--mulde-eigen[data-pos="3"] { grid-column: 2; grid-row: 5; }
+.zelle--mulde-eigen[data-pos="4"] { grid-column: 2; grid-row: 6; }
+.zelle--mulde-eigen[data-pos="5"] { grid-column: 2; grid-row: 7; }
+
+.zelle--mulde-gegner[data-pos="0"] { grid-column: 1; grid-row: 7; }
+.zelle--mulde-gegner[data-pos="1"] { grid-column: 1; grid-row: 6; }
+.zelle--mulde-gegner[data-pos="2"] { grid-column: 1; grid-row: 5; }
+.zelle--mulde-gegner[data-pos="3"] { grid-column: 1; grid-row: 4; }
+.zelle--mulde-gegner[data-pos="4"] { grid-column: 1; grid-row: 3; }
+.zelle--mulde-gegner[data-pos="5"] { grid-column: 1; grid-row: 2; }
+
+/* ---------------------------------------------------------------------------
+   Platzierung im Querformat
+   ---------------------------------------------------------------------------
+   Der Umbruchpunkt richtet sich nach der BREITE, nicht nach dem
+   Seitenverhaeltnis: Ein Telefon im Querformat (etwa 667 px) bekommt das
+   breite Brett, ein Tablet im Hochformat (768 px) ebenfalls – beide haben
+   genug Platz. Nur das Telefon im Hochformat kippt.
+   --------------------------------------------------------------------------- */
+
+@media (min-width: 600px) {
+  .brett {
+    /*
+     * minmax(2.75rem, 1fr): jede Mulde mindestens 44 px breit (NFA-05),
+     * sonst gleich breit. Ein blosses `1fr` darf nie schmaler werden als
+     * sein Inhalt – mit den 16-px-Beschriftungen der Haeuser waere das Brett
+     * bei 600 bis 650 px Bildschirmbreite sonst breiter als der Bildschirm
+     * geworden. Bei 600 px sind die Mulden so noch rund 56 px breit.
+     */
+    grid-template-columns: auto repeat(6, minmax(2.75rem, 1fr)) auto;
+    grid-template-rows: repeat(2, minmax(var(--mulde-min), 1fr));
+  }
+
+  /* Die Haeuser ueberspannen beide Zeilen, ganz aussen. */
+  .zelle--haus-gegner { grid-area: 1 / 1 / 3 / 2; }
+  .zelle--haus-eigen  { grid-area: 1 / 8 / 3 / 9; }
+
+  /* Eigene Reihe unten, Nummer 0 links bis 5 rechts (am Haus). */
+  .zelle--mulde-eigen[data-pos="0"] { grid-column: 2; grid-row: 2; }
+  .zelle--mulde-eigen[data-pos="1"] { grid-column: 3; grid-row: 2; }
+  .zelle--mulde-eigen[data-pos="2"] { grid-column: 4; grid-row: 2; }
+  .zelle--mulde-eigen[data-pos="3"] { grid-column: 5; grid-row: 2; }
+  .zelle--mulde-eigen[data-pos="4"] { grid-column: 6; grid-row: 2; }
+  .zelle--mulde-eigen[data-pos="5"] { grid-column: 7; grid-row: 2; }
+
+  /* Gegnerische Reihe oben, spiegelbildlich. */
+  .zelle--mulde-gegner[data-pos="0"] { grid-column: 7; grid-row: 1; }
+  .zelle--mulde-gegner[data-pos="1"] { grid-column: 6; grid-row: 1; }
+  .zelle--mulde-gegner[data-pos="2"] { grid-column: 5; grid-row: 1; }
+  .zelle--mulde-gegner[data-pos="3"] { grid-column: 4; grid-row: 1; }
+  .zelle--mulde-gegner[data-pos="4"] { grid-column: 3; grid-row: 1; }
+  .zelle--mulde-gegner[data-pos="5"] { grid-column: 2; grid-row: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+   Die Zellen
+   --------------------------------------------------------------------------- */
+
+.zelle {
+  display: grid;
+  min-block-size: var(--mulde-min);
+}
+
+/*
+ * Die Mulde selbst.
+ *
+ * Eigene Mulden sind echte <button>-Elemente, gegnerische Mulden sind <div>:
+ * Damit funktionieren Tastaturbedienung und Fokus ohne eigenes Zutun, und es
+ * ist gar nicht erst moeglich, eine gegnerische Mulde anzusteuern
+ * (Konzept 8.7).
+ */
+.mulde {
+  /* Bezugspunkt fuer die Tasten-Plakette (.mulde__taste). */
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: var(--mulde-min);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+
+  padding: var(--abstand-klein);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+
+  background-color: var(--farbe-mulde);
+  box-shadow: var(--schatten-tief);
+  color: var(--farbe-text);
+
+  /* Verhindert die Zoom-Verzoegerung beim Doppeltipp und damit den Eindruck
+     einer traegen Oberflaeche (Konzept 8.9). */
+  touch-action: manipulation;
+
+  transition:
+    transform var(--dauer-kurz) ease,
+    background-color var(--dauer-kurz) ease,
+    border-color var(--dauer-kurz) ease;
+}
+
+/* Als Button darf die Mulde keinen Systemrahmen mitbringen. */
+button.mulde {
+  cursor: default;
+  appearance: none;
+}
+
+/* Das Haus: dieselbe Optik, aber groesser und mit dem Punktestand. */
+.haus {
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: var(--mulde-min);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+
+  padding: var(--abstand-klein);
+  border-radius: var(--radius-gross);
+  background-color: var(--farbe-haus);
+  box-shadow: var(--schatten-tief);
+}
+
+.haus__zahl {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* line-height 1 ist hier in Ordnung: Eine einzelne Zahl bricht nie um, die
+     Regel "Zeilenabstand mind. 1,5" betrifft mehrzeiligen Text. */
+  line-height: 1;
+}
+
+/* Volle Deckkraft und 16 px: Abgeschwaechter Kleintext ist fuer
+   Sehschwache kaum lesbar. */
+.haus__beschriftung {
+  font-size: 1rem;
+  color: var(--farbe-text);
+}
+
+/* ---------------------------------------------------------------------------
+   Kugeln
+   ---------------------------------------------------------------------------
+   Bis 8 Kugeln einzelne Punkte, ab 9 nur noch die Zahl mit angedeutetem
+   Stapel: Ab neun Punkte zu zeichnen waere auf einem Telefon nicht mehr
+   unterscheidbar, und die Zahl ist ohnehin die verlaesslichere Information
+   (Konzept 8.3).
+   --------------------------------------------------------------------------- */
+
+.kugeln {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.12rem;
+  place-content: center;
+  min-block-size: 1.2lh;
+}
+
+.kugel {
+  inline-size: clamp(0.4rem, 1.6vw, 0.7rem);
+  block-size: clamp(0.4rem, 1.6vw, 0.7rem);
+  border-radius: var(--radius-rund);
+  background-color: var(--farbe-kugel);
+}
+
+/* Der Zahlenwert – fuer Sehende die schnellste Information. */
+.mulde__zahl {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;   /* einzelne Zahl, bricht nie um – siehe .haus__zahl */
+}
+
+/*
+ * Tasten-Plakette der Tastaturhilfe: welche Taste (1 bis 6) diese Mulde spielt.
+ * Absolut in der Ecke, damit die Mulde dadurch nicht hoeher wird. Nur auf
+ * Handys blendet 07-zustaende.css sie aus.
+ */
+.mulde__taste {
+  position: absolute;
+  inset-block-start: 0.2rem;
+  inset-inline-start: 0.2rem;
+
+  padding-inline: 0.3em;
+  border: 1px solid var(--farbe-text);
+  border-radius: var(--radius-klein);
+  background-color: var(--farbe-karte);
+  color: var(--farbe-text);
+
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: var(--zeilenhoehe);
+}
+
+/* Ab 9 Kugeln: grosse Zahl, Punktraster ausgeblendet. */
+.mulde--viele {
+  & .kugeln { display: none; }
+
+  & .mulde__zahl {
+    font-size: clamp(1.15rem, 4vw, 1.6rem);
+    /* Angedeuteter Stapel hinter der Zahl. */
+    text-shadow:
+      0.08em 0.08em 0 color-mix(in oklch, var(--farbe-kugel) 55%, transparent),
+      0.16em 0.16em 0 color-mix(in oklch, var(--farbe-kugel) 25%, transparent);
+  }
+}
+
+/* Leere Mulde: die 0 bleibt gut lesbar. Dass die Mulde leer ist, sieht man
+   bereits an den fehlenden Kugelpunkten – dafuer muss die Zahl nicht
+   verblassen. */
+.mulde--leer .mulde__zahl {
+  font-weight: 400;
+}

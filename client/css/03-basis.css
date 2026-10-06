@@ -1,0 +1,152 @@
+/**
+ * Typografie und Grundelemente (Ebene: basis).
+ */
+
+/*
+ * Hausschrift Jost – kostenlos (SIL Open Font License, Lizenztext liegt
+ * neben der Datei in client/fonts/).
+ *
+ * Warum nicht Gellix, die Schrift des Landes Hessen? Gellix ist
+ * kostenpflichtig, und die Testversion gilt nur fuer einen Rechner – ein
+ * Webserver gibt die Datei aber an jeden Besucher weiter. Jost sieht aehnlich
+ * aus: Beide sind geometrische Schriften nach dem Vorbild der Futura.
+ *
+ * Die Datei liegt auf dem EIGENEN Server statt bei Google Fonts: Sonst
+ * bekaeme Google bei jedem Seitenaufruf die IP-Adresse des Besuchers.
+ *
+ * Eine variable Schriftdatei enthaelt alle Staerken von 100 bis 900 – daher
+ * nur eine Datei. `font-display: swap` zeigt sofort die Systemschrift und
+ * tauscht, sobald Jost geladen ist.
+ */
+@font-face {
+  font-family: 'Jost';
+  src: url('../fonts/jost-variabel.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  /* Nur das helle Farbschema (siehe 02-tokens.css): Auch Eingabefelder,
+     Scrollleisten und Dialoge des Browsers bleiben hell, wenn das
+     Betriebssystem auf Dunkelmodus steht. */
+  color-scheme: light;
+  /* 100dvh statt 100vh: Die ein- und ausfahrende Browserleiste auf iOS und
+     Android soll das Layout nicht abschneiden (Konzept 8.9). */
+  min-block-size: 100dvh;
+}
+
+/*
+ * Einstellung "Groessere Schrift" (js/einstellungen.js).
+ *
+ * Eine einzige Regel genuegt, weil das ganze Projekt in rem rechnet: Wird die
+ * Grundschrift 12,5 % groesser, wachsen Texte, Abstaende UND Klickflaechen
+ * mit. Prozent statt px, damit eine im Browser eingestellte Grundgroesse
+ * erhalten bleibt.
+ */
+html[data-schrift="gross"] {
+  font-size: 112.5%;
+}
+
+body {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  font-family: var(--schrift);
+  font-size: var(--schrift-basis);
+  line-height: var(--zeilenhoehe);
+  color: var(--farbe-text);
+  background-color: var(--farbe-grund);
+
+  /* Sichere Bereiche: Das eigene Haus soll nicht unter der Gestenleiste des
+     Telefons liegen (Konzept 8.9). */
+  padding-block-end: max(0px, env(safe-area-inset-bottom));
+}
+
+/* Auch Ueberschriften koennen umbrechen – deshalb ebenfalls mindestens 1,5
+   Zeilenabstand (Regelwerk 6.1). */
+h1, h2, h3 {
+  line-height: var(--zeilenhoehe);
+  text-wrap: balance;
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.35rem; }
+
+p {
+  /* Hoechstens 68 Zeichen je Zeile (NFA-05). */
+  max-inline-size: var(--zeile-max);
+}
+
+a {
+  color: var(--farbe-kugel);
+}
+
+strong {
+  font-weight: 600;
+}
+
+/*
+ * Tasten sehen aus wie Tasten (Tastaturhilfe).
+ * font-family und font-size ausdruecklich setzen: Browser zeigen <kbd> sonst in
+ * einer kleineren Festbreitenschrift – unter 16 px.
+ */
+kbd {
+  display: inline-block;
+  min-inline-size: 1.6em;
+  padding-inline: 0.35em;
+
+  border: 1px solid var(--farbe-text-leise);
+  border-block-end-width: 3px;
+  border-radius: var(--radius-klein);
+  background-color: var(--farbe-karte);
+  color: var(--farbe-text);
+
+  font-family: inherit;
+  font-size: 1em;
+  line-height: var(--zeilenhoehe);
+  text-align: center;
+}
+
+/*
+ * Sichtbarer Fokusring – 3 px, eigener Abstand, mindestens 3:1 Kontrast
+ * (WCAG 2.4.11). `:focus-visible` statt `:focus`, damit ein Mausklick keinen
+ * Ring hinterlaesst, die Tastatur aber immer einen zeigt.
+ */
+:focus-visible {
+  outline: 3px solid var(--farbe-kugel);
+  outline-offset: 2px;
+  border-radius: var(--radius-klein);
+}
+
+/*
+ * Auf dem dunklen Holz des Bretts waere der farbige Ring kaum zu sehen
+ * (nachgerechnet: rund 2:1). Hier deshalb ein heller Ring.
+ */
+.brett :focus-visible {
+  outline-color: var(--farbe-text-hell);
+}
+
+/* Sprungmarke: unsichtbar, bis sie den Fokus bekommt. Auch sie ist eine
+   Klickflaeche und bekommt deshalb mindestens 44 px Hoehe. */
+.sprungmarke {
+  position: absolute;
+  inset-block-start: -100%;
+  inset-inline-start: var(--abstand);
+  z-index: 10;
+
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+
+  padding: var(--abstand-klein) var(--abstand);
+  background-color: var(--farbe-karte);
+  border-radius: var(--radius-klein);
+  box-shadow: var(--schatten);
+  text-decoration: none;
+
+  &:focus-visible {
+    inset-block-start: var(--abstand-klein);
+  }
+}

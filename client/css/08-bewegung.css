@@ -1,0 +1,41 @@
+/**
+ * Bewegung reduzieren (Ebene: bewegung) – die ALLERLETZTE Ebene.
+ *
+ * WARUM EINE EIGENE EBENE GANZ AM ENDE?
+ * Diese Regel stand frueher in 01-reset.css, also in der ERSTEN Ebene. Eine
+ * spaeter genannte Ebene gewinnt aber immer – egal, wie schwach ihr Selektor
+ * ist. Die Animationen aus `komponenten` und `zustaende` (huepfender Lader,
+ * Aufleuchten, Ruetteln) liefen deshalb trotz Systemeinstellung weiter.
+ *
+ * In `zustaende` haette es auch nicht gereicht: Innerhalb derselben Ebene
+ * zaehlt wieder die Spezifitaet, und `.zelle--beute .mulde` schlaegt `*`.
+ * Als letzte Ebene schlaegt diese Regel jede Animation – ohne `!important`
+ * (dieselbe Idee wie `[hidden]` in 07-zustaende.css).
+ *
+ * Zwei Ausloeser, dieselbe Wirkung:
+ *   - Systemeinstellung "Bewegung reduzieren" (WCAG 2.3.3)
+ *   - Einstellung "Weniger Animation" im Spiel (js/einstellungen.js)
+ *
+ * Die schrittweise Kugel-Animation aus js/spiel.js ist JavaScript und wird
+ * dort ueber `wenigerBewegung()` aus dom.js abgeschaltet.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+}
+
+html[data-bewegung="wenig"] *,
+html[data-bewegung="wenig"] *::before,
+html[data-bewegung="wenig"] *::after {
+  animation-duration: 0.01ms;
+  animation-iteration-count: 1;
+  transition-duration: 0.01ms;
+  scroll-behavior: auto;
+}
