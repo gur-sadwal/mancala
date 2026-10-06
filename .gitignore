@@ -1,0 +1,14 @@
+# Abhaengigkeiten
+node_modules/
+
+# Archiv bleibt lokal: fremde PDFs und eine gespiegelte Webseite (Konzept 12.4)
+Archiv/
+
+# macOS
+.DS_Store
+
+# Logdateien
+*.log
+
+# Testabdeckung
+coverage/

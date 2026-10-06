@@ -1,0 +1,26 @@
+{
+  "name": "mancala",
+  "version": "0.1.0",
+  "description": "Verteiltes 2-Personen-Webspiel Mancala (Kalaha) nach dem BrainKing-Regelwerk – DHBW W3WI_110.2",
+  "author": "Gursharan Sadwal",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "build": "npm run check",
+    "check": "node --check server/index.js && npm test",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "dev": "node --watch server/index.js 3000"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
