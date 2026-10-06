@@ -89,27 +89,6 @@
   padding-block: var(--abstand);
 }
 
-.fuss {
-  padding: var(--abstand);
-  text-align: center;
-  color: var(--farbe-text-leise);
-  font-size: 1rem;
-
-  /* Roter Strich oben: dieselbe Landesfarbe wie die Kopfzeile. */
-  border-block-start: 0.25rem solid var(--farbe-hessen-rot);
-
-  & p {
-    margin-inline: auto;
-  }
-}
-
-.fuss__liste {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.25rem var(--abstand);
-}
-
 /* ---------------------------------------------------------------------------
    Warten
    --------------------------------------------------------------------------- */
@@ -198,8 +177,6 @@
     & .kopf__untertitel,
     & .kopf__autor { display: none; }
   }
-
-  .fuss { display: none; }
 
   .ansicht--spiel { gap: var(--abstand-klein); }
 }
