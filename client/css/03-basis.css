@@ -121,8 +121,8 @@ kbd {
 }
 
 /*
- * Auf dem dunklen Holz des Bretts waere der farbige Ring kaum zu sehen
- * (nachgerechnet: rund 2:1). Hier deshalb ein heller Ring.
+ * Auf dem blauen Brett waere der blaue Ring unsichtbar (nachgerechnet:
+ * 1,1:1). Hier deshalb ein heller Ring – 8,7:1.
  */
 .brett :focus-visible {
   outline-color: var(--farbe-text-hell);
@@ -138,7 +138,7 @@ kbd {
 
   display: inline-flex;
   align-items: center;
-  min-block-size: 2.75rem;
+  min-block-size: var(--ziel-min);
 
   padding: var(--abstand-klein) var(--abstand);
   background-color: var(--farbe-karte);

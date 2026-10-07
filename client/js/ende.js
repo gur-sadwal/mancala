@@ -225,13 +225,17 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
 
   /**
    * Erklaert in einem Satz, warum die Partie vorbei ist.
+   *
+   * @param {string} grund
+   * @param {boolean} gewonnen  bei einer Aufgabe: Wer gewinnt, hat NICHT
+   *                            aufgegeben – so laesst sich sagen, wer es war
    */
-  function grundText(grund) {
+  function grundText(grund, gewonnen) {
     switch (grund) {
       case GRUND.GEGNER_WEG:
         return 'Der Gegner hat das Spiel verlassen.';
       case GRUND.AUFGEGEBEN:
-        return 'Die Partie wurde aufgegeben.';
+        return gewonnen ? 'Dein Gegner hat aufgegeben.' : 'Du hast aufgegeben.';
       case GRUND.INTERNER_FEHLER:
         return 'Die Partie musste wegen eines Fehlers abgebrochen werden.';
       case GRUND.SERVER_ENDE:
@@ -277,7 +281,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
 
       setzeText(punkteEigen, meine);
       setzeText(punkteGegner, seine);
-      setzeText(grundAnzeige, grundText(ergebnis.grund));
+      setzeText(grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz));
 
       if (ohneWertung(ergebnis.grund)) {
         setzeText(titel, 'Partie abgebrochen');
@@ -290,7 +294,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
         setzeText(text, `${meine} zu ${seine} – Glückwunsch.`);
       } else {
         setzeText(titel, 'Du hast verloren');
-        setzeText(text, `${meine} zu ${seine} – beim nächsten Mal.`);
+        setzeText(text, `${meine} zu ${seine} – viel Glück beim nächsten Mal.`);
       }
 
       // Revanche-Knopf, Hinweissatz und Zaehler.

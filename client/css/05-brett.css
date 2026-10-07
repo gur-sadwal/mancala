@@ -43,9 +43,13 @@
   max-inline-size: var(--brett-max);
   margin-inline: auto;
 
-  padding: var(--abstand-brett);
+  /* Etwas mehr Rand als Abstand: So bleibt rundum ein Streifen Brett stehen. */
+  padding: calc(var(--abstand-brett) * 1.5);
+  /* Hessen-Blau mit leichtem Verlauf, als fiele Licht von oben darauf. */
   background-color: var(--farbe-brett);
-  border-radius: var(--radius-gross);
+  background-image: linear-gradient(var(--farbe-brett), var(--farbe-brett-tief));
+  /* Stark gerundet: Ein echtes Mancala-Brett hat runde Enden. */
+  border-radius: calc(var(--radius-gross) * 2);
   box-shadow: var(--schatten);
 
   /* ----- Hochformat: 2 Spalten, 8 Zeilen (Haus, 6 Mulden, Haus) ----- */
@@ -94,13 +98,18 @@
 @media (min-width: 600px) {
   .brett {
     /*
-     * minmax(2.75rem, 1fr): jede Mulde mindestens 44 px breit (NFA-05),
+     * minmax(var(--ziel-min), 1fr): jede Mulde mindestens 44 px breit (NFA-05),
      * sonst gleich breit. Ein blosses `1fr` darf nie schmaler werden als
      * sein Inhalt – mit den 16-px-Beschriftungen der Haeuser waere das Brett
      * bei 600 bis 650 px Bildschirmbreite sonst breiter als der Bildschirm
      * geworden. Bei 600 px sind die Mulden so noch rund 56 px breit.
+     *
+     * Die Haeuser haben eine feste Breite (1.2fr) statt `auto`: Mit `auto`
+     * wuerden sie breiter, sobald Kugeln hineinfallen, und das ganze Brett
+     * wuerde waehrend der Partie wackeln.
      */
-    grid-template-columns: auto repeat(6, minmax(2.75rem, 1fr)) auto;
+    grid-template-columns:
+      minmax(3.5rem, 1.2fr) repeat(6, minmax(var(--ziel-min), 1fr)) minmax(3.5rem, 1.2fr);
     grid-template-rows: repeat(2, minmax(var(--mulde-min), 1fr));
   }
 
@@ -156,8 +165,11 @@
   gap: 0.15rem;
 
   padding: var(--abstand-klein);
-  border: 2px solid transparent;
-  border-radius: var(--radius);
+  /* Immer 3 px Rand, nur die Farbe wechselt (07-zustaende.css). So springt
+     das Brett nicht, wenn eine Mulde spielbar wird. */
+  border: 3px solid transparent;
+  /* 50 % ergibt eine Ellipse: runde Mulden wie auf einem echten Brett. */
+  border-radius: 50%;
 
   background-color: var(--farbe-mulde);
   box-shadow: var(--schatten-tief);
@@ -179,7 +191,10 @@ button.mulde {
   appearance: none;
 }
 
-/* Das Haus: dieselbe Optik, aber groesser und mit dem Punktestand. */
+/*
+ * Das Haus: dieselbe Optik wie eine Mulde, aber als lange Pille ueber beide
+ * Reihen. Oben die Punktzahl, darunter die Kugeln, unten die Beschriftung.
+ */
 .haus {
   inline-size: 100%;
   block-size: 100%;
@@ -189,10 +204,10 @@ button.mulde {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.1rem;
+  gap: 0.35rem;
 
-  padding: var(--abstand-klein);
-  border-radius: var(--radius-gross);
+  padding: var(--abstand) var(--abstand-klein);
+  border-radius: var(--radius-rund);
   background-color: var(--farbe-haus);
   box-shadow: var(--schatten-tief);
 }
@@ -211,30 +226,84 @@ button.mulde {
 .haus__beschriftung {
   font-size: 1rem;
   color: var(--farbe-text);
+  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------
    Kugeln
    ---------------------------------------------------------------------------
-   Bis 8 Kugeln einzelne Punkte, ab 9 nur noch die Zahl mit angedeutetem
-   Stapel: Ab neun Punkte zu zeichnen waere auf einem Telefon nicht mehr
-   unterscheidbar, und die Zahl ist ohnehin die verlaesslichere Information
-   (Konzept 8.3).
+   Jede Kugel wird gezeichnet – in den Mulden UND in den Haeusern. Damit
+   trotzdem alles hineinpasst, werden die Kugeln kleiner, je mehr es sind.
+   Die Zahl daneben bleibt die verlaessliche Information (Konzept 8.3).
    --------------------------------------------------------------------------- */
 
 .kugeln {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.12rem;
-  place-content: center;
-  min-block-size: 1.2lh;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 0.1rem;
+
+  /* Schmaler als die Mulde, damit die Kugeln innerhalb der Rundung bleiben. */
+  max-inline-size: 78%;
 }
 
+/*
+ * Eine Kugel aus Glas: ein radialer Verlauf mit hellem Glanzpunkt oben links
+ * und dunklerem Rand. Alle drei Toene werden aus EINER Farbe gemischt
+ * (--kugel-farbe) – so genuegt fuer die Gegenseite eine einzige Zeile.
+ */
 .kugel {
-  inline-size: clamp(0.4rem, 1.6vw, 0.7rem);
-  block-size: clamp(0.4rem, 1.6vw, 0.7rem);
+  --kugel-farbe: var(--farbe-kugel);
+
+  inline-size: calc(var(--kugel-groesse) * var(--kugel-faktor, 1));
+  block-size: calc(var(--kugel-groesse) * var(--kugel-faktor, 1));
   border-radius: var(--radius-rund);
-  background-color: var(--farbe-kugel);
+
+  background-color: var(--kugel-farbe);
+  background-image: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in oklch, var(--kugel-farbe) 35%, white) 0 15%,
+    var(--kugel-farbe) 55%,
+    color-mix(in oklch, var(--kugel-farbe) 70%, black)
+  );
+  box-shadow: var(--schatten-kugel);
+
+  /* Eine neue Kugel faellt sichtbar hinein. Die Animation laeuft von selbst
+     an, sobald js/spiel.js das Element einfuegt – ohne eigenes JavaScript. */
+  animation: einfallen var(--dauer-kugel) ease-out;
+}
+
+@keyframes einfallen {
+  from { transform: translateY(-0.6rem) scale(1.4); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* Jede dritte Kugel liegt etwas hoeher: Das wirkt wie ein Haufen statt wie
+   ein Raster. */
+.kugel:nth-child(3n + 2) {
+  translate: 0 -15%;
+}
+
+/* Kugeln auf der Gegenseite in Hessen-Rot – die Zuordnung soll nicht allein
+   an der Position haengen. Auf der Mulde: 4,8:1, im Haus 4,2:1 (Grafiken
+   brauchen mindestens 3:1, WCAG 1.4.11). */
+.zelle--mulde-gegner .kugel,
+.zelle--haus-gegner .kugel {
+  --kugel-farbe: var(--farbe-kugel-gegner);
+}
+
+/*
+ * Viele Kugeln: kleiner zeichnen statt weglassen. `:has()` zaehlt hier mit:
+ * Gibt es eine 13. (bzw. 25.) Kugel, schrumpfen alle Kugeln dieser Mulde.
+ * Das JavaScript muss davon nichts wissen.
+ */
+.kugeln:has(> :nth-child(13)) {
+  --kugel-faktor: 0.75;
+}
+
+.kugeln:has(> :nth-child(25)) {
+  --kugel-faktor: 0.6;
 }
 
 /* Der Zahlenwert – fuer Sehende die schnellste Information. */
@@ -247,13 +316,14 @@ button.mulde {
 
 /*
  * Tasten-Plakette der Tastaturhilfe: welche Taste (1 bis 6) diese Mulde spielt.
- * Absolut in der Ecke, damit die Mulde dadurch nicht hoeher wird. Nur auf
- * Handys blendet 07-zustaende.css sie aus.
+ * Absolut in der Ecke, damit die Mulde dadurch nicht hoeher wird. Weil die
+ * Mulde rund ist, liegt die Ecke schon auf dem Brett – die Plakette verdeckt
+ * also keine Kugeln. Nur auf Handys blendet 07-zustaende.css sie aus.
  */
 .mulde__taste {
   position: absolute;
-  inset-block-start: 0.2rem;
-  inset-inline-start: 0.2rem;
+  inset-block-start: -0.2rem;
+  inset-inline-start: -0.2rem;
 
   padding-inline: 0.3em;
   border: 1px solid var(--farbe-text);
@@ -266,22 +336,8 @@ button.mulde {
   line-height: var(--zeilenhoehe);
 }
 
-/* Ab 9 Kugeln: grosse Zahl, Punktraster ausgeblendet. */
-.mulde--viele {
-  & .kugeln { display: none; }
-
-  & .mulde__zahl {
-    font-size: clamp(1.15rem, 4vw, 1.6rem);
-    /* Angedeuteter Stapel hinter der Zahl. */
-    text-shadow:
-      0.08em 0.08em 0 color-mix(in oklch, var(--farbe-kugel) 55%, transparent),
-      0.16em 0.16em 0 color-mix(in oklch, var(--farbe-kugel) 25%, transparent);
-  }
-}
-
 /* Leere Mulde: die 0 bleibt gut lesbar. Dass die Mulde leer ist, sieht man
-   bereits an den fehlenden Kugelpunkten – dafuer muss die Zahl nicht
-   verblassen. */
+   bereits an den fehlenden Kugeln – dafuer muss die Zahl nicht verblassen. */
 .mulde--leer .mulde__zahl {
   font-weight: 400;
 }

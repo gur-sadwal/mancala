@@ -19,7 +19,7 @@
    *
    * Rot und Weiss: Web-Werte der Landesflagge. Weiss auf Rot: 5,5:1.
    * Blau: auf Kontrast abgestimmt. Weiss darauf 8,3:1, als Link auf dem
-   * Seitenhintergrund 7,6:1, als Kugel auf der Mulde 3,3:1.
+   * Seitenhintergrund 7,6:1, als Kugel auf der Mulde 7,2:1.
    */
   --farbe-hessen-rot: #D40011;
   --farbe-hessen-weiss: #FFFFFF;
@@ -28,9 +28,17 @@
   /* ----- Farben: Flaechen ----- */
   --farbe-grund: oklch(97% 0.012 85);        /* Seitenhintergrund */
   --farbe-karte: oklch(99% 0.006 85);        /* Karten, Formulare, Dialog */
-  --farbe-brett: oklch(38% 0.045 60);        /* Holzton des Bretts */
-  --farbe-mulde: oklch(72% 0.055 75);        /* Mulden */
-  --farbe-haus: oklch(66% 0.06 75);          /* Haeuser, etwas dunkler */
+  /*
+   * Das Brett in Hessen-Blau statt in Braun: Es passt damit zur Kopfzeile
+   * (Rot-Weiss mit blauem Streifen). Zwei Toene fuer einen leichten Verlauf
+   * von oben nach unten. Weiss darauf: 9,2:1 bzw. 11,8:1.
+   */
+  --farbe-brett: oklch(40% 0.1 250);
+  --farbe-brett-tief: oklch(34% 0.09 252);
+  /* Mulden und Haeuser hell wie Porzellan, damit rote und blaue Kugeln darin
+     gut zu sehen sind (Kugeln auf der Mulde: mindestens 4,8:1). */
+  --farbe-mulde: oklch(95% 0.02 85);
+  --farbe-haus: oklch(91% 0.03 85);          /* Haeuser, etwas dunkler */
 
   /* ----- Farben: Schrift ----- */
   --farbe-text: oklch(25% 0.02 85);          /* auf --farbe-grund: > 12:1 */
@@ -39,7 +47,11 @@
 
   /* ----- Farben: Bedeutung ----- */
   --farbe-kugel: var(--farbe-hessen-blau);   /* Akzent: Links, Fokusring, eigene Kugeln */
+  --farbe-kugel-gegner: var(--farbe-hessen-rot); /* Kugeln auf der Gegenseite */
   --farbe-aktiv: oklch(52% 0.15 145);        /* "du bist am Zug", Gruen */
+  /* Rand der Mulden, die ich gerade spielen darf: Gold. Auf dem blauen Brett
+     6:1 – Gruen haette dort nur rund 1,8:1. */
+  --farbe-spielbar: oklch(86% 0.15 85);
   --farbe-warnung: oklch(45% 0.12 40);       /* Fehler, rotbraun – bewusst anders als das Hessen-Rot */
   --farbe-beute: oklch(62% 0.17 65);         /* Diebstahl-Hervorhebung */
   --farbe-extrazug: oklch(50% 0.16 300);     /* Extrazug-Hervorhebung, als Text > 4,5:1 */
@@ -49,12 +61,18 @@
 
   /* ----- Masse ----- */
   /*
-   * Die Mulde ist nie kleiner als 44 px – die Mindestzielgroesse aus
-   * WCAG 2.5.5 und ausdrueckliche Vorgabe des Dozenten (NFA-05).
-   * 2.75rem = 44px bei 16px Grundschrift.
+   * Mindestgroesse JEDER Klickflaeche: 44 x 44 px – die Mindestzielgroesse
+   * aus WCAG 2.5.5 und ausdrueckliche Vorgabe des Dozenten (NFA-05).
+   * 2.75rem = 44px bei 16px Grundschrift. Knoepfe, Eingabefeld, Spielart,
+   * Aufklapp-Zeile, Sprungmarke und Mulden lesen diesen einen Wert.
    */
-  --mulde-min: clamp(2.75rem, 11vw, 5.5rem);
+  --ziel-min: 2.75rem;
+  /* Die Mulde ist nie kleiner als --ziel-min und waechst mit der Breite. */
+  --mulde-min: clamp(var(--ziel-min), 11vw, 6.5rem);
   --abstand-brett: clamp(0.35rem, 1.4vw, 0.9rem);
+  /* Durchmesser einer Kugel. Bei vielen Kugeln in einer Mulde wird er
+     kleiner (05-brett.css), damit immer ALLE Kugeln zu sehen sind. */
+  --kugel-groesse: clamp(0.6rem, 1.5vw, 1rem);
   --brett-max: 60rem;
   --zeile-max: 68ch;
 
@@ -82,10 +100,12 @@
   --zeilenhoehe: 1.5;
 
   /* ----- Bewegung ----- */
-  --dauer-kugel: 110ms;      /* eine Kugel im Saepfad (Konzept 8.4) */
+  --dauer-kugel: 180ms;      /* eine Kugel im Saepfad (Konzept 8.4), = TAKT_SAAT in js/spiel.js */
   --dauer-kurz: 160ms;
   --dauer-mittel: 320ms;
 
   --schatten: 0 1px 2px oklch(0% 0 0 / 0.08), 0 4px 12px oklch(0% 0 0 / 0.06);
-  --schatten-tief: inset 0 2px 5px oklch(0% 0 0 / 0.28);
+  /* Nach innen: laesst Mulden und Haeuser wie ins Brett gefraest wirken. */
+  --schatten-tief: inset 0 3px 8px oklch(0% 0 0 / 0.35);
+  --schatten-kugel: 0 1px 1px oklch(0% 0 0 / 0.35);   /* jede Kugel liegt auf */
 }

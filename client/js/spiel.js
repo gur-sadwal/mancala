@@ -136,9 +136,6 @@ export function alleZellen() {
  * liefert eine Zuordnung "kanonische Zelle -> DOM-Element".
  */
 
-/** Hoechstzahl an Kugeln, die noch als einzelne Punkte gezeichnet werden. */
-const PUNKTE_BIS = 8;
-
 /**
  * Die 14 Zellen in der Reihenfolge, in der sie im DOM stehen sollen.
  *
@@ -227,12 +224,13 @@ function erzeugeZelle(zelle, rolle) {
   return li;
 }
 
-/** Das Haus: grosse Zahl plus Beschriftung. */
+/** Das Haus: grosse Zahl, darunter die Kugeln, ganz unten die Beschriftung. */
 function erzeugeHaus(rolle) {
   const eigen = rolle.seite === 'eigen';
 
   return erzeuge('div', { klassen: ['haus'] }, [
     erzeuge('span', { klassen: ['haus__zahl'], text: '0' }),
+    erzeuge('span', { klassen: ['kugeln'] }),
     erzeuge('span', {
       klassen: ['haus__beschriftung'],
       text: eigen ? 'Dein Haus' : 'Gegner',
@@ -272,19 +270,22 @@ function erzeugeMulde(rolle, alsButton) {
 }
 
 /**
- * Passt die Zahl der gezeichneten Kugelpunkte an.
+ * Passt die Zahl der gezeichneten Kugeln an – in Mulden und Haeusern.
  *
- * Es werden nur Punkte hinzugefuegt oder entfernt, nie alle neu erzeugt – das
- * haelt die Animation ruhig.
+ * Es wird JEDE Kugel gezeichnet, egal wie viele es sind. Damit alle
+ * hineinpassen, macht das CSS sie bei vielen Kugeln kleiner (css/05-brett.css).
+ *
+ * Es werden nur Kugeln hinzugefuegt oder entfernt, nie alle neu erzeugt – das
+ * haelt die Animation ruhig. Nebenbei startet jede neu eingefuegte Kugel ihre
+ * CSS-Animation "einfallen": Man sieht sie in die Mulde fallen.
  */
-function setzeKugelpunkte(kugelnContainer, anzahl) {
-  const sichtbar = Math.min(anzahl, PUNKTE_BIS);
+function setzeKugeln(kugelnContainer, anzahl) {
   const vorhanden = kugelnContainer.childElementCount;
 
-  for (let i = vorhanden; i < sichtbar; i += 1) {
+  for (let i = vorhanden; i < anzahl; i += 1) {
     kugelnContainer.append(erzeuge('span', { klassen: ['kugel'] }));
   }
-  for (let i = vorhanden; i > sichtbar; i -= 1) {
+  for (let i = vorhanden; i > anzahl; i -= 1) {
     kugelnContainer.lastElementChild?.remove();
   }
 }
@@ -326,14 +327,17 @@ function zeichneBrett(zellen, brett, sitz, ichBinDran) {
   }
 }
 
-/** Haus: nur die Zahl. */
+/** Haus: Zahl und Kugeln. */
 function zeichneHaus(element, anzahl) {
   const zahl = element.querySelector('.haus__zahl');
+  const kugeln = element.querySelector('.kugeln');
+
   if (zahl) setzeText(zahl, anzahl);
+  if (kugeln) setzeKugeln(kugeln, anzahl);
 }
 
 /**
- * Mulde: Punkte, Zahl und Zustand.
+ * Mulde: Kugeln, Zahl und Zustand.
  *
  * Der Zustand einer eigenen Mulde (Konzept 8.3):
  *   spielbar  ich bin am Zug und die Mulde enthaelt mindestens eine Kugel
@@ -346,11 +350,10 @@ function zeichneMulde(element, anzahl, rolle, ichBinDran) {
   const kugeln = mulde.querySelector('.kugeln');
   const zahl = mulde.querySelector('.mulde__zahl');
 
-  if (kugeln) setzeKugelpunkte(kugeln, anzahl);
+  if (kugeln) setzeKugeln(kugeln, anzahl);
   if (zahl) setzeText(zahl, anzahl);
 
   schalte(mulde, 'mulde--leer', anzahl === 0);
-  schalte(mulde, 'mulde--viele', anzahl > PUNKTE_BIS);
 
   // Gegnerische Mulden sind nie bedienbar – fuer sie ist hier Schluss.
   if (rolle.seite !== 'eigen') return;
@@ -419,8 +422,12 @@ function zeichneStand(elemente, spielstand, sitz) {
  * Dieser Abschnitt kennt Socket.io nicht.
  */
 
-/** Wartezeit je gesaeter Kugel. */
-const TAKT_SAAT = 110;
+/**
+ * Wartezeit je gesaeter Kugel – so lang wie --dauer-kugel in
+ * css/02-tokens.css, damit jede Kugel zu Ende gefallen ist, bevor die
+ * naechste kommt.
+ */
+const TAKT_SAAT = 180;
 
 /** Wartezeit fuer Beute- und Extrazug-Hervorhebung. */
 const TAKT_HINWEIS = 620;
@@ -477,6 +484,11 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     // Eingabe sperren, solange sich das Bild bewegt (Konzept 8.5).
     schalte(brettElement, 'brett--gesperrt', true);
 
+    // Die Markierung des vorigen Zuges gehoert zum alten Bild.
+    for (const element of zellen.values()) {
+      element.classList.remove('zelle--zuletzt');
+    }
+
     try {
       // Bei "weniger Bewegung" entfallen alle Schritte und der Endzustand
       // wird sofort gezeichnet (WCAG 2.3.3).
@@ -491,6 +503,10 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
       const [vonReihe, vonSpalte] = bericht.vonZelle;
       arbeit[vonReihe][vonSpalte] = 0;
       zeichneBrett(zellen, arbeit, sitz, false);
+
+      // Kurz innehalten: Man soll sehen, aus welcher Mulde die Kugeln
+      // genommen wurden, bevor die erste wieder faellt.
+      await warte(TAKT_SAAT);
 
       // --- Saeen --------------------------------------------------------
       for (const [reihe, spalte] of bericht.pfad) {
@@ -555,6 +571,10 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
       if (!abgeloest()) {
         zeichneBrett(zellen, spielstand.brett, sitz, ichBinDran);
         schalte(brettElement, 'brett--gesperrt', false);
+
+        // Die Startmulde bleibt markiert, bis der naechste Zug beginnt – so
+        // sieht man auch spaeter noch, was zuletzt gespielt wurde.
+        elementVon(bericht.vonZelle)?.classList.add('zelle--zuletzt');
       }
     }
   }
@@ -630,12 +650,19 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * Nur wenn der Fokus wirklich verloren ist: Wer bewusst woanders steht,
    * etwa auf "Partie aufgeben", wird nicht weggezogen.
    *
-   * "Verloren" heisst: Fokus liegt auf <body> (Chrome, Safari) ODER noch auf
-   * dem inzwischen gesperrten Button (so verhaelt sich Firefox teilweise).
+   * "Verloren" heisst: Fokus liegt auf <body> (Chrome, Safari), noch auf
+   * dem inzwischen gesperrten Button (so verhaelt sich Firefox teilweise)
+   * ODER in einer gerade versteckten Ansicht – etwa auf "Gegner suchen", das
+   * die Partie ausgeloest hat. Dort schiebt der Browser den Fokus erst einen
+   * Augenblick spaeter auf <body>; ohne die dritte Bedingung kaeme diese
+   * Funktion also zu frueh und taete nichts.
    */
   function stelleFokusWiederHer(ichBinDran) {
     const aktiv = document.activeElement;
-    const fokusVerloren = !aktiv || aktiv === document.body || aktiv.disabled;
+    const fokusVerloren = !aktiv
+      || aktiv === document.body
+      || aktiv.disabled
+      || aktiv.closest('[hidden]') !== null;
 
     if (!ichBinDran || !fokusVerloren) return;
 

@@ -97,7 +97,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
         setzeText(
           positionAnzeige,
           position === 1
-            ? 'Du bist als Naechster an der Reihe.'
+            ? 'Du bist als Nächster an der Reihe.'
             : `Du bist auf Platz ${position} der Warteschlange.`,
         );
       } else {

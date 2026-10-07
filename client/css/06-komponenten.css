@@ -8,8 +8,8 @@
 
 .knopf {
   /* Auch Schaltflaechen halten die Mindestzielgroesse von 44 px (NFA-05). */
-  min-block-size: 2.75rem;
-  min-inline-size: 2.75rem;
+  min-block-size: var(--ziel-min);
+  min-inline-size: var(--ziel-min);
 
   display: inline-flex;
   align-items: center;
@@ -122,7 +122,7 @@
 }
 
 .feld__eingabe {
-  min-block-size: 2.75rem;
+  min-block-size: var(--ziel-min);
   padding-inline: var(--abstand);
   padding-block: var(--abstand-klein);
 
@@ -193,7 +193,7 @@
 .umschalter__option {
   /* Beide Felder gleich breit, auf dem Telefon untereinander. */
   flex: 1 1 12rem;
-  min-block-size: 2.75rem;
+  min-block-size: var(--ziel-min);
 
   display: flex;
   align-items: center;
@@ -291,7 +291,7 @@
    */
   & summary {
     cursor: pointer;
-    min-block-size: 2.75rem;
+    min-block-size: var(--ziel-min);
     padding-block: 0.625rem;
     font-weight: 600;
   }
@@ -321,7 +321,13 @@
 
   text-align: center;
 
-  /* Der Hintergrund hinter dem modalen Dialog. */
+  /*
+   * Der Hintergrund hinter dem modalen Dialog.
+   *
+   * Hier bewusst der Farbwert selbst statt einer Variable: ::backdrop hat in
+   * aelteren Browserversionen Custom Properties NICHT von :root geerbt – eine
+   * Variable liefe dort ins Leere, und der Hintergrund bliebe durchsichtig.
+   */
   &::backdrop {
     background-color: oklch(20% 0.02 85 / 0.55);
     backdrop-filter: blur(2px);

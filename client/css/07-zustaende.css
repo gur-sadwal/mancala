@@ -61,20 +61,21 @@
    --------------------------------------------------------------------------- */
 
 /*
- * Spielbar = dicker dunkler Rand statt gruenem Rand. Gruen auf Holz hatte nur
- * etwa 2:1 und ist bei Rot-Gruen-Schwaeche kaum zu erkennen. Gruen bleibt
- * trotzdem am Brettrahmen, und der Text "Du bist am Zug" sagt es zusaetzlich.
+ * Spielbar = goldener Rand. Gruen haette auf dem blauen Brett nur rund 1,8:1
+ * und ist bei Rot-Gruen-Schwaeche kaum zu erkennen; Gold hat dort 6:1. Gruen
+ * bleibt trotzdem am Brettrahmen, und der Text "Du bist am Zug" sagt es
+ * zusaetzlich. Gesperrte Mulden haben gar keinen sichtbaren Rand – der
+ * Unterschied haengt also nicht allein an der Farbe.
  */
 .mulde--spielbar {
   cursor: pointer;
-  border-width: 3px;
-  border-color: var(--farbe-text);
+  border-color: var(--farbe-spielbar);
 
   @media (hover: hover) {
     &:hover {
       /* Hover- und Fokusfarben werden aus der Grundfarbe abgeleitet, statt
          als eigener Wert gepflegt zu werden. */
-      background-color: color-mix(in oklch, var(--farbe-mulde) 80%, var(--farbe-aktiv));
+      background-color: color-mix(in oklch, var(--farbe-mulde) 75%, var(--farbe-spielbar));
       transform: translateY(-3px) scale(1.03);
     }
   }
@@ -85,12 +86,14 @@
   }
 }
 
-/* Nur die Kugelpunkte verblassen – die Zahl bleibt voll lesbar. */
+/* Nur die Kugeln verblassen – die Zahl bleibt voll lesbar. 0.7 statt 0.6:
+   So haben auch verblasste Kugeln noch mindestens 3,5:1 auf der Mulde
+   (nachgerechnet; mit 0.6 waeren es genau 3,0:1 gewesen). */
 .mulde--gesperrt {
   cursor: not-allowed;
 
   & .kugeln {
-    opacity: 0.6;
+    opacity: 0.7;
   }
 }
 
@@ -101,15 +104,8 @@
  */
 
 /* .mulde--gegnerisch: bewusst ohne Regel. Kein Cursor-Wechsel (kein
-   Bedienelement) und keine Transparenz (Zahl soll voll lesbar bleiben). */
-
-/* Gegnerische Kugeln in einer anderen Farbe – die Zuordnung darf nicht allein
-   an der Position haengen. Dunkel statt Blau: 6,4:1 auf der Mulde (Grafiken
-   brauchen mindestens 3:1, WCAG 1.4.11); das leise Grau lag mit 2,98:1 knapp
-   darunter. Haeuser zeigen nur die Zahl, keine Kugelpunkte. */
-.zelle--mulde-gegner .kugel {
-  background-color: var(--farbe-text);
-}
+   Bedienelement) und keine Transparenz (Zahl soll voll lesbar bleiben).
+   Die rote Kugelfarbe der Gegenseite steht bei den Kugeln in 05-brett.css. */
 
 /* ---------------------------------------------------------------------------
    Wer ist am Zug
@@ -181,6 +177,19 @@
 @keyframes extrazug {
   0%, 100% { background-color: var(--farbe-haus); }
   50%      { background-color: color-mix(in oklch, var(--farbe-extrazug) 40%, white); }
+}
+
+/*
+ * Hier begann der letzte Zug: gestrichelter heller Ring um die Mulde, bis der
+ * naechste Zug beginnt. So sieht man auch nach der Animation noch, was der
+ * Gegner gespielt hat. Die helle Linie auf dem blauen Brett: 8,7:1.
+ *
+ * `:not(:focus-visible)`: Diese Ebene steht hinter `basis` und wuerde den
+ * Fokusring sonst ueberschreiben. Der Fokusring geht immer vor.
+ */
+.zelle--zuletzt .mulde:not(:focus-visible) {
+  outline: 2px dashed var(--farbe-text-hell);
+  outline-offset: 3px;
 }
 
 /* Abgelehnter Zug (z. B. leere Mulde): kurzes Ruetteln statt einer Meldung. */
