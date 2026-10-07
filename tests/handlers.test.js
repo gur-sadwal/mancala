@@ -443,6 +443,29 @@ describe('Handler: Abbrechen', () => {
     expect(ben.alle(EREIGNIS.START)).toHaveLength(1);
   });
 
+  test('kommt Abbrechen erst nach dem Start an, läuft die Partie normal weiter', () => {
+    const { anna, ben, manager } = schnellesSpiel();
+
+    anna.sende(EREIGNIS.ABBRECHEN);   // der Klick war unterwegs, als START kam
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.holeNachSocket('a')).not.toBeNull();
+    expect(imProtokoll('ignoriert')).toBe(true);
+  });
+
+  test('ebenso nach dem Start einer Revanche (Esc im Ergebnisdialog)', () => {
+    const { anna, ben, manager } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    ben.sende(EREIGNIS.REVANCHE);   // die Revanche startet
+
+    ben.sende(EREIGNIS.ABBRECHEN);  // Ben schloss den Dialog, bevor START ankam
+
+    expect(anna.alle(EREIGNIS.ABBRUCH)).toHaveLength(1);   // nur die erste Partie
+    expect(manager.holeNachSocket('b')).not.toBeNull();
+  });
+
   test('ohne Warteplatz und ohne Partie passiert nichts', () => {
     const { verbinde } = erzeugeUmgebung();
     const anna = verbinde('a');

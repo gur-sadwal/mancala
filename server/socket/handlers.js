@@ -342,11 +342,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
   /** `spiel:abbrechen` – Suche abbrechen. */
   function aufAbbrechen(socket) {
-    // Sonderfall F-08: Die Partie wurde bereits angelegt, waehrend der Klick
-    // unterwegs war. Dann ist der Abbruch als Aufgabe zu behandeln.
-    const partie = manager.holeNachSocket(socket.id);
-    if (partie) {
-      aufAufgeben(socket);
+    // Der Klick kam zu spät: Die Partie wurde schon angelegt, während er
+    // unterwegs war. Sie läuft normal weiter – der Client wechselt mit START
+    // ohnehin ins Spiel. Kein Sieg ohne Zug für den Gegner.
+    if (manager.holeNachSocket(socket.id)) {
+      logger.info('Abbrechen ignoriert, Partie läuft schon', { socketId: socket.id });
       return;
     }
 
