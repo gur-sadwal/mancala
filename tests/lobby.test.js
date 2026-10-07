@@ -91,6 +91,28 @@ describe('Warteschlange', () => {
   });
 });
 
+describe('Wartefrist (die Zeit wird hereingereicht)', () => {
+  const FRIST = 1000;
+
+  test('genau an der Frist wird entfernt, knapp davor nicht', () => {
+    const lobby = erzeugeLobby();
+    lobby.beitreten('a', 'Anna', 0);
+    lobby.beitreten('b', 'Ben', 500);
+
+    expect(lobby.raeumeAuf(FRIST, FRIST - 1)).toEqual([]);
+    expect(lobby.raeumeAuf(FRIST, FRIST)).toEqual(['a']);
+    expect(lobby.enthaelt('b')).toBe(true);
+  });
+
+  test('ein privater Link läuft ebenso ab', () => {
+    const lobby = erzeugeLobby();
+    const { einladung } = lobby.erstellePrivat('a', 'Anna', 0);
+
+    expect(lobby.raeumeAuf(FRIST, FRIST)).toEqual(['a']);
+    expect(lobby.nimmPrivat(einladung)).toBeNull();
+  });
+});
+
 describe('Privates Spiel', () => {
   test('legt einen Warteplatz mit einem 6-stelligen Code an', () => {
     const lobby = erzeugeLobby();
@@ -404,15 +426,21 @@ describe('Partieverwaltung', () => {
     expect(manager.holeNachId(partie.id)).toBeNull();
   });
 
-  test('raeumt erledigte und verwaiste Partien ab', () => {
+  test('findet ruhende Partien genau ab der Frist, ohne sie zu entfernen', () => {
     const { manager, partie } = mitPartie();
+    partie.letzteAktivitaet = 1000;
 
-    // maxRuhe 0: die Partie gilt als zu lange untaetig.
-    const entfernt = manager.raeumeAuf(0);
+    expect(manager.findeRuhendePartien(500, 1499)).toEqual([]);
+    expect(manager.findeRuhendePartien(500, 1500)).toEqual([partie]);
+    // Entfernt wird erst über den Handler, damit beide Spieler Bescheid bekommen.
+    expect(manager.anzahl()).toBe(1);
+  });
 
-    expect(entfernt).toHaveLength(1);
-    expect(entfernt[0].id).toBe(partie.id);
-    expect(manager.anzahl()).toBe(0);
+  test('findet auch beendete, aber noch nicht aufgelöste Partien', () => {
+    const { manager, partie } = mitPartie();
+    partie.status = STATUS.ABGEBROCHEN;
+
+    expect(manager.findeRuhendePartien(60000, partie.letzteAktivitaet)).toEqual([partie]);
   });
 });
 

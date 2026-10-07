@@ -8,15 +8,14 @@
 
 import { Server } from 'socket.io';
 
-import {
-  AUFRAEUM_INTERVALL_MS,
-  WARTESCHLANGE_MAX_ALTER_MS,
-} from '../spiel/manager.js';
 import { REVANCHE_TAKT_MS } from '../spiel/lobby.js';
 import { erzeugeRatenbegrenzer } from './rateLimit.js';
 import { erzeugeHandler } from './handlers.js';
 import { logger } from '../util/logger.js';
 import { GRUND } from '../../shared/protokoll.js';
+
+/** EINSTELLBAR: So oft prüft der Server die Fristen (Partie ohne Zug, Warten). */
+const AUFRAEUM_TAKT_MS = 60 * 1000;
 
 /**
  * Haengt Socket.io an einen bestehenden HTTP-Server.
@@ -69,27 +68,17 @@ export function erzeugeGateway(httpServer, { lobby, manager }) {
   });
 
   /**
-   * Aufraeumintervall (Konzept 7.6).
-   *
-   * Rueckversicherung fuer den Fall, dass ein Aufraeumpfad uebersehen wurde.
-   * `unref()` sorgt dafuer, dass dieses Intervall den Prozess nicht am Leben
-   * haelt, wenn sonst nichts mehr laeuft.
+   * Aufräumtakt: prüft die Fristen; was dann passiert, steht in handlers.js
+   * (raeumeAuf). `unref()` sorgt dafuer, dass dieses Intervall den Prozess
+   * nicht am Leben haelt, wenn sonst nichts mehr laeuft.
    */
   const aufraeumer = setInterval(() => {
     try {
-      const partien = manager.raeumeAuf();
-      const wartende = lobby.raeumeAuf(WARTESCHLANGE_MAX_ALTER_MS);
-
-      if (partien.length > 0 || wartende.length > 0) {
-        logger.info('Aufgeraeumt', {
-          partien: partien.length,
-          wartende: wartende.length,
-        });
-      }
+      handler.raeumeAuf();
     } catch (fehler) {
       logger.error('Aufraeumen fehlgeschlagen', fehler);
     }
-  }, AUFRAEUM_INTERVALL_MS);
+  }, AUFRAEUM_TAKT_MS);
   aufraeumer.unref();
 
   /**

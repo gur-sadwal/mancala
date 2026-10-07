@@ -54,9 +54,10 @@ export function erzeugeLobby() {
 
   /**
    * Nimmt einen Spieler auf.
+   * @param {number} jetzt  Beginn des Wartens; im Test frei wählbar
    * @returns {{ok: true, position: number} | {ok: false, code: string}}
    */
-  function beitreten(socketId, name) {
+  function beitreten(socketId, name, jetzt = Date.now()) {
     // Doppelte Eintraege verhindern – etwa bei einem doppelt gesendeten
     // Formular oder einem Skript, das mehrfach beitritt. Gilt fuer beide
     // Wege: Wer privat wartet, steht nicht zusaetzlich in der Schlange.
@@ -64,7 +65,7 @@ export function erzeugeLobby() {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
 
-    warteschlange.push({ socketId, name, seit: Date.now() });
+    warteschlange.push({ socketId, name, seit: jetzt });
     return { ok: true, position: warteschlange.length };
   }
 
@@ -74,7 +75,7 @@ export function erzeugeLobby() {
    * @returns {{ok: true, einladung: string} | {ok: false, code: string}}
    *          `einladung` ist der Code fuer den Link, z. B. "K7M2QX"
    */
-  function erstellePrivat(socketId, name) {
+  function erstellePrivat(socketId, name, jetzt = Date.now()) {
     if (enthaelt(socketId)) {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
@@ -86,7 +87,7 @@ export function erzeugeLobby() {
       einladung = neuerEinladungsCode();
     }
 
-    privat.set(einladung, { socketId, name, seit: Date.now() });
+    privat.set(einladung, { socketId, name, seit: jetzt });
     return { ok: true, einladung };
   }
 
@@ -162,20 +163,20 @@ export function erzeugeLobby() {
   }
 
   /**
-   * Entfernt Eintraege, die MINDESTENS `maxAlterMs` alt sind.
-   *
-   * Rueckversicherung gegen vergessene Aufraeumpfade (Konzept 7.6, NFA-10).
+   * Entfernt Eintraege, die MINDESTENS `maxAlterMs` alt sind – die
+   * Wartefrist. Wer entfernt wurde, benachrichtigt handlers.js (raeumeAuf).
    *
    * Die Grenze ist bewusst einschliessend (`<=`): Bei einem Aufruf mit 0
    * wird alles entfernt, statt dass das Ergebnis davon abhaengt, ob der
-   * Eintrag in derselben Millisekunde entstanden ist. Im Betrieb (30 Minuten)
+   * Eintrag in derselben Millisekunde entstanden ist. Im Betrieb (Minuten)
    * macht das keinen Unterschied, im Test aber den zwischen deterministisch
    * und zufaellig.
    *
+   * @param {number} jetzt  aktuelle Zeit; im Test frei wählbar
    * @returns {string[]} Kennungen der entfernten Eintraege
    */
-  function raeumeAuf(maxAlterMs) {
-    const grenze = Date.now() - maxAlterMs;
+  function raeumeAuf(maxAlterMs, jetzt = Date.now()) {
+    const grenze = jetzt - maxAlterMs;
     const entfernt = [];
 
     // Rueckwaerts laufen, damit das Entfernen die noch zu pruefenden Indizes

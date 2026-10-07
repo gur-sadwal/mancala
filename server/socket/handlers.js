@@ -24,9 +24,15 @@ import {
   EREIGNIS,
   FEHLER,
   FEHLER_TEXT,
+  GRENZEN,
   GRUND,
   STATUS,
 } from '../../shared/protokoll.js';
+
+// Fristen in Millisekunden. EINSTELLBAR sind die Minuten in
+// shared/protokoll.js (GRENZEN); hier wird nur umgerechnet.
+const PARTIE_RUHE_MS = GRENZEN.PARTIE_RUHE_MINUTEN * 60 * 1000;
+const WARTEN_MS = GRENZEN.WARTEN_MINUTEN * 60 * 1000;
 
 /**
  * Verdrahtet alle Ereignisse eines Sockets.
@@ -210,6 +216,28 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   function pruefeRevanchen(jetzt = Date.now()) {
     for (const socketId of lobby.abgelaufeneRevanchen(jetzt)) {
       socketVon(socketId)?.emit(EREIGNIS.REVANCHE_ABGELAUFEN);
+    }
+  }
+
+  /**
+   * Prüft die Fristen (Aufräumtakt in gateway.js): Partien ohne Zug enden,
+   * zu lange Wartende müssen neu beginnen – beide bekommen eine Nachricht.
+   *
+   * @param {number} jetzt  aktuelle Zeit; im Test frei wählbar
+   */
+  function raeumeAuf(jetzt = Date.now()) {
+    for (const partie of manager.findeRuhendePartien(PARTIE_RUHE_MS, jetzt)) {
+      beendeKontrolliert(partie, GRUND.ZU_LANGE_KEIN_ZUG);
+    }
+
+    const wartende = lobby.raeumeAuf(WARTEN_MS, jetzt);
+    for (const socketId of wartende) {
+      const socket = socketVon(socketId);
+      if (socket) sendeFehler(socket, FEHLER.WARTEZEIT_ABGELAUFEN);
+    }
+    if (wartende.length > 0) {
+      logger.info('Wartezeit abgelaufen', { wartende: wartende.length });
+      sendePositionen();
     }
   }
 
@@ -606,5 +634,5 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   // `beendeKontrolliert` wird auch vom geordneten Herunterfahren gebraucht
   // (SIGTERM, Konzept 7.7), `pruefeRevanchen` vom Sekundentakt – deshalb
   // beide nach aussen gereicht.
-  return { registriere, beendeKontrolliert, fuehreZusammen, pruefeRevanchen };
+  return { registriere, beendeKontrolliert, fuehreZusammen, pruefeRevanchen, raeumeAuf };
 }

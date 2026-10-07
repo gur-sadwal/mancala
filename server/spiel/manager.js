@@ -15,15 +15,6 @@ import { neueSpielId } from '../util/ids.js';
 import { neuePartie, sitzVon } from './partie.js';
 import { STATUS } from '../../shared/protokoll.js';
 
-/** Partien ohne Aktivitaet seit dieser Zeit werden aufgeraeumt. */
-export const PARTIE_MAX_RUHE_MS = 60 * 60 * 1000;   // 60 Minuten
-
-/** Warteschlangeneintraege aelter als diese Zeit werden entfernt. */
-export const WARTESCHLANGE_MAX_ALTER_MS = 30 * 60 * 1000;  // 30 Minuten
-
-/** Abstand, in dem die Aufraeumroutine laeuft. */
-export const AUFRAEUM_INTERVALL_MS = 5 * 60 * 1000;  // 5 Minuten
-
 /**
  * Erzeugt die Partieverwaltung.
  *
@@ -106,29 +97,28 @@ export function erzeugeManager() {
   }
 
   /**
-   * Aufraeumintervall-Arbeit: Partien ohne Aktivitaet entfernen.
+   * Partien, in denen seit `maxRuheMs` kein Zug kam – oder die schon beendet,
+   * aber noch nicht aufgeloest sind (nur nach einem Fehler moeglich).
    *
-   * Rueckversicherung fuer den Fall, dass ein Aufraeumpfad doch einmal
-   * uebersehen wurde (Konzept 7.6).
+   * Entfernt nichts: Beendet werden sie in handlers.js (raeumeAuf), damit
+   * beide Spieler eine Nachricht bekommen und den Raum verlassen.
    *
-   * @returns {object[]} die entfernten Partien
+   * @param {number} jetzt  aktuelle Zeit; im Test frei wählbar
+   * @returns {object[]} die gefundenen Partien
    */
-  function raeumeAuf(maxRuheMs = PARTIE_MAX_RUHE_MS) {
-    const grenze = Date.now() - maxRuheMs;
-    const entfernt = [];
+  function findeRuhendePartien(maxRuheMs, jetzt = Date.now()) {
+    const grenze = jetzt - maxRuheMs;
+    const ruhend = [];
 
-    for (const [id, partie] of partien) {
+    for (const partie of partien.values()) {
       // Einschliessende Grenze, aus demselben Grund wie in lobby.js.
       const abgelaufen = partie.letzteAktivitaet <= grenze;
       const erledigt = partie.status === STATUS.BEENDET
         || partie.status === STATUS.ABGEBROCHEN;
 
-      if (abgelaufen || erledigt) {
-        entferne(id);
-        entfernt.push(partie);
-      }
+      if (abgelaufen || erledigt) ruhend.push(partie);
     }
-    return entfernt;
+    return ruhend;
   }
 
   /** Anzahl verwalteter Partien – fuer `/gesundheit` (Konzept 7.3). */
@@ -147,7 +137,7 @@ export function erzeugeManager() {
     holeNachSocket,
     sitzVonSocket,
     entferne,
-    raeumeAuf,
+    findeRuhendePartien,
     anzahl,
     alle,
   };

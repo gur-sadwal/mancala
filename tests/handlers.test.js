@@ -732,3 +732,98 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     expect(imProtokoll('disconnect-Handler fehlgeschlagen')).toBe(true);
   });
 });
+
+describe('Handler: Aufräumen nach Fristen', () => {
+  const MINUTE = 60 * 1000;
+  const PARTIE_FRIST = GRENZEN.PARTIE_RUHE_MINUTEN * MINUTE;
+  const WARTE_FRIST = GRENZEN.WARTEN_MINUTEN * MINUTE;
+
+  test('eine Partie ohne Zug endet nach der Frist – beide erfahren es', () => {
+    const { anna, ben, handler, manager, raeume } = schnellesSpiel();
+    const { spielId } = anna.letzte(EREIGNIS.START).daten;
+
+    handler.raeumeAuf(Date.now() + PARTIE_FRIST);
+
+    for (const spieler of [anna, ben]) {
+      const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
+      expect(abbruch.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+      expect(abbruch.revanche).toBe(false);
+    }
+    expect(manager.anzahl()).toBe(0);
+    expect(raeume.get(spielId).size).toBe(0);
+  });
+
+  test('eine Minute vor der Frist bleibt die Partie unberührt', () => {
+    const { anna, handler, manager } = schnellesSpiel();
+
+    handler.raeumeAuf(Date.now() + PARTIE_FRIST - MINUTE);
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('nur die ruhende Partie endet, eine frische läuft weiter', () => {
+    const { verbinde, handler, manager } = erzeugeUmgebung();
+    const [anna, ben, carl, dora] = ['a', 'b', 'c', 'd'].map((id) => verbinde(id));
+    for (const spieler of [anna, ben, carl, dora]) {
+      spieler.sende(EREIGNIS.BEITRETEN, { name: spieler.id });
+    }
+    manager.holeNachSocket('a').letzteAktivitaet = 0;   // letzter Zug 1970
+
+    handler.raeumeAuf();
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+    expect(carl.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('Wartende und Ersteller privater Spiele bekommen nach der Frist eine Meldung', () => {
+    const { verbinde, handler, lobby } = erzeugeUmgebung();
+    const anna = verbinde('a');
+    const pia = verbinde('p');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+    pia.sende(EREIGNIS.BEITRETEN, { name: 'Pia', privat: true });
+
+    handler.raeumeAuf(Date.now() + WARTE_FRIST);
+
+    for (const spieler of [anna, pia]) {
+      expect(spieler.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.WARTEZEIT_ABGELAUFEN);
+    }
+    expect(lobby.anzahl()).toBe(0);
+  });
+
+  test('eine Minute vor der Wartefrist passiert nichts', () => {
+    const { verbinde, handler, lobby } = erzeugeUmgebung();
+    const anna = verbinde('a');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+
+    handler.raeumeAuf(Date.now() + WARTE_FRIST - MINUTE);
+
+    expect(anna.letzte(EREIGNIS.FEHLER)).toBeUndefined();
+    expect(lobby.anzahl()).toBe(1);
+  });
+
+  test('danach erfahren die übrigen Wartenden ihre neue Position', () => {
+    const { verbinde, handler, lobby } = erzeugeUmgebung();
+    verbinde('a');
+    const ben = verbinde('b');
+    // Direkt über die Lobby: Anna wartet seit 1970, Ben erst seit eben.
+    lobby.beitreten('a', 'Anna', 0);
+    lobby.beitreten('b', 'Ben');
+
+    handler.raeumeAuf();
+
+    expect(lobby.enthaelt('a')).toBe(false);
+    expect(ben.letzte(EREIGNIS.WARTESCHLANGE).daten).toEqual({ position: 1 });
+  });
+
+  test('der Link eines abgelaufenen privaten Spiels gilt nicht mehr', () => {
+    const { code, handler, verbinde } = privatesSpiel();
+    handler.raeumeAuf(Date.now() + WARTE_FRIST);
+    const ben = verbinde('b');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+
+    expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
+  });
+});
