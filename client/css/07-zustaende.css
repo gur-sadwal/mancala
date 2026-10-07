@@ -11,8 +11,9 @@
    Sichtbarkeit – muss ganz oben in dieser Ebene stehen
    ---------------------------------------------------------------------------
    Das `hidden`-Attribut wirkt nur ueber eine `display: none`-Regel im
-   Standard-Stylesheet des Browsers. Diese Regel hat die schwaechste
-   Spezifitaet ueberhaupt – JEDE eigene display-Angabe schlaegt sie. Weil
+   Standard-Stylesheet des Browsers. Weil sie von dort stammt (Herkunft
+   "user agent"), verliert sie gegen JEDE eigene display-Angabe – egal, wie
+   schwach deren Selektor ist. Weil
    `.ansicht` in der Ebene `layout` ein `display: flex` setzt, blieben
    versteckte Ansichten sichtbar: Der Wartebildschirm stand noch da, waehrend
    das Spiel schon lief.

@@ -105,18 +105,3 @@ export function wenigerBewegung() {
   return document.documentElement.dataset.bewegung === 'wenig'
     || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
-
-/**
- * Kann der Browser Invoker Commands (`commandfor` und `command` am <button>)?
- *
- * Damit oeffnet ein Knopf einen Dialog ganz ohne JavaScript, z. B.
- * <button commandfor="dialog-aufgeben" command="show-modal">. Baseline seit
- * Dezember 2025 – aeltere Browser (etwa Safari vor 26.2) kennen es nicht.
- * Dort braucht der Knopf einen Klick-Listener als Fallback.
- *
- * Eine Funktion statt einer Konstanten: `HTMLButtonElement` gibt es nur im
- * Browser. So bleibt dom.js unter Jest (Node) ladbar.
- */
-export function kannInvokerCommands() {
-  return 'commandForElement' in HTMLButtonElement.prototype;
-}

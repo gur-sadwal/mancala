@@ -81,9 +81,13 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.INTERNER_FEHLER]: 'Es ist ein interner Fehler aufgetreten.',
 });
 
-/** Zustaende einer Partie (Konzept 4.7). */
+/**
+ * Zustaende einer Partie (Konzept 4.7).
+ *
+ * Bewusste Abweichung vom Konzept: Es gibt keinen Zustand WARTET. Eine Partie
+ * entsteht erst, wenn zwei Spieler da sind; wer wartet, steht in der Lobby.
+ */
 export const STATUS = Object.freeze({
-  WARTET: 'WARTET',
   LAEUFT: 'LAEUFT',
   BEENDET: 'BEENDET',
   ABGEBROCHEN: 'ABGEBROCHEN',

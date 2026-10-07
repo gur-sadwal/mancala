@@ -27,10 +27,8 @@
     <h1 class="kopf__titel">Mancala</h1>
     <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>
     <p class="kopf__autor">von Gursharan S. Sadwal</p>
-    <!-- commandfor/command: Der Knopf oeffnet den Dialog ohne JavaScript
-         (Invoker Commands; Fallback fuer aeltere Browser in js/einstellungen.js). -->
-    <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf"
-            commandfor="dialog-einstellungen" command="show-modal">
+    <!-- Oeffnet #dialog-einstellungen (Klick-Listener in js/einstellungen.js). -->
+    <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf">
       Einstellungen
     </button>
   </header>
@@ -204,10 +202,8 @@
       </p>
 
       <div class="spiel__aktionen">
-        <!-- Oeffnet die Rueckfrage #dialog-aufgeben ohne JavaScript
-             (Invoker Commands; Fallback fuer aeltere Browser in js/spiel.js). -->
-        <button type="button" id="knopf-aufgeben" class="knopf knopf--still"
-                commandfor="dialog-aufgeben" command="show-modal">
+        <!-- Oeffnet die Rueckfrage #dialog-aufgeben (Klick-Listener in js/spiel.js). -->
+        <button type="button" id="knopf-aufgeben" class="knopf knopf--still">
           Partie aufgeben
         </button>
       </div>
