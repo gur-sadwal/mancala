@@ -59,6 +59,7 @@ export const FEHLER = Object.freeze({
   BEREITS_IN_PARTIE: 'BEREITS_IN_PARTIE',
   CODE_UNBEKANNT: 'CODE_UNBEKANNT',           // Einladungslink ungueltig oder abgelaufen
   INTERNER_FEHLER: 'INTERNER_FEHLER',         // Schicht 2 der Absturzsicherung
+  WARTEZEIT_ABGELAUFEN: 'WARTEZEIT_ABGELAUFEN', // länger als GRENZEN.WARTEN_MINUTEN gewartet
 });
 
 /**
@@ -80,6 +81,7 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.BEREITS_IN_PARTIE]: 'Du bist bereits in einer Partie.',
   [FEHLER.CODE_UNBEKANNT]: 'Dieses private Spiel gibt es nicht mehr. Bitte um einen neuen Link.',
   [FEHLER.INTERNER_FEHLER]: 'Es ist ein interner Fehler aufgetreten.',
+  [FEHLER.WARTEZEIT_ABGELAUFEN]: 'Die Wartezeit ist abgelaufen. Bitte starte ein neues Spiel.',
 });
 
 /**
@@ -101,6 +103,7 @@ export const GRUND = Object.freeze({
   AUFGEGEBEN: 'AUFGEGEBEN',       // jemand hat aufgegeben
   INTERNER_FEHLER: 'INTERNER_FEHLER', // Invariante verletzt o. ae. (Konzept 7.7)
   SERVER_ENDE: 'SERVER_ENDE',     // Server wird heruntergefahren (SIGTERM/SIGINT)
+  ZU_LANGE_KEIN_ZUG: 'ZU_LANGE_KEIN_ZUG', // GRENZEN.PARTIE_RUHE_MINUTEN ohne Zug, wird nicht gewertet
 });
 
 /** Grenzen, die Server und Client gleichermassen kennen muessen. */
@@ -110,6 +113,15 @@ export const GRENZEN = Object.freeze({
   MULDE_MAX: 5,
   CODE_LAENGE: 6,        // Zeichen im Einladungscode, z. B. K7M2QX
   REVANCHE_SEKUNDEN: 15, // so lange gilt ein Revanche-Angebot (Zaehler im Ergebnisdialog)
+
+  // EINSTELLBAR: Nach so vielen Minuten ohne Zug beendet der Server eine
+  // Partie (nicht gewertet). Steht hier, damit Server und Anzeige dieselbe
+  // Zahl benutzen.
+  PARTIE_RUHE_MINUTEN: 15,
+
+  // EINSTELLBAR: So lange darf man auf einen Gegner warten – in der
+  // Warteschlange und mit einem privaten Einladungslink.
+  WARTEN_MINUTEN: 7.5,
 });
 
 /** Hoechster Codepoint des C0-Steuerzeichenbereichs (0 bis 31). */
