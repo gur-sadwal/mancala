@@ -9,35 +9,7 @@
  * Das Modul ist frei von Socket.io-Bezuegen und deshalb direkt testbar.
  */
 
-import { EREIGNIS, GRENZEN } from '../../shared/protokoll.js';
-
-/** Hoechster Codepoint des C0-Steuerzeichenbereichs (0 bis 31). */
-const LETZTES_C0_ZEICHEN = 31;
-
-/** Codepoint von DEL. */
-const DEL = 127;
-
-/**
- * Entfernt alle Steuerzeichen aus einer Zeichenkette.
- *
- * Solche Zeichen haben in einem Spielernamen nichts zu suchen: Ein
- * Zeilenumbruch oder ein Nullbyte wuerde die Anzeige zerlegen, ohne selbst
- * sichtbar zu sein.
- *
- * Bewusst eine Schleife ueber Codepoints statt eines regulaeren Ausdrucks mit
- * Unicode-Escapes: Die Absicht ist so direkt ablesbar, und `for...of` iteriert
- * ueber vollstaendige Codepoints, zerschneidet also keine Emoji.
- */
-function ohneSteuerzeichen(text) {
-  let ergebnis = '';
-  for (const zeichen of text) {
-    const code = zeichen.codePointAt(0);
-    if (code > LETZTES_C0_ZEICHEN && code !== DEL) {
-      ergebnis += zeichen;
-    }
-  }
-  return ergebnis;
-}
+import { EREIGNIS, GRENZEN, bereinigeName } from '../../shared/protokoll.js';
 
 /**
  * Ist der Wert ein einfaches Objekt?
@@ -63,21 +35,25 @@ export const istGanzzahlIm = (wert, min, max) => Number.isInteger(wert)
 /**
  * Macht aus beliebiger Eingabe einen anzeigbaren Spielernamen.
  *
- *   keine Zeichenkette  ->  'Spieler'
- *   Steuerzeichen       ->  entfernt
- *   Laenge              ->  auf 20 Zeichen gekuerzt
- *   danach leer         ->  'Spieler'
+ *   keine Zeichenkette     ->  'Spieler'
+ *   Steuerzeichen, < und > ->  entfernt  } die gemeinsame Namensregel
+ *   Laenge                 ->  auf 20    } bereinigeName (shared/protokoll.js)
+ *   danach leer            ->  'Spieler'
  *
- * HTML wird NICHT maskiert und muss es auch nicht: Der Client setzt Namen
- * ausschliesslich ueber `textContent`, nie ueber `innerHTML` (Konzept 6.2).
- * Ein Name wie `<b>Nico</b>` erscheint also woertlich – unschoen, aber
- * harmlos. Wuerde hier zusaetzlich maskiert, stuenden am Ende doppelt
- * maskierte Zeichen auf dem Bildschirm.
+ * Der Browser hat den Namen mit derselben Regel schon vor dem Absenden
+ * geprueft (client/js/anmelden.js). Hier gilt sie VERBINDLICH: Ein
+ * manipulierter Client kann seine Pruefung einfach weglassen – dem Client
+ * wird nie vertraut.
+ *
+ * Gegen Cross-Site-Scripting gibt es damit zwei Absicherungen: Der Client
+ * setzt Namen ausschliesslich ueber `textContent`, nie ueber `innerHTML`
+ * (Konzept 6.2), und ohne `<` und `>` kann ein Name gar kein HTML-Tag
+ * enthalten.
  */
 export function saubererName(wert) {
   if (typeof wert !== 'string') return 'Spieler';
 
-  const bereinigt = ohneSteuerzeichen(wert).trim().slice(0, GRENZEN.NAME_MAX);
+  const bereinigt = bereinigeName(wert);
 
   return bereinigt.length > 0 ? bereinigt : 'Spieler';
 }

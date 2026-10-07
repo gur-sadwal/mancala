@@ -21,6 +21,29 @@ const WURZEL = path.resolve(HIER, '..', '..');
 const pfadZu = (...teile) => path.join(WURZEL, ...teile);
 
 /**
+ * Content-Security-Policy: Was darf der Browser auf dieser Seite laden und
+ * ausfuehren? Eine Regel je Zeile, damit jede einzeln erklaerbar bleibt.
+ *
+ *   default-src 'self'      alles nur von DIESEM Server: Skripte, CSS,
+ *                           Schrift und die Socket.io-Verbindung. Damit
+ *                           laufen keine Inline-Skripte, keine
+ *                           onclick-Attribute und kein eval – das Projekt
+ *                           braucht nichts davon.
+ *   img-src 'self' data:    dazu das leere Favicon (`href="data:,"`)
+ *   object-src 'none'       keine Plugins
+ *   base-uri 'none'         kein <base>-Element, das alle Pfade umbiegt
+ *   frame-ancestors 'none'  die Seite darf nicht in fremde Seiten
+ *                           eingebettet werden (Klick-Entfuehrung)
+ */
+export const CSP = [
+  "default-src 'self'",
+  "img-src 'self' data:",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+/**
  * @param {{manager: object, lobby: object}} deps  fuer den Gesundheitsendpunkt
  */
 export function erzeugeApp({ manager, lobby }) {
@@ -28,6 +51,24 @@ export function erzeugeApp({ manager, lobby }) {
 
   // Verraet die Server-Technik nicht nach aussen.
   app.disable('x-powered-by');
+
+  /**
+   * Schutz gegen Cross-Site-Scripting (XSS) – die DRITTE Absicherung.
+   *
+   * Die erste steckt im Client: Texte wie Spielernamen werden nur ueber
+   * textContent gesetzt, nie ueber innerHTML. Die zweite in der Namensregel:
+   * `<` und `>` sind verboten (shared/protokoll.js). Diese Kopfzeilen greifen,
+   * falls trotzdem einmal HTML eingeschleust wuerde: Der Browser fuehrt dann
+   * nur Skripte von diesem Server aus.
+   *
+   * nosniff: Der Browser haelt sich an den angegebenen Dateityp und raet nicht
+   * selbst – eine Textdatei wird so nie als Skript ausgefuehrt.
+   */
+  app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy', CSP);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    next();
+  });
 
   /**
    * Gesundheitsendpunkt (Konzept 7.10).

@@ -1,0 +1,72 @@
+/**
+ * Tests der Express-App (server/http/app.js): Sicherheitskopfzeilen gegen
+ * Cross-Site-Scripting und die Auslieferung der Seiten.
+ *
+ * Die App wird auf Port 0 gestartet – das Betriebssystem waehlt dann einen
+ * freien Port. Abgefragt wird mit `fetch`, das in Node eingebaut ist; eine
+ * zusaetzliche Testbibliothek ist dafuer nicht noetig.
+ */
+
+import { erzeugeApp, CSP } from '../server/http/app.js';
+
+/** Attrappen: Der Gesundheitsendpunkt fragt nur nach der Anzahl. */
+const manager = { anzahl: () => 0 };
+const lobby = { anzahl: () => 0 };
+
+let server;
+let basis;
+
+beforeAll(async () => {
+  const app = erzeugeApp({ manager, lobby });
+  await new Promise((fertig) => {
+    server = app.listen(0, '127.0.0.1', fertig);
+  });
+  basis = `http://127.0.0.1:${server.address().port}`;
+});
+
+afterAll(async () => {
+  await new Promise((fertig) => server.close(fertig));
+});
+
+describe('Schutz gegen Cross-Site-Scripting', () => {
+  test('die Startseite schickt die Content-Security-Policy mit', async () => {
+    const antwort = await fetch(`${basis}/`);
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get('content-security-policy')).toBe(CSP);
+  });
+
+  test('die Policy erlaubt Skripte nur vom eigenen Server', () => {
+    // Kein 'unsafe-inline' und kein 'unsafe-eval': Inline-Skripte,
+    // onclick-Attribute und eval laufen damit nicht.
+    expect(CSP).toContain("default-src 'self'");
+    expect(CSP).not.toContain('unsafe-inline');
+    expect(CSP).not.toContain('unsafe-eval');
+  });
+
+  test('auch Skripte, die 404-Seite und shared/ bekommen die Kopfzeilen', async () => {
+    for (const pfad of ['/js/main.js', '/shared/protokoll.js', '/gibt-es-nicht']) {
+      const antwort = await fetch(`${basis}${pfad}`);
+      expect(antwort.headers.get('content-security-policy')).toBe(CSP);
+      expect(antwort.headers.get('x-content-type-options')).toBe('nosniff');
+    }
+  });
+
+  test('die Server-Technik wird nicht verraten', async () => {
+    const antwort = await fetch(`${basis}/`);
+    expect(antwort.headers.get('x-powered-by')).toBeNull();
+  });
+});
+
+describe('Auslieferung', () => {
+  test('unbekannte Adresse: 404 mit eigener Seite', async () => {
+    const antwort = await fetch(`${basis}/gibt-es-nicht`);
+    expect(antwort.status).toBe(404);
+    expect(await antwort.text()).toContain('Diese Seite gibt es nicht');
+  });
+
+  test('der Gesundheitsendpunkt meldet Partien und Wartende', async () => {
+    const antwort = await fetch(`${basis}/gesundheit`);
+    const daten = await antwort.json();
+    expect(daten).toMatchObject({ status: 'ok', partien: 0, wartende: 0 });
+  });
+});

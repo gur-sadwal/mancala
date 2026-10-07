@@ -12,6 +12,7 @@
  */
 
 import { $, zeige, setzeText } from './dom.js';
+import { bereinigeName, NAME_VERBOTEN } from '/shared/protokoll.js';
 
 /** Schluessel, unter dem der zuletzt benutzte Name gemerkt wird. */
 const SPEICHER_NAME = 'mancala.name';
@@ -96,7 +97,21 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
   function beiAbsenden(ereignis) {
     ereignis.preventDefault();
 
-    const name = feldName.value.trim();
+    // ERSTE Pruefung des Namens, hier im Browser – mit derselben Regel wie
+    // auf dem Server (bereinigeName aus shared/protokoll.js). Sie ist reine
+    // Bequemlichkeit: Man erfaehrt sofort, was nicht geht. Verbindlich prueft
+    // danach der Server noch einmal (server/socket/validation.js).
+
+    // < und > werden nicht still entfernt, sondern gemeldet: Wer sie tippt,
+    // soll wissen, warum sein Name anders aussieht.
+    const verboten = [...feldName.value].some((zeichen) => NAME_VERBOTEN.includes(zeichen));
+    if (verboten) {
+      zeigeFehler('Die Zeichen < und > sind im Namen nicht erlaubt.');
+      feldName.focus();
+      return;
+    }
+
+    const name = bereinigeName(feldName.value);
 
     if (name.length === 0) {
       zeigeFehler('Bitte gib einen Namen ein.');
@@ -104,6 +119,8 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
       return;
     }
 
+    // Das Feld zeigt jetzt genau den Namen, der beim Server ankommt.
+    feldName.value = name;
     zeigeFehler('');
 
     try {

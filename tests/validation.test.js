@@ -13,7 +13,7 @@ import {
 } from '../server/socket/validation.js';
 
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
-import { EREIGNIS } from '../shared/protokoll.js';
+import { EREIGNIS, bereinigeName } from '../shared/protokoll.js';
 
 describe('istObjekt', () => {
   test('akzeptiert einfache Objekte', () => {
@@ -83,14 +83,41 @@ describe('saubererName', () => {
     expect(saubererName(mitSteuerzeichen)).toBe('Nico');
   });
 
-  test('laesst HTML woertlich stehen – der Client setzt nur textContent', () => {
-    // Bewusste Entscheidung (Konzept 7.8): Maskiert wird nicht hier, sondern
-    // es wird gar kein HTML interpretiert.
-    expect(saubererName('<b>Nico</b>')).toBe('<b>Nico</b>');
+  test('entfernt < und > – ohne sie gibt es kein HTML-Tag (XSS)', () => {
+    // Der Browser meldet diese Zeichen schon vor dem Absenden. Kommen sie
+    // trotzdem an (manipulierter Client), entfernt der Server sie.
+    expect(saubererName('<b>Nico</b>')).toBe('bNico/b');
+    expect(saubererName('<script>alert(1)</script>')).not.toMatch(/[<>]/);
+    expect(saubererName('<>')).toBe('Spieler');
   });
 
   test('zerschneidet keine Emoji', () => {
     expect(saubererName('Anna 🎲')).toBe('Anna 🎲');
+  });
+});
+
+describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () => {
+  test('liefert eine leere Zeichenkette, wenn nichts uebrig bleibt', () => {
+    // Der Browser meldet dann "Bitte gib einen Namen ein.", der Server setzt
+    // "Spieler" ein – das entscheidet jede Seite selbst.
+    expect(bereinigeName('')).toBe('');
+    expect(bereinigeName('   ')).toBe('');
+    expect(bereinigeName(String.fromCharCode(0, 7, 10))).toBe('');
+    expect(bereinigeName('<>')).toBe('');
+  });
+
+  test('Browser und Server kommen zum selben Namen', () => {
+    // Was der Browser ins Feld schreibt, muss genau das sein, was der Server
+    // daraus macht – sonst stuende auf dem Brett ein anderer Name.
+    const eingaben = ['Gursharan', '  Nico  ', 'A'.repeat(30), 'Anna 🎲',
+      `Ni${String.fromCharCode(10)}co`, '<b>Nico</b>', 'Ölmühle Ärger'];
+    for (const eingabe of eingaben) {
+      expect(saubererName(eingabe)).toBe(bereinigeName(eingabe));
+    }
+  });
+
+  test('Umlaute und Satzzeichen bleiben erlaubt', () => {
+    expect(bereinigeName('Jörg-Ümit & Co.')).toBe('Jörg-Ümit & Co.');
   });
 });
 

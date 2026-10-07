@@ -4,7 +4,8 @@
  * Diese Datei wird vom Server per `import` geladen UND vom Browser als
  * statische Datei ausgeliefert. Beide Seiten benutzen buchstaeblich dieselbe
  * Datei – der einfachste Weg, Tippfehler in Ereignisnamen auszuschliessen,
- * ohne einen Bundler einzufuehren (Konzept 12.3).
+ * ohne einen Bundler einzufuehren (Konzept 12.3). Aus demselben Grund steht
+ * hier auch die Namensregel `bereinigeName`.
  *
  * WICHTIG: Hier darf nichts stehen, was nur im Node-Umfeld existiert (kein
  * `process`, kein `require`, kein Dateizugriff) – sonst bricht der Browser.
@@ -72,7 +73,7 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.NICHT_AM_ZUG]: 'Du bist gerade nicht am Zug.',
   [FEHLER.MULDE_UNGUELTIG]: 'Diese Mulde gibt es nicht.',
   [FEHLER.MULDE_LEER]: 'Diese Mulde ist leer.',
-  [FEHLER.PARTIE_NICHT_AKTIV]: 'Diese Partie laeuft nicht mehr.',
+  [FEHLER.PARTIE_NICHT_AKTIV]: 'Diese Partie läuft nicht mehr.',
   [FEHLER.KEINE_PARTIE]: 'Du bist in keiner laufenden Partie.',
   [FEHLER.ZU_VIELE_ANFRAGEN]: 'Zu viele Anfragen. Bitte kurz warten.',
   [FEHLER.BEREITS_IN_WARTESCHLANGE]: 'Du suchst bereits nach einem Gegner.',
@@ -110,6 +111,64 @@ export const GRENZEN = Object.freeze({
   CODE_LAENGE: 6,        // Zeichen im Einladungscode, z. B. K7M2QX
   REVANCHE_SEKUNDEN: 15, // so lange gilt ein Revanche-Angebot (Zaehler im Ergebnisdialog)
 });
+
+/** Hoechster Codepoint des C0-Steuerzeichenbereichs (0 bis 31). */
+const LETZTES_C0_ZEICHEN = 31;
+
+/** Codepoint von DEL. */
+const DEL = 127;
+
+/**
+ * Zeichen, die in einem Namen verboten sind: Mit `<` beginnt und mit `>`
+ * endet jedes HTML-Tag. Ohne sie kann ein Name kein Tag wie `<script>` oder
+ * `<img onerror=...>` enthalten – Schutz gegen Cross-Site-Scripting (XSS).
+ *
+ * Das ist die ZWEITE Absicherung. Die erste steckt im Client: Er setzt Namen
+ * ausschliesslich ueber `textContent`, nie ueber `innerHTML` (Konzept 6.2).
+ */
+export const NAME_VERBOTEN = '<>';
+
+/**
+ * Die Namensregel – EINE Regel, an ZWEI Stellen geprueft.
+ *
+ *   1. Im Browser, vor dem Absenden (client/js/anmelden.js): Der Spieler
+ *      sieht sofort, was ankommt, und bekommt eine Meldung, wenn vom Namen
+ *      nichts uebrig bleibt. Reine Bequemlichkeit.
+ *   2. Auf dem Server (server/socket/validation.js): verbindlich. Ein
+ *      manipulierter Client kann die erste Pruefung einfach weglassen – dem
+ *      Client wird nie vertraut.
+ *
+ * Weil beide Seiten diese Datei laden, koennen die zwei Pruefungen nicht
+ * auseinanderlaufen.
+ *
+ *   Steuerzeichen  ->  entfernt (Zeilenumbruch, Nullbyte ...): Sie wuerden
+ *                      die Anzeige zerlegen, ohne selbst sichtbar zu sein
+ *   < und >        ->  entfernt (NAME_VERBOTEN, gegen XSS)
+ *   Leerzeichen    ->  am Anfang und Ende entfernt
+ *   Laenge         ->  auf GRENZEN.NAME_MAX (20) gekuerzt
+ *
+ * Kann eine leere Zeichenkette liefern. Was dann passiert, entscheidet jede
+ * Seite selbst: Der Browser meldet "Bitte gib einen Namen ein.", der Server
+ * setzt "Spieler" ein.
+ *
+ * Bewusst eine Schleife ueber Codepoints statt eines regulaeren Ausdrucks mit
+ * Unicode-Escapes: Die Absicht ist so direkt ablesbar, und `for...of`
+ * iteriert ueber vollstaendige Codepoints, zerschneidet also keine Emoji.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function bereinigeName(text) {
+  let erlaubt = '';
+  for (const zeichen of text) {
+    const code = zeichen.codePointAt(0);
+    const istSteuerzeichen = code <= LETZTES_C0_ZEICHEN || code === DEL;
+    if (!istSteuerzeichen && !NAME_VERBOTEN.includes(zeichen)) {
+      erlaubt += zeichen;
+    }
+  }
+  return erlaubt.trim().slice(0, GRENZEN.NAME_MAX);
+}
 
 /**
  * Erlaubte Zeichen im Einladungscode.
