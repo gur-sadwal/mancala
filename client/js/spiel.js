@@ -696,10 +696,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * Klick auf "Partie aufgeben" – mit Rueckfrage, weil es endgueltig ist.
    *
    * Die Rueckfrage ist der <dialog id="dialog-aufgeben"> statt window.confirm():
-   * confirm() haelt das gesamte JavaScript an, auch Socket.io. Dieser Listener
-   * laeuft VOR dem commandfor im HTML (im Browser gemessen) und oeffnet den
-   * Dialog selbst; commandfor findet ihn dann offen und tut nichts mehr.
-   * Browser ohne Invoker Commands sind so ebenfalls abgedeckt.
+   * confirm() haelt das gesamte JavaScript an, auch Socket.io.
    */
   function beiAufgeben() {
     if (!dialogAufgeben.open) dialogAufgeben.showModal();
@@ -721,8 +718,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * Rueckfrage geschlossen – mit einem der zwei Knoepfe oder mit Esc.
    *
    * Nur "Ja, aufgeben" (value="aufgeben") gibt auf. returnValue wird danach
-   * geleert: Esc aendert ihn nicht, sonst gaelte beim naechsten Mal noch die
-   * alte Wahl.
+   * geleert, weil Esc ihn nicht in jedem Browser leert (Chromium tut es, die
+   * aeltere HTML-Spezifikation nicht). Sonst gaelte beim naechsten Mal noch
+   * die alte Wahl.
    */
   function beiAufgebenGeschlossen() {
     const wahl = dialogAufgeben.returnValue;
