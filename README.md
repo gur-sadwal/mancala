@@ -15,7 +15,7 @@ Voraussetzung: **Node.js ab Version 20** (siehe `.nvmrc`).
 
 ```bash
 npm install
-npm run build        # prüft Syntax und führt alle Tests aus
+npm run build        # prüft die Syntax aller JS-Dateien und führt alle Tests aus
 npm run start 3000   # Port als Argument
 ```
 
@@ -25,6 +25,21 @@ im selben Netz unter `http://<ip-des-servers>:3000`, weil der Server auf
 
 Zum Ausprobieren genügen zwei Browserfenster: Beide öffnen die Seite, geben
 einen Namen ein und werden automatisch zusammengeführt.
+
+### Was macht `npm run build`?
+
+Es gibt bewusst **keinen Bundler**: Der Browser lädt die ES-Module direkt, es
+muss also nichts übersetzt oder zusammengefasst werden. Der Build ist deshalb
+ein Prüfschritt:
+
+1. `node --check` prüft die Syntax jeder JavaScript-Datei in `server/`,
+   `shared/` und `client/js/` – **einzeln in einer Schleife**. Grund:
+   `node --check a.js b.js` prüft nur die erste Datei und meldet trotzdem
+   Erfolg. So fällt auch ein Tippfehler in einer Client-Datei auf, die kein
+   Test lädt.
+2. Danach laufen alle Jest-Tests.
+
+Scheitert einer der beiden Schritte, bricht der Build mit Fehlercode ab.
 
 ### Weitere Befehle
 
