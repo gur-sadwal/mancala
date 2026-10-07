@@ -587,6 +587,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   const abschnitt = $('#ansicht-spiel');
   const brettElement = $('#brett');
   const knopfAufgeben = $('#knopf-aufgeben');
+  const dialogAufgeben = $('#dialog-aufgeben');
 
   /** Gebuendelte Bezuege fuer zeichneStand(). */
   const elemente = {
@@ -691,20 +692,54 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
   document.addEventListener('keydown', beiTaste);
 
-  /** Klick auf "Partie aufgeben" – mit Rueckfrage, weil es endgueltig ist. */
+  /**
+   * Klick auf "Partie aufgeben" – mit Rueckfrage, weil es endgueltig ist.
+   *
+   * Die Rueckfrage ist der <dialog id="dialog-aufgeben"> statt window.confirm():
+   * confirm() haelt das gesamte JavaScript an, auch Socket.io. Dieser Listener
+   * laeuft VOR dem commandfor im HTML (im Browser gemessen) und oeffnet den
+   * Dialog selbst; commandfor findet ihn dann offen und tut nichts mehr.
+   * Browser ohne Invoker Commands sind so ebenfalls abgedeckt.
+   */
   function beiAufgeben() {
-    // Bewusst eine Rueckfrage: Aufgeben ist nicht rueckgaengig zu machen.
-    if (window.confirm('Partie wirklich aufgeben? Der Gegner gewinnt dann.')) {
-      aktionen.aufgeben();
-    }
+    if (!dialogAufgeben.open) dialogAufgeben.showModal();
+  }
+
+  /**
+   * Schliesst eine noch offene Rueckfrage – sie gehoert zur alten Partie.
+   *
+   * Fall: Die Rueckfrage ist offen, und die Partie endet gerade (der Gegner
+   * gibt auf oder macht den letzten Zug). Ohne das hier bliebe sie offen, und
+   * "Ja, aufgeben" traefe nach einer Revanche die NEUE Partie. close() ohne
+   * Wert laesst returnValue leer, beiAufgebenGeschlossen() gibt also nicht auf.
+   */
+  function schliesseRueckfrage() {
+    if (dialogAufgeben.open) dialogAufgeben.close();
+  }
+
+  /**
+   * Rueckfrage geschlossen – mit einem der zwei Knoepfe oder mit Esc.
+   *
+   * Nur "Ja, aufgeben" (value="aufgeben") gibt auf. returnValue wird danach
+   * geleert: Esc aendert ihn nicht, sonst gaelte beim naechsten Mal noch die
+   * alte Wahl.
+   */
+  function beiAufgebenGeschlossen() {
+    const wahl = dialogAufgeben.returnValue;
+    dialogAufgeben.returnValue = '';
+    if (wahl === 'aufgeben') aktionen.aufgeben();
   }
 
   knopfAufgeben.addEventListener('click', beiAufgeben);
+  dialogAufgeben.addEventListener('close', beiAufgebenGeschlossen);
 
   return {
     zeige(sichtbar) {
       zeige(abschnitt, sichtbar);
-      if (!sichtbar) animator?.brichAb();
+      if (!sichtbar) {
+        animator?.brichAb();
+        schliesseRueckfrage();
+      }
     },
 
     /**
@@ -716,6 +751,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
       wartetAufAntwort = false;
       letzteMulde = null;
       knopfAufgeben.disabled = false;
+      schliesseRueckfrage();
 
       // Eine laufende Animation der vorigen Partie gehoert zu alten Zellen.
       animator?.brichAb();
@@ -808,6 +844,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
       brettElement.removeEventListener('click', beiKlick);
       document.removeEventListener('keydown', beiTaste);
       knopfAufgeben.removeEventListener('click', beiAufgeben);
+      dialogAufgeben.removeEventListener('close', beiAufgebenGeschlossen);
       animator?.brichAb();
     },
   };
