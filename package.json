@@ -14,6 +14,7 @@
     "build": "npm run check",
     "check": "for f in server/*.js server/*/*.js shared/*.js client/js/*.js; do node --check \"$f\" || exit 1; done && npm test",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "abdeckung": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "dev": "node --watch server/index.js 3000"
   },
   "dependencies": {

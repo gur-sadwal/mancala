@@ -214,6 +214,16 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'KEINE' });
     expect(lobby.vergissRevanche('a')).toBe('c');
   });
+
+  test('wer geht, nennt keinen alten Gegner, der schon eine neue Revanche hat', () => {
+    const lobby = erzeugeLobby();
+    lobby.merkeRevanche(anna, ben);
+    // Ben hat inzwischen gegen Carl gespielt – sein Eintrag zeigt auf Carl.
+    lobby.merkeRevanche(ben, carl);
+
+    expect(lobby.vergissRevanche('a')).toBeNull();
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'WARTET', gegnerId: 'c' });
+  });
 });
 
 describe('Revanche-Frist', () => {
@@ -367,6 +377,20 @@ describe('Partieverwaltung', () => {
     expect(eins.id).not.toBe(zwei.id);
     expect(manager.holeNachSocket('c').id).toBe(zwei.id);
     expect(manager.anzahl()).toBe(2);
+  });
+
+  test('liefert alle Partien – für das Herunterfahren', () => {
+    const manager = erzeugeManager();
+    const eins = manager.starte({ socketId: 'a', name: 'A' }, { socketId: 'b', name: 'B' });
+    const zwei = manager.starte({ socketId: 'c', name: 'C' }, { socketId: 'd', name: 'D' });
+
+    expect(manager.alle()).toEqual([eins, zwei]);
+  });
+
+  test('ein fremder Socket hat in der Partie keinen Sitz', () => {
+    const { partie } = mitPartie();
+
+    expect(sitzVon(partie, 'fremd')).toBeNull();
   });
 
   test('entfernt beim Aufloesen beide Eintraege aus beiden Maps', () => {

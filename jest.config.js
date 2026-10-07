@@ -22,5 +22,6 @@ export default {
     'server/spiel/**/*.js',
     'server/socket/validation.js',
     'server/socket/handlers.js',
+    'server/socket/rateLimit.js',
   ],
 };

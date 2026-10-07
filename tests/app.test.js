@@ -70,3 +70,31 @@ describe('Auslieferung', () => {
     expect(daten).toMatchObject({ status: 'ok', partien: 0, wartende: 0 });
   });
 });
+
+describe('Fehlerbehandlung', () => {
+  test('ein Fehler in einer Anfrage ergibt 500 statt eines Absturzes', async () => {
+    // Ein Manager, der beim Zählen wirft – wie ein Programmierfehler.
+    const kaputterManager = {
+      anzahl() {
+        throw new Error('absichtlicher Testfehler');
+      },
+    };
+    const app = erzeugeApp({ manager: kaputterManager, lobby });
+    const echtesError = console.error;
+    console.error = () => {};   // die erwartete Fehlerzeile nicht ausgeben
+    const kaputterServer = await new Promise((fertig) => {
+      const s = app.listen(0, '127.0.0.1', () => fertig(s));
+    });
+
+    try {
+      const adresse = `http://127.0.0.1:${kaputterServer.address().port}`;
+      const antwort = await fetch(`${adresse}/gesundheit`);
+
+      expect(antwort.status).toBe(500);
+      expect(await antwort.json()).toEqual({ fehler: 'Interner Serverfehler' });
+    } finally {
+      console.error = echtesError;
+      await new Promise((fertig) => kaputterServer.close(fertig));
+    }
+  });
+});
