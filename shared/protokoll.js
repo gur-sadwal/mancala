@@ -106,6 +106,9 @@ export const GRUND = Object.freeze({
   ZU_LANGE_KEIN_ZUG: 'ZU_LANGE_KEIN_ZUG', // GRENZEN.PARTIE_RUHE_MINUTEN ohne Zug, wird nicht gewertet
 });
 
+/** Wert von `ergebnis.sieger` bei Gleichstand (24:24). */
+export const REMIS = 'remis';
+
 /** Grenzen, die Server und Client gleichermassen kennen muessen. */
 export const GRENZEN = Object.freeze({
   NAME_MAX: 20,          // Zeichen; entspricht maxlength im HTML-Formular
