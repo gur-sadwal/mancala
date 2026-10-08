@@ -701,6 +701,17 @@ describe('Handler: Ratenbegrenzung', () => {
     ]);
   });
 
+  test('eine Flut bekommt je Fenster nur eine Antwort', () => {
+    const ratenbegrenzer = erzeugeRatenbegrenzer(3, 1000, () => 0);
+    const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
+    const anna = verbinde('a');
+
+    for (let i = 0; i < 25; i += 1) anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+
+    const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
+    expect(codes.filter((code) => code === FEHLER.ZU_VIELE_ANFRAGEN)).toHaveLength(1);
+  });
+
   test('beim Verbindungsabbruch wird der Zähler gelöscht', () => {
     const { verbinde, ratenbegrenzer } = erzeugeUmgebung();
     const anna = verbinde('a');

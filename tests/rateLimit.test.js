@@ -48,6 +48,23 @@ describe('Ratenbegrenzung', () => {
     expect(begrenzer.erlaubt('a')).toBe(true);
   });
 
+  test('istErsteSperre meldet nur die erste verworfene Nachricht im Fenster', () => {
+    let jetzt = 0;
+    const begrenzer = erzeugeRatenbegrenzer(2, 1000, () => jetzt);
+    const ersteSperren = [];
+
+    for (let i = 0; i < 5; i += 1) {
+      begrenzer.erlaubt('a');
+      ersteSperren.push(begrenzer.istErsteSperre('a'));
+    }
+    expect(ersteSperren).toEqual([false, false, true, false, false]);
+
+    jetzt = 1000;   // neues Fenster: wieder genau einmal
+    for (let i = 0; i < 3; i += 1) begrenzer.erlaubt('a');
+    expect(begrenzer.istErsteSperre('a')).toBe(true);
+    expect(begrenzer.istErsteSperre('unbekannt')).toBe(false);
+  });
+
   test('ohne Angaben gilt: 20 Ereignisse je Sekunde', () => {
     let jetzt = 0;
     const begrenzer = erzeugeRatenbegrenzer(undefined, undefined, () => jetzt);

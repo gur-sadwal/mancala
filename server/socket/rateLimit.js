@@ -50,6 +50,15 @@ export function erzeugeRatenbegrenzer(
   }
 
   /**
+   * War das gerade die erste verworfene Nachricht in diesem Fenster? Nur
+   * sie bekommt eine Antwort – sonst schickte der Server auf eine Flut eine
+   * ebenso große Flut zurück.
+   */
+  function istErsteSperre(socketId) {
+    return zaehler.get(socketId)?.anzahl === grenze + 1;
+  }
+
+  /**
    * Raeumt den Zaehler eines getrennten Sockets ab.
    *
    * Ohne diesen Aufruf im `disconnect`-Handler waere die Map ein langsames
@@ -64,5 +73,5 @@ export function erzeugeRatenbegrenzer(
     return zaehler.size;
   }
 
-  return { erlaubt, vergiss, anzahl };
+  return { erlaubt, istErsteSperre, vergiss, anzahl };
 }

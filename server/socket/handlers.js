@@ -577,7 +577,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
         // Ratenbegrenzung vor allem anderen: Eine Flut soll moeglichst frueh
         // versickern (Konzept 7.9).
         if (!ratenbegrenzer.erlaubt(socket.id)) {
-          sendeFehler(socket, FEHLER.ZU_VIELE_ANFRAGEN);
+          if (ratenbegrenzer.istErsteSperre(socket.id)) {
+            sendeFehler(socket, FEHLER.ZU_VIELE_ANFRAGEN);
+          }
           return;
         }
 
