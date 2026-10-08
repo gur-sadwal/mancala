@@ -150,7 +150,7 @@ const aktionen = verbinde({
     const revancheSeit = Date.now();
 
     // Erst die Animation des letzten Zuges zu Ende laufen lassen.
-    await letzteAnimation;
+    await warteAufAnimation();
     store.setze({
       ansicht: ANSICHT.ENDE,
       spielstand,
@@ -169,7 +169,7 @@ const aktionen = verbinde({
   async beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
     partieVorbei = true;
     const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
-    await letzteAnimation;
+    await warteAufAnimation();
 
     store.setze({
       ansicht: ANSICHT.ENDE,
@@ -270,6 +270,18 @@ const warteAnsicht = erzeugeWarteAnsicht({
   },
 });
 const spielAnsicht = erzeugeSpielAnsicht({ aktionen });
+
+/**
+ * Wartet, bis die letzte Zug-Animation fertig ist – scheitert sie, geht es
+ * trotzdem weiter. Sonst käme der Ergebnisdialog nach einem Fehler nie.
+ */
+async function warteAufAnimation() {
+  try {
+    await letzteAnimation;
+  } catch (fehler) {
+    console.error('Zug-Animation gescheitert – zeige trotzdem das Ergebnis.', fehler);
+  }
+}
 
 /**
  * Revanche-Stand, sobald das Ergebnis da ist.

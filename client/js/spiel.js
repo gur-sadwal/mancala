@@ -587,6 +587,12 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
       }
 
       return !abgeloest();
+    } catch (fehler) {
+      // Ein Fehler in der Animation darf das Spiel nicht anhalten: Das
+      // finally zeichnet trotzdem den Serverstand, und spieleZug läuft
+      // normal zu Ende (Sperre lösen, Fokus zurück).
+      console.error('Zug-Animation gescheitert – zeige den Serverstand.', fehler);
+      return !abgeloest();
     } finally {
       // Der Endzustand wird IMMER gezeichnet – auch wenn oben etwas
       // schiefging oder die Animation abgeloest wurde. Das ist das
