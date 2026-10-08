@@ -845,6 +845,19 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     },
 
     /**
+     * Die Partie ist auf dem Server vorbei (letzter Zug, Aufgabe, Abbruch).
+     *
+     * Es gibt nichts mehr aufzugeben – sonst liefe ein Klick während der
+     * Schlussanimation ins Leere (KEINE_PARTIE). Eine offene Rückfrage
+     * „Partie aufgeben?“ wird geschlossen, damit nicht zwei Dialoge
+     * übereinanderliegen, wenn gleich das Ergebnis erscheint.
+     */
+    beende() {
+      knopfAufgeben.disabled = true;
+      schliesseRueckfrage();
+    },
+
+    /**
      * Spielt einen Zug ab und zeichnet danach den Serverzustand.
      *
      * Die Eingabesperre wird erst hier wieder geloest – nicht vorher, sonst
@@ -855,10 +868,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
       // Punktestand und „am Zug“ werden erst NACH der Animation gezeichnet –
       // sonst stünde oben schon der Endstand, während die Kugeln noch fallen.
-
-      // Nach dem letzten Zug gibt es nichts mehr aufzugeben. Sonst liefe ein
-      // Klick waehrend der Schlussanimation ins Leere (KEINE_PARTIE).
-      knopfAufgeben.disabled = spielstand.status !== 'LAEUFT';
 
       // Der Hinweis zur Sonderregel erscheint dagegen sofort.
       zeigeSonderregel(bericht);

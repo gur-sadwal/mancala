@@ -139,7 +139,7 @@ const aktionen = verbinde({
   },
 
   beiStand({ spielstand, bericht }) {
-    if (spielstand.status !== STATUS.LAEUFT) partieVorbei = true;
+    if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
     store.setze({ spielstand });
     letzteAnimation = spielAnsicht.spieleZug(bericht, spielstand);
   },
@@ -148,6 +148,7 @@ const aktionen = verbinde({
     // Die Revanche-Frist zaehlt ab JETZT, nicht erst nach der Animation – so
     // passt der Zaehler im Dialog zur Frist auf dem Server.
     const revancheSeit = Date.now();
+    markierePartieVorbei();
 
     // Erst die Animation des letzten Zuges zu Ende laufen lassen.
     await warteAufAnimation();
@@ -167,7 +168,7 @@ const aktionen = verbinde({
    * Spieler bekommt einen Dialog und kann sofort neu suchen.
    */
   async beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
-    partieVorbei = true;
+    markierePartieVorbei();
     const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
     await warteAufAnimation();
 
@@ -270,6 +271,16 @@ const warteAnsicht = erzeugeWarteAnsicht({
   },
 });
 const spielAnsicht = erzeugeSpielAnsicht({ aktionen });
+
+/**
+ * Die Partie ist auf dem Server vorbei: Ein später Klick darf nicht mehr zur
+ * Anmeldung führen (siehe partieVorbei), und die Spielansicht sperrt
+ * „Partie aufgeben“ und schließt eine offene Rückfrage.
+ */
+function markierePartieVorbei() {
+  partieVorbei = true;
+  spielAnsicht.beende();
+}
 
 /**
  * Wartet, bis die letzte Zug-Animation fertig ist – scheitert sie, geht es
