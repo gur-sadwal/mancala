@@ -54,13 +54,13 @@
          Ansicht 1: ANMELDEN
          =================================================================== -->
     <section id="ansicht-anmelden" class="ansicht" hidden>
-      <h2 id="t-anmelden" class="ansicht__titel" tabindex="-1">Spiel beitreten</h2>
+      <h2 id="t-anmelden"  tabindex="-1">Spiel beitreten</h2>
 
       <form id="form-anmelden" class="formular" novalidate>
         <div class="feld">
           <label class="feld__beschriftung" for="feld-name">Dein Spielername</label>
           <input
-            id="feld-name"
+           id="feld-name"
             class="feld__eingabe"
             name="name"
             type="text"
@@ -129,7 +129,7 @@
          gefordert, Regelwerk 4.1 Folie 3)
          =================================================================== -->
     <section id="ansicht-warten" class="ansicht" hidden>
-      <h2 id="t-warten" class="ansicht__titel" tabindex="-1">Warte auf Gegenspieler…</h2>
+      <h2 id="t-warten"  tabindex="-1">Warte auf Gegenspieler…</h2>
 
       <!-- Der Ladeindikator ist rein dekorativ; die Information steckt im Text daneben. -->
       <div class="lader">
@@ -139,7 +139,7 @@
         <span class="lader__kugel"></span>
       </div>
 
-      <p class="warten__status">
+      <p>
         Du spielst als <strong id="warten-name">…</strong>.
         <span id="warten-position"></span>
       </p>
@@ -173,12 +173,12 @@
 
       <!-- Punktestaende und Zuganzeige -->
       <div class="stand">
-        <p class="stand__spieler stand__spieler--gegner" id="stand-gegner">
+        <p class="stand__spieler" id="stand-gegner">
           <span class="stand__name" id="name-gegner">Gegner</span>
           <span class="stand__punkte" id="punkte-gegner">0</span>
         </p>
 
-        <p class="stand__spieler stand__spieler--eigen" id="stand-eigen">
+        <p class="stand__spieler" id="stand-eigen">
           <span class="stand__name" id="name-eigen">Du</span>
           <span class="stand__punkte" id="punkte-eigen">0</span>
         </p>
@@ -226,9 +226,9 @@
     <p id="ende-grund" class="dialog__grund"></p>
 
     <p class="dialog__stand">
-      <span class="dialog__zahl" id="ende-punkte-eigen">0</span>
-      <span class="dialog__doppelpunkt">:</span>
-      <span class="dialog__zahl" id="ende-punkte-gegner">0</span>
+      <span id="ende-punkte-eigen">0</span>
+      <span>:</span>
+      <span id="ende-punkte-gegner">0</span>
     </p>
 
     <p id="ende-text" class="dialog__text"></p>
