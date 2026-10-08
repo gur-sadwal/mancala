@@ -227,7 +227,14 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
    */
   function raeumeAuf(jetzt = Date.now()) {
     for (const partie of manager.findeRuhendePartien(PARTIE_RUHE_MS, jetzt)) {
-      beendeKontrolliert(partie, GRUND.ZU_LANGE_KEIN_ZUG);
+      // SCHUTZ: Ein Fehler bei einer Partie darf die uebrigen Partien und
+      // die Wartenden in diesem Takt nicht aufhalten. Aufgeloest ist sie
+      // trotzdem (finally in beendeKontrolliert).
+      try {
+        beendeKontrolliert(partie, GRUND.ZU_LANGE_KEIN_ZUG);
+      } catch (fehler) {
+        logger.error('Fristende einer Partie fehlgeschlagen', fehler);
+      }
     }
 
     const wartende = lobby.raeumeAuf(WARTEN_MS, jetzt);

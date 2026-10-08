@@ -946,6 +946,25 @@ describe('Handler: Aufräumen nach Fristen', () => {
     expect(anna.empfangen.length).toBe(vorher);
   });
 
+  test('eine kaputte Partie hält die Fristprüfung der anderen nicht auf', () => {
+    const { verbinde, handler, manager, lobby } = erzeugeUmgebung();
+    const [anna, ben, carl, dora, emil] = ['a', 'b', 'c', 'd', 'e'].map((id) => verbinde(id));
+    for (const spieler of [anna, ben, carl, dora]) {
+      spieler.sende(EREIGNIS.BEITRETEN, { name: spieler.id });
+    }
+    lobby.beitreten('e', 'Emil', 0);                   // wartet seit 1970
+    manager.holeNachSocket('a').brett = null;          // Programmierfehler in Partie 1
+    manager.holeNachSocket('a').letzteAktivitaet = 0;
+    manager.holeNachSocket('c').letzteAktivitaet = 0;
+
+    expect(() => handler.raeumeAuf()).not.toThrow();
+
+    expect(carl.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+    expect(emil.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.WARTEZEIT_ABGELAUFEN);
+    expect(manager.anzahl()).toBe(0);
+    expect(imProtokoll('[ERROR]')).toBe(true);
+  });
+
   test('eine Minute vor der Frist bleibt die Partie unberührt', () => {
     const { anna, handler, manager } = schnellesSpiel();
 
