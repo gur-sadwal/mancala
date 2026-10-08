@@ -264,7 +264,7 @@ function erzeugeMulde(rolle, alsButton) {
   }
 
   return erzeuge(tag, {
-    klassen: ['mulde', alsButton ? 'mulde--eigen' : 'mulde--gegnerisch'],
+    klassen: alsButton ? ['mulde', 'mulde--eigen'] : ['mulde'],
     attribute,
   }, kinder);
 }
@@ -380,13 +380,10 @@ function zeichneStand(elemente, spielstand, sitz) {
   const ichBinDran = spielstand.amZug === sitz;
 
   // Die Haeuser liegen kanonisch: unten [1,6], oben [0,0].
-  const punkte = {
-    unten: spielstand.brett[1][6],
-    oben: spielstand.brett[0][0],
-  };
-
-  setzeText(elemente.punkteEigen, punkte[sitz]);
-  setzeText(elemente.punkteGegner, punkte[gegnerSitz]);
+  const [eigenReihe, eigenSpalte] = hausVon(sitz);
+  const [gegnerReihe, gegnerSpalte] = hausVon(gegnerSitz);
+  setzeText(elemente.punkteEigen, spielstand.brett[eigenReihe][eigenSpalte]);
+  setzeText(elemente.punkteGegner, spielstand.brett[gegnerReihe][gegnerSpalte]);
 
   // Heissen beide gleich (z. B. zweimal "Anna"), steht beim eigenen Stand
   // "Du" – sonst waeren die zwei Punktestaende nicht auseinanderzuhalten.
@@ -453,7 +450,7 @@ export function hinweisText(bericht, sitz) {
 const TAKT_SAAT = 180;
 
 /** Wartezeit fuer Beute- und Extrazug-Hervorhebung. */
-const TAKT_HINWEIS = 620;
+const TAKT_HINWEIS = 640;
 
 /** Wartezeit fuer die Endabrechnung. */
 const TAKT_ABRECHNUNG = 700;
@@ -464,153 +461,91 @@ const TAKT_ABRECHNUNG = 700;
  * @param {Map<string, HTMLElement>} deps.zellen
  * @param {'unten'|'oben'} deps.sitz
  */
+export function hausVon(sitz) {
+  return sitz === 'unten' ? [1, 6] : [0, 0];
+}
+
+/** Kopiert ein Bild, damit spätere Schritte frühere Bilder nicht verändern. */
+function animationsbild(brett, hervorheben = [], klasse = '', dauer = TAKT_SAAT) {
+  return { brett: brett.map((reihe) => [...reihe]), hervorheben, klasse, dauer };
+}
+
+/** Folgt nur dem Bericht; gültige Züge und Endstand bestimmt der Server. */
+export function schritteDesZuges(bericht) {
+  const brett = bericht.brettVorher.map((reihe) => [...reihe]);
+  const [reihe, spalte] = bericht.vonZelle;
+  brett[reihe][spalte] = 0;
+  const bilder = [animationsbild(brett)];
+
+  for (const [zielReihe, zielSpalte] of bericht.pfad) {
+    brett[zielReihe][zielSpalte] += 1;
+    bilder.push(animationsbild(brett, [[zielReihe, zielSpalte]], 'zelle--saat'));
+  }
+  if (bericht.beute) {
+    const { eigeneZelle, gegnerZelle, anzahl } = bericht.beute;
+    bilder.push(animationsbild(brett, [eigeneZelle, gegnerZelle],
+      'zelle--beute', TAKT_HINWEIS));
+    brett[eigeneZelle[0]][eigeneZelle[1]] = 0;
+    brett[gegnerZelle[0]][gegnerZelle[1]] = 0;
+    const [hausReihe, hausSpalte] = hausVon(bericht.sitz);
+    brett[hausReihe][hausSpalte] += anzahl;
+    bilder.push(animationsbild(brett, [], '', TAKT_SAAT * 2));
+  }
+  if (bericht.extrazug) {
+    bilder.push(animationsbild(brett, [hausVon(bericht.sitz)],
+      'zelle--extrazug', TAKT_HINWEIS));
+  }
+  if (bericht.abrechnung) {
+    bilder.push(animationsbild(brett, [], '', TAKT_ABRECHNUNG));
+  }
+  return bilder;
+}
+
 function erzeugeAnimator({ brettElement, zellen, sitz }) {
-  /**
-   * Laufende Nummer der aktuellen Animation.
-   *
-   * Trifft waehrend einer laufenden Animation bereits die naechste Nachricht
-   * ein (etwa der Extrazug des Gegners), wird die laufende abgekuerzt und die
-   * neue begonnen – die einzige Stelle, an der eine kleine Warteschlange
-   * noetig ist (Konzept 8.4).
-   */
   let laufNr = 0;
+  const elementVon = (zelle) => zellen.get(schluessel(zelle));
 
-  /** Hilfszugriff auf ein Zellenelement anhand der kanonischen Adresse. */
-  const elementVon = (zelle) => zellen.get(schluessel(zelle)) ?? null;
-
-  /** Setzt eine Hervorhebungsklasse und nimmt sie nach der Dauer zurueck. */
-  async function hebeHervor(zellenListe, klasse, dauer) {
-    const elemente = zellenListe.map(elementVon).filter(Boolean);
-
-    for (const element of elemente) element.classList.add(klasse);
-    await warte(dauer);
-    for (const element of elemente) element.classList.remove(klasse);
+  function entferneMarkierungen() {
+    for (const element of zellen.values()) {
+      element.classList.remove('zelle--zuletzt', 'zelle--saat',
+        'zelle--beute', 'zelle--extrazug');
+    }
   }
 
-  /**
-   * Spielt einen Zug ab.
-   *
-   * @param {object} bericht      aus spiel:stand
-   * @param {object} spielstand   der Zustand NACH dem Zug (die Wahrheit)
-   * @returns {Promise<boolean>} true, wenn die Animation zu Ende lief;
-   *          false, wenn eine neuere sie abgeloest hat
-   */
+  async function zeigeBild(bild, meineNr) {
+    zeichneBrett(zellen, bild.brett, sitz, false);
+    const elemente = bild.hervorheben.map(elementVon);
+    for (const element of elemente) element.classList.add(bild.klasse);
+    await warte(bild.dauer);
+    if (meineNr !== laufNr) return;
+    for (const element of elemente) element.classList.remove(bild.klasse);
+  }
+
   async function spiele(bericht, spielstand) {
     laufNr += 1;
     const meineNr = laufNr;
-
-    /** Wurde diese Animation inzwischen von einer neueren abgeloest? */
-    const abgeloest = () => meineNr !== laufNr;
-
-    const ichBinDran = spielstand.amZug === sitz;
-
-    // Eingabe sperren, solange sich das Bild bewegt (Konzept 8.5).
     schalte(brettElement, 'brett--gesperrt', true);
-
-    // Die Markierung des vorigen Zuges gehoert zum alten Bild.
-    for (const element of zellen.values()) {
-      element.classList.remove('zelle--zuletzt');
-    }
-
+    entferneMarkierungen();
     try {
-      // Bei "weniger Bewegung" entfallen alle Schritte und der Endzustand
-      // wird sofort gezeichnet (WCAG 2.3.3).
-      if (wenigerBewegung()) return true;
-
-      // Arbeitskopie, die schrittweise auf den Endzustand zulaeuft. Sie beginnt
-      // bei brettVorher, damit die Animation auch dann vom richtigen
-      // Ausgangsbild startet, wenn zwischendurch neu gezeichnet wurde.
-      const arbeit = bericht.brettVorher.map((reihe) => [...reihe]);
-
-      // --- Startmulde leeren -------------------------------------------
-      const [vonReihe, vonSpalte] = bericht.vonZelle;
-      arbeit[vonReihe][vonSpalte] = 0;
-      zeichneBrett(zellen, arbeit, sitz, false);
-
-      // Kurz innehalten: Man soll sehen, aus welcher Mulde die Kugeln
-      // genommen wurden, bevor die erste wieder faellt.
-      await warte(TAKT_SAAT);
-
-      // --- Saeen --------------------------------------------------------
-      for (const [reihe, spalte] of bericht.pfad) {
-        if (abgeloest()) return false;
-
-        arbeit[reihe][spalte] += 1;
-        zeichneBrett(zellen, arbeit, sitz, false);
-
-        const element = elementVon([reihe, spalte]);
-        if (element) {
-          element.classList.add('zelle--saat');
-          // Die Klasse wird nach dem Takt wieder entfernt, damit dieselbe
-          // Zelle beim naechsten Durchlauf erneut aufleuchten kann.
-          setTimeout(() => element.classList.remove('zelle--saat'), TAKT_SAAT);
+      if (!wenigerBewegung()) {
+        for (const bild of schritteDesZuges(bericht)) {
+          if (meineNr !== laufNr) return false;
+          await zeigeBild(bild, meineNr);
         }
-
-        await warte(TAKT_SAAT);
       }
-
-      if (abgeloest()) return false;
-
-      // --- Diebstahl ----------------------------------------------------
-      if (bericht.beute) {
-        const { eigeneZelle, gegnerZelle, anzahl } = bericht.beute;
-
-        await hebeHervor([eigeneZelle, gegnerZelle], 'zelle--beute', TAKT_HINWEIS);
-        if (abgeloest()) return false;
-
-        // Die Kugeln wandern ins Haus des Spielers, der gezogen hat.
-        const haus = bericht.sitz === 'unten' ? [1, 6] : [0, 0];
-        arbeit[eigeneZelle[0]][eigeneZelle[1]] = 0;
-        arbeit[gegnerZelle[0]][gegnerZelle[1]] = 0;
-        arbeit[haus[0]][haus[1]] += anzahl;
-
-        zeichneBrett(zellen, arbeit, sitz, false);
-        await warte(TAKT_SAAT * 2);
-      }
-
-      if (abgeloest()) return false;
-
-      // --- Extrazug -----------------------------------------------------
-      if (bericht.extrazug) {
-        const haus = bericht.sitz === 'unten' ? [1, 6] : [0, 0];
-        await hebeHervor([haus], 'zelle--extrazug', TAKT_HINWEIS);
-      }
-
-      if (abgeloest()) return false;
-
-      // --- Endabrechnung ------------------------------------------------
-      if (bericht.abrechnung) {
-        // Die Restkugeln wandern sichtbar in die Haeuser. Gezeichnet wird
-        // dafuer schlicht der Endzustand mit einer Pause davor, damit der
-        // Wechsel wahrnehmbar ist.
-        await warte(TAKT_ABRECHNUNG);
-      }
-
-      return !abgeloest();
     } catch (fehler) {
-      // Ein Fehler in der Animation darf das Spiel nicht anhalten: Das
-      // finally zeichnet trotzdem den Serverstand, und spieleZug läuft
-      // normal zu Ende (Sperre lösen, Fokus zurück).
       console.error('Zug-Animation gescheitert – zeige den Serverstand.', fehler);
-      return !abgeloest();
-    } finally {
-      // Der Endzustand wird IMMER gezeichnet – auch wenn oben etwas
-      // schiefging oder die Animation abgeloest wurde. Das ist das
-      // Sicherheitsnetz gegen Abweichungen zwischen Bild und Wahrheit.
-      if (!abgeloest()) {
-        zeichneBrett(zellen, spielstand.brett, sitz, ichBinDran);
-        schalte(brettElement, 'brett--gesperrt', false);
-
-        // Die Startmulde bleibt markiert, bis der naechste Zug beginnt – so
-        // sieht man auch spaeter noch, was zuletzt gespielt wurde.
-        elementVon(bericht.vonZelle)?.classList.add('zelle--zuletzt');
-      }
     }
+    if (meineNr !== laufNr) return false;
+    zeichneBrett(zellen, spielstand.brett, sitz, spielstand.amZug === sitz);
+    schalte(brettElement, 'brett--gesperrt', false);
+    elementVon(bericht.vonZelle)?.classList.add('zelle--zuletzt');
+    return true;
   }
 
-  /** Bricht eine laufende Animation ab, etwa beim Ansichtswechsel. */
   function brichAb() {
     laufNr += 1;
+    entferneMarkierungen();
     schalte(brettElement, 'brett--gesperrt', false);
   }
 
@@ -619,6 +554,10 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
 // ===========================================================================
 // 5. Ansicht
 // ===========================================================================
+
+export function muldeAusTaste(taste) {
+  return ['1', '2', '3', '4', '5', '6'].indexOf(taste);
+}
 
 /**
  * Verantwortlich fuer: Brett aufbauen, Spielstand zeichnen, Klicks
@@ -686,14 +625,14 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * Augenblick spaeter auf <body>; ohne die dritte Bedingung kaeme diese
    * Funktion also zu frueh und taete nichts.
    */
-  function stelleFokusWiederHer(ichBinDran) {
+  function stelleFokusWiederHer() {
     const aktiv = document.activeElement;
     const fokusVerloren = !aktiv
       || aktiv === document.body
       || aktiv.disabled
       || aktiv.closest('[hidden]') !== null;
 
-    if (!ichBinDran || !fokusVerloren) return;
+    if (!fokusVerloren) return;
 
     const zuletzt = brettElement.querySelector(`button[data-mulde="${letzteMulde}"]`);
     const ziel = zuletzt && !zuletzt.disabled
@@ -743,10 +682,10 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     // Kuerzel wie Cmd+1 (Browser-Tab wechseln) sind nicht gemeint.
     if (ereignis.metaKey || ereignis.ctrlKey || ereignis.altKey) return;
 
-    const nummer = Number.parseInt(ereignis.key, 10);
-    if (!(nummer >= 1 && nummer <= 6)) return;
+    const mulde = muldeAusTaste(ereignis.key);
+    if (mulde === -1) return;
 
-    const knopf = brettElement.querySelector(`button[data-mulde="${nummer - 1}"]`);
+    const knopf = brettElement.querySelector(`button[data-mulde="${mulde}"]`);
     if (knopf && !knopf.disabled) knopf.click();
   }
 
@@ -803,6 +742,10 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     document.removeEventListener('keydown', beiTaste);
     knopfAufgeben.removeEventListener('click', beiAufgeben);
     dialogAufgeben.removeEventListener('close', beiAufgebenGeschlossen);
+    for (const mulde of brettElement.querySelectorAll('.mulde--eigen')) {
+      mulde.removeEventListener('animationend', beiRuettelnEnde);
+      mulde.classList.remove('mulde--abgelehnt');
+    }
   }
 
   /** Zeigt den Hinweis zu Extrazug oder Klauen – ohne Sonderregel nichts. */
@@ -813,57 +756,67 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
   }
 
-  return {
-    zeige(sichtbar) {
-      zeige(abschnitt, sichtbar);
+  function zeichneAlles(spielstand) {
+    zeichneBrett(zellen, spielstand.brett, sitz, spielstand.amZug === sitz);
+    zeichneStand(elemente, spielstand, sitz);
+    schalte(brettElement, 'brett--gesperrt', false);
+  }
 
-      // ACHTUNG: zeige(true) kommt bei jeder Zustandsaenderung, auch mitten
-      // im Zug. Hier darf deshalb nichts zurueckgesetzt werden – nur anmelden.
-      if (sichtbar) {
-        meldeListenerAn();
-        return;
-      }
-      animator?.brichAb();
-      schliesseRueckfrage();
-      meldeListenerAb();
-    },
+  function beiRuettelnEnde(ereignis) {
+    // Kugel-Animationen steigen ebenfalls auf: Nur die Mulde selbst zählt.
+    if (ereignis.target !== ereignis.currentTarget
+      || ereignis.animationName !== 'ruetteln') return;
+    const mulde = ereignis.currentTarget;
+    mulde.classList.remove('mulde--abgelehnt');
+    mulde.removeEventListener('animationend', beiRuettelnEnde);
+  }
 
-    /**
+  function ruettleMulden() {
+    if (wenigerBewegung()) return;
+    for (const mulde of brettElement.querySelectorAll('.mulde--eigen')) {
+      mulde.addEventListener('animationend', beiRuettelnEnde);
+      mulde.classList.add('mulde--abgelehnt');
+    }
+  }
+
+  function zeige(sichtbar) {
+    zeige(abschnitt, sichtbar);
+
+    // ACHTUNG: zeige(true) kommt bei jeder Zustandsaenderung, auch mitten
+    // im Zug. Hier darf deshalb nichts zurueckgesetzt werden – nur anmelden.
+    if (sichtbar) {
+      meldeListenerAn();
+      return;
+    }
+    animator?.brichAb();
+    schliesseRueckfrage();
+    meldeListenerAb();
+  }
+
+/**
      * Beginnt eine neue Partie: Brett neu aufbauen, weil sich mit dem Sitz
      * die Zuordnung der Zellen aendert.
      */
-    starte(spielstand, eigenerSitz) {
-      sitz = eigenerSitz;
-      wartetAufAntwort = false;
-      letzteMulde = null;
-      knopfAufgeben.disabled = false;
-      schliesseRueckfrage();
+  function starte(spielstand, eigenerSitz) {
+    sitz = eigenerSitz;
+    wartetAufAntwort = false;
+    letzteMulde = null;
+    knopfAufgeben.disabled = false;
+    schliesseRueckfrage();
 
-      // Eine laufende Animation der vorigen Partie gehoert zu alten Zellen.
-      animator?.brichAb();
-      zellen = baueBrett(brettElement, sitz);
-      animator = erzeugeAnimator({ brettElement, zellen, sitz });
+    // Eine laufende Animation der vorigen Partie gehoert zu alten Zellen.
+    animator?.brichAb();
+    zellen = baueBrett(brettElement, sitz);
+    animator = erzeugeAnimator({ brettElement, zellen, sitz });
 
-      this.aktualisiere(spielstand);
+    zeichneAlles(spielstand);
 
-      // Der Knopf, der die Partie ausgeloest hat, ist jetzt versteckt – ohne
-      // das hier stuende der Tastaturfokus auf <body>.
-      stelleFokusWiederHer(spielstand.amZug === sitz);
-    },
+    // Der Knopf, der die Partie ausgeloest hat, ist jetzt versteckt – ohne
+    // das hier stuende der Tastaturfokus auf <body>.
+    stelleFokusWiederHer();
+  }
 
-    /** Zeichnet einen Spielstand ohne Animation (Start, Wiederherstellung). */
-    aktualisiere(spielstand) {
-      if (!zellen || !sitz) return;
-
-      const ichBinDran = spielstand.amZug === sitz;
-
-      zeichneBrett(zellen, spielstand.brett, sitz, ichBinDran);
-      zeichneStand(elemente, spielstand, sitz);
-
-      schalte(brettElement, 'brett--gesperrt', false);
-    },
-
-    /**
+/**
      * Die Partie ist auf dem Server vorbei (letzter Zug, Aufgabe, Abbruch).
      *
      * Es gibt nichts mehr aufzugeben – sonst liefe ein Klick während der
@@ -871,66 +824,63 @@ export function erzeugeSpielAnsicht({ aktionen }) {
      * „Partie aufgeben?“ wird geschlossen, damit nicht zwei Dialoge
      * übereinanderliegen, wenn gleich das Ergebnis erscheint.
      */
-    beende() {
-      knopfAufgeben.disabled = true;
-      schliesseRueckfrage();
-    },
+  function beende() {
+    knopfAufgeben.disabled = true;
+    schliesseRueckfrage();
+  }
 
-    /**
+/**
      * Spielt einen Zug ab und zeichnet danach den Serverzustand.
      *
      * Die Eingabesperre wird erst hier wieder geloest – nicht vorher, sonst
      * koennte waehrend der Animation ein zweiter Zug abgeschickt werden.
      */
-    async spieleZug(bericht, spielstand) {
-      if (!zellen || !sitz || !animator) return;
+  async function spieleZug(bericht, spielstand) {
+    if (!zellen || !sitz || !animator) return;
 
-      // Punktestand und „am Zug“ werden erst NACH der Animation gezeichnet –
-      // sonst stünde oben schon der Endstand, während die Kugeln noch fallen.
+    // Punktestand und „am Zug“ werden erst NACH der Animation gezeichnet –
+    // sonst stünde oben schon der Endstand, während die Kugeln noch fallen.
 
-      // Der Hinweis zur Sonderregel erscheint dagegen sofort.
-      zeigeSonderregel(bericht);
+    // Der Hinweis zur Sonderregel erscheint dagegen sofort.
+    zeigeSonderregel(bericht);
 
-      const zuEnde = await animator.spiele(bericht, spielstand);
+    const zuEnde = await animator.spiele(bericht, spielstand);
 
-      // Abgeloest? Dann zeichnet die neuere Animation – dieser (alte) Stand
-      // darf die Anzeige nicht mehr ueberschreiben.
-      if (!zuEnde) return;
+    // Abgeloest? Dann zeichnet die neuere Animation – dieser (alte) Stand
+    // darf die Anzeige nicht mehr ueberschreiben.
+    if (!zuEnde) return;
 
-      // Nach der Animation gilt wieder der normale Text.
-      zeichneStand(elemente, spielstand, sitz);
+    // Nach der Animation gilt wieder der normale Text.
+    zeichneStand(elemente, spielstand, sitz);
 
-      // Ohne Animation wäre der Hinweis sofort wieder überschrieben und nie zu
-      // sehen. Er bleibt dann bis zum nächsten Zug stehen.
-      if (wenigerBewegung()) zeigeSonderregel(bericht);
-      wartetAufAntwort = false;
-      stelleFokusWiederHer(spielstand.amZug === sitz);
-    },
+    // Ohne Animation wäre der Hinweis sofort wieder überschrieben und nie zu
+    // sehen. Er bleibt dann bis zum nächsten Zug stehen.
+    if (wenigerBewegung()) zeigeSonderregel(bericht);
+    wartetAufAntwort = false;
+    stelleFokusWiederHer();
+  }
 
-    /**
+/**
      * Zeigt eine abgelehnte Eingabe an der betroffenen Mulde (Konzept 6.7).
      *
      * Eine kurze visuelle Ablehnung ist hier angemessener als eine
      * Fehlermeldung: Der haeufigste Grund ist ein Klick, der eine
      * Sekundenbruchteil zu spaet kam.
      */
-    melde(text, { ruetteln = false } = {}) {
-      wartetAufAntwort = false;
-      schalte(brettElement, 'brett--gesperrt', false);
-      setzeText(elemente.zuganzeige, text);
-      schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
+  function melde(text, { ruetteln = false } = {}) {
+    wartetAufAntwort = false;
+    schalte(brettElement, 'brett--gesperrt', false);
+    setzeText(elemente.zuganzeige, text);
+    schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
 
-      if (ruetteln) {
-        const mulden = brettElement.querySelectorAll('.mulde--eigen');
-        for (const mulde of mulden) {
-          mulde.classList.add('mulde--abgelehnt');
-          setTimeout(() => mulde.classList.remove('mulde--abgelehnt'), 300);
-        }
-      }
+    if (ruetteln) {
+      ruettleMulden();
+    }
 
-      // Nach einer Ablehnung bin ich weiter am Zug, sonst waere sie nicht
-      // gekommen – der Fokus darf also zurueck aufs Brett.
-      stelleFokusWiederHer(true);
-    },
-  };
+    // Nach einer Ablehnung bin ich weiter am Zug, sonst waere sie nicht
+    // gekommen – der Fokus darf also zurueck aufs Brett.
+    stelleFokusWiederHer();
+  }
+
+  return { zeige, starte, beende, spieleZug, melde };
 }
