@@ -29,11 +29,10 @@ function partieMit(brett, amZug = 'unten') {
     amZug,
     zugNr: 0,
     spieler: {
-      unten: { socketId: 'a', name: 'Unten', verbunden: true },
-      oben: { socketId: 'b', name: 'Oben', verbunden: true },
+      unten: { socketId: 'a', name: 'Unten' },
+      oben: { socketId: 'b', name: 'Oben' },
     },
     ergebnis: null,
-    begonnenAm: 0,
     letzteAktivitaet: 0,
   };
 }

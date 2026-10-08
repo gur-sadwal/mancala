@@ -6,7 +6,7 @@
  * Partie in einem Test durchspielen, ohne einen Server zu starten.
  */
 
-import { neuesBrett } from './brett.js';
+import { neuesBrett, SITZ_NAMEN } from './brett.js';
 import { ergebnisVon } from './engine.js';
 import { STATUS, GRUND } from '../../shared/protokoll.js';
 
@@ -29,11 +29,10 @@ export function neuePartie(id, spielerUnten, spielerOben) {
     amZug: 'unten',           // Sitz `unten` eroeffnet
     zugNr: 0,
     spieler: {
-      unten: { socketId: spielerUnten.socketId, name: spielerUnten.name, verbunden: true },
-      oben: { socketId: spielerOben.socketId, name: spielerOben.name, verbunden: true },
+      unten: { socketId: spielerUnten.socketId, name: spielerUnten.name },
+      oben: { socketId: spielerOben.socketId, name: spielerOben.name },
     },
     ergebnis: null,
-    begonnenAm: Date.now(),
     letzteAktivitaet: Date.now(),
   };
 }
@@ -44,9 +43,7 @@ export function neuePartie(id, spielerUnten, spielerOben) {
  * @returns {'unten'|'oben'|null}
  */
 export function sitzVon(partie, socketId) {
-  if (partie.spieler.unten.socketId === socketId) return 'unten';
-  if (partie.spieler.oben.socketId === socketId) return 'oben';
-  return null;
+  return SITZ_NAMEN.find((sitz) => partie.spieler[sitz].socketId === socketId) ?? null;
 }
 
 /**
@@ -91,7 +88,7 @@ export function beendeVorzeitig(partie, grund, sieger = null) {
   // Sieger: interner Fehler, Serverende und „zu lange kein Zug“ werden nicht
   // gewertet.
   partie.ergebnis = { ...ergebnisVon(partie.brett, grund), sieger };
-  partie.letzteAktivitaet = Date.now();
+  beruehre(partie);
 
   return partie.ergebnis;
 }
