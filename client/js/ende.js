@@ -24,14 +24,36 @@ const SPEICHER_BILANZ = 'mancala.bilanz';
  * mancher Browser wirft der Speicherzugriff eine Ausnahme.
  */
 function leseBilanz() {
-  const leer = { siege: 0, niederlagen: 0, remis: 0 };
-
   try {
-    const gespeichert = JSON.parse(window.sessionStorage.getItem(SPEICHER_BILANZ));
-    return { ...leer, ...gespeichert };
+    return bilanzAusSpeichertext(window.sessionStorage.getItem(SPEICHER_BILANZ));
   } catch {
-    return leer;
+    return bilanzAusSpeichertext(null);
   }
+}
+
+/**
+ * Macht aus dem gespeicherten Text eine Bilanz (ohne DOM, mit Jest testbar).
+ *
+ * SCHUTZ: Den Speicher kann jeder in den Entwicklerwerkzeugen ändern. Nur
+ * ganze Zahlen ab 0 werden übernommen, alles andere zählt als 0 – sonst
+ * stünde z. B. „abc1“ in der Bilanz.
+ */
+export function bilanzAusSpeichertext(text) {
+  const bilanz = { siege: 0, niederlagen: 0, remis: 0 };
+
+  let gespeichert;
+  try {
+    gespeichert = JSON.parse(text);
+  } catch {
+    return bilanz;
+  }
+  if (typeof gespeichert !== 'object' || gespeichert === null) return bilanz;
+
+  for (const name of Object.keys(bilanz)) {
+    const wert = gespeichert[name];
+    if (Number.isSafeInteger(wert) && wert >= 0) bilanz[name] = wert;
+  }
+  return bilanz;
 }
 
 /** Schreibt die Bilanz zurueck – scheitert das, zaehlt sie eben nur bis zum Neuladen. */

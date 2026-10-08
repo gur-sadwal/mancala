@@ -18,7 +18,9 @@ import * as protokoll from '../shared/protokoll.js';
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 
-const { bilanzText, revancheText, ohneWertung, grundText } = await import('../client/js/ende.js');
+const {
+  bilanzText, bilanzAusSpeichertext, revancheText, ohneWertung, grundText,
+} = await import('../client/js/ende.js');
 const { GRUND } = protokoll;
 
 describe('Bilanz dieser Sitzung', () => {
@@ -30,6 +32,31 @@ describe('Bilanz dieser Sitzung', () => {
   test('ohne Namen beginnt der Satz mit „Dein“', () => {
     expect(bilanzText('', { siege: 0, niederlagen: 2, remis: 1 }))
       .toBe('Dein Ergebnis: 0-2 | 1 Remis');
+  });
+});
+
+describe('Bilanz aus dem Speicher lesen', () => {
+  const LEER = { siege: 0, niederlagen: 0, remis: 0 };
+
+  test('übernimmt eine gültige gespeicherte Bilanz', () => {
+    expect(bilanzAusSpeichertext('{"siege":2,"niederlagen":1,"remis":3}'))
+      .toEqual({ siege: 2, niederlagen: 1, remis: 3 });
+  });
+
+  test('nie gespeichert oder kaputter Text ergibt eine leere Bilanz', () => {
+    expect(bilanzAusSpeichertext(null)).toEqual(LEER);
+    expect(bilanzAusSpeichertext('{kaputt')).toEqual(LEER);
+  });
+
+  test('übernimmt nur ganze Zahlen ab 0 – alles andere wird 0', () => {
+    expect(bilanzAusSpeichertext('{"siege":"abc","niederlagen":-2,"remis":1.5}')).toEqual(LEER);
+  });
+
+  test('übernimmt keine fremden Namen und keine Texte oder Listen', () => {
+    expect(bilanzAusSpeichertext('{"siege":1,"boese":"<b>x</b>"}'))
+      .toEqual({ ...LEER, siege: 1 });
+    expect(bilanzAusSpeichertext('"abc"')).toEqual(LEER);
+    expect(bilanzAusSpeichertext('[5,6]')).toEqual(LEER);
   });
 });
 
