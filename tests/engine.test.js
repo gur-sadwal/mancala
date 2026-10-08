@@ -7,15 +7,14 @@
  */
 
 import {
-  neuesBrett,
   pruefeZug,
   fuehreZugAus,
   ergebnisVon,
   moeglicheZuege,
 } from '../server/spiel/engine.js';
 
-import { gesamtSumme, muldenSumme, OBEN, UNTEN } from '../server/spiel/brett.js';
-import { STATUS, FEHLER, GRUND } from '../shared/protokoll.js';
+import { neuesBrett, gesamtSumme, muldenSumme, OBEN, UNTEN } from '../server/spiel/brett.js';
+import { STATUS, FEHLER, GRUND, REMIS } from '../shared/protokoll.js';
 
 // ---------------------------------------------------------------------------
 // Hilfsmittel
@@ -354,7 +353,7 @@ describe('T-16: Endstand 24:24', () => {
     const ergebnis = ergebnisVon(brett);
 
     expect(ergebnis.punkte).toEqual({ unten: 24, oben: 24 });
-    expect(ergebnis.sieger).toBe('remis');
+    expect(ergebnis.sieger).toBe(REMIS);
     expect(ergebnis.grund).toBe(GRUND.REGULAER);
   });
 

@@ -14,7 +14,7 @@
 
 import {
   SITZE,
-  KUGELN_GESAMT,
+  istSitz,
   kopiereBrett,
   lies,
   setze,
@@ -29,14 +29,80 @@ import {
   punkteVon,
   pruefeInvarianten,
   SITZ_NAMEN,
-  istSitz,
 } from './brett.js';
+import { FEHLER, STATUS, GRUND, GRENZEN, REMIS } from '../../shared/protokoll.js';
 
-import { FEHLER, STATUS, GRUND, GRENZEN } from '../../shared/protokoll.js';
+// ---------------------------------------------------------------------------
+// 5.1 / 5.8 Zug ausfuehren
+// ---------------------------------------------------------------------------
 
-// `neuesBrett` gehoert zur oeffentlichen Schnittstelle der Engine (Konzept
-// 5.1), liegt aber sachlich im Brett-Modul. Re-Export statt Zweitimplementierung.
-export { neuesBrett } from './brett.js';
+/**
+ * Fuehrt einen Zug aus. Die einzige Funktion, die den Zustand veraendert.
+ *
+ * Sie arbeitet auf einer KOPIE des Bretts und gibt das Ergebnis zurueck; der
+ * Aufrufer entscheidet, ob er es uebernimmt. Damit kann ein Test einen Zug
+ * probeweise rechnen, ohne den Ausgangszustand zu zerstoeren (Test T-22).
+ *
+ * @returns {{ok: true, partie: object, bericht: object}
+ *          |{ok: false, code: string}}
+ */
+export function fuehreZugAus(partie, sitz, mulde) {
+  const pruefung = pruefeZug(partie, sitz, mulde);
+  if (!pruefung.ok) return pruefung;
+
+  const brettVorher = kopiereBrett(partie.brett);
+  const brett = kopiereBrett(partie.brett);   // auf dieser Kopie wird gerechnet
+
+  const { letzteZelle, pfad } = saee(brett, sitz, pruefung.zelle);
+  const geklaut = klaueKugeln(brett, sitz, letzteZelle);
+
+  // Spielende auch dann pruefen, wenn ein Extrazug vorliegt: Ein Spieler
+  // kann seine Reihe mit genau dem Zug leeren, der ihm einen Extrazug gibt –
+  // dann endet die Partie, statt ihn ins Leere ziehen zu lassen (Test T-13).
+  const beendet = istSpielende(brett);
+  const abrechnung = beendet ? verteileRestkugeln(brett) : null;
+
+  // Landet die letzte Kugel im eigenen Haus, bleibt das Zugrecht beim
+  // Spieler (Regelwerk 3.3) – nach Partieende gibt es keinen Extrazug mehr.
+  const extrazug = !beendet && zelleGleich(letzteZelle, SITZE[sitz].haus);
+
+  // Invarianten (Schicht 4, Konzept 7.7). Kein throw: Der Aufrufer beendet
+  // diese eine Partie kontrolliert (Fall F-11).
+  const invarianten = pruefeInvarianten(brett);
+  if (!invarianten.ok) {
+    return { ok: false, code: FEHLER.INTERNER_FEHLER, verletzungen: invarianten.verletzungen };
+  }
+
+  // Zugbericht fuer die Animation (Konzept 5.8, Entscheidung E-6). Alle Zellen
+  // sind kanonisch; der Client dreht sie selbst mit ausSicht().
+  const bericht = {
+    sitz,
+    mulde,
+    vonZelle: pruefung.zelle,
+    pfad,
+    extrazug,
+    beute: geklaut,
+    abrechnung,
+    brettVorher,
+  };
+  return { ok: true, partie: partieNachZug(partie, brett, sitz, beendet, extrazug), bericht };
+}
+
+/** Die Partie nach dem Zug: neues Brett, Zugrecht, Status und Ergebnis. */
+function partieNachZug(partie, brett, sitz, beendet, extrazug) {
+  // Nach einem Extrazug und am Spielende bleibt das Zugrecht beim Ziehenden.
+  let amZug = SITZE[sitz].gegner;
+  if (beendet || extrazug) amZug = sitz;
+
+  return {
+    ...partie,
+    brett,
+    amZug,
+    zugNr: partie.zugNr + 1,
+    status: beendet ? STATUS.BEENDET : STATUS.LAEUFT,
+    ergebnis: beendet ? ergebnisVon(brett, GRUND.REGULAER) : null,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // 5.2 Zugvalidierung
@@ -60,35 +126,27 @@ export { neuesBrett } from './brett.js';
  * @returns {{ok: true, zelle: number[]} | {ok: false, code: string}}
  */
 export function pruefeZug(partie, sitz, mulde) {
-  // 1. Partie muss laufen. Eine beendete oder abgebrochene Partie nimmt keine
-  //    Zuege mehr an – das faengt auch verspaetete Nachrichten ab (F-03).
+  // 1. Eine beendete oder abgebrochene Partie nimmt keine Zuege mehr an –
+  //    das faengt auch verspaetete Nachrichten ab (F-03).
   if (!partie || partie.status !== STATUS.LAEUFT) {
     return { ok: false, code: FEHLER.PARTIE_NICHT_AKTIV };
   }
 
-  // Ein unbekannter Sitzname kaeme nur durch einen Programmierfehler zustande,
-  // wuerde aber unten zu einem Zugriff auf `undefined` fuehren.
-  if (!istSitz(sitz)) {
+  // 2. Reihenfolge – die Anti-Cheating-Kernpruefung. Ein unbekannter
+  //    Sitzname wuerde unten zu einem Zugriff auf `undefined` fuehren.
+  if (!istSitz(sitz) || partie.amZug !== sitz) {
     return { ok: false, code: FEHLER.NICHT_AM_ZUG };
   }
 
-  // 2. Reihenfolge. Das ist die Anti-Cheating-Kernpruefung: Auch ein
-  //    manipulierter Client kann nicht ausserhalb der Reihe ziehen.
-  if (partie.amZug !== sitz) {
-    return { ok: false, code: FEHLER.NICHT_AM_ZUG };
-  }
-
-  // 3. Bereich. Number.isInteger schliesst "3", 3.5, NaN, null und Infinity
-  //    gemeinsam aus (Konzept 7.8).
+  // 3. Number.isInteger schliesst "3", 3.5, NaN, null und Infinity aus.
   if (!Number.isInteger(mulde) || mulde < GRENZEN.MULDE_MIN || mulde > GRENZEN.MULDE_MAX) {
     return { ok: false, code: FEHLER.MULDE_UNGUELTIG };
   }
 
   const zelle = SITZE[sitz].mulde(mulde);
 
-  // 4. Kann nicht fehlschlagen, solange 3 gilt. Steht trotzdem hier, weil die
-  //    Sitzabbildung SITZE[sitz].mulde die Stelle ist, an der ein spaeterer
-  //    Umbau einen Fehler einschleppen koennte (assert-artige Kontrolle).
+  // 4. Kann nicht fehlschlagen, solange 3 gilt (assert-artige Kontrolle der
+  //    Sitzabbildung SITZE[sitz].mulde).
   if (!istInEigenerReihe(sitz, zelle) || istHaus(zelle)) {
     return { ok: false, code: FEHLER.MULDE_UNGUELTIG };
   }
@@ -129,23 +187,21 @@ export function pruefeZug(partie, sitz, mulde) {
 function saee(brett, sitz, startZelle) {
   const gegnerHaus = SITZE[sitz].gegnerHaus;
 
-  let steine = lies(brett, startZelle);
+  let kugeln = lies(brett, startZelle);
   setze(brett, startZelle, 0);   // Mulde wird vollstaendig geleert
 
   const pfad = [];
   let zelle = startZelle;
 
-  while (steine > 0) {
+  while (kugeln > 0) {
     zelle = naechsteZelle(zelle);
 
     // Das gegnerische Haus wird uebersprungen: Ein Spieler kann niemals
     // Kugeln in das Haus des Gegners befoerdern (Regelwerk 3.2.3).
-    if (zelleGleich(zelle, gegnerHaus)) {
-      continue;
-    }
+    if (zelleGleich(zelle, gegnerHaus)) continue;
 
     erhoehe(brett, zelle);
-    steine -= 1;
+    kugeln -= 1;
     pfad.push(zelle);
   }
 
@@ -166,7 +222,7 @@ function saee(brett, sitz, startZelle) {
  *
  * @returns {{eigeneZelle: number[], gegnerZelle: number[], anzahl: number}|null}
  */
-function pruefeBeute(brett, sitz, letzteZelle) {
+function klaueKugeln(brett, sitz, letzteZelle) {
   // Nur auf der eigenen Seite. Eine letzte Kugel in einer leeren GEGNERISCHEN
   // Mulde bleibt folgenlos (Randfall R-04, Test T-08).
   if (!istInEigenerReihe(sitz, letzteZelle)) return null;
@@ -202,35 +258,33 @@ function pruefeBeute(brett, sitz, letzteZelle) {
 // ---------------------------------------------------------------------------
 
 /**
- * Prueft auf Spielende und rechnet gegebenenfalls die Restkugeln ab.
+ * Ist die Partie vorbei? Veraendert nichts.
  *
  * AUSLEGUNG (Konzept 5.6): Das Regelwerk formuliert die Endebedingung aus
  * Sicht des Spielers, der nicht mehr ziehen kann. Geprueft werden hier BEIDE
  * Reihen nach jedem Zug, denn ein Zug kann auch die eigene Reihe leeren.
- * Beides fuehrt gemaess Regelwerk 3.5 zum sofortigen Ende; die Restkugeln
- * gehen an den Spieler, auf dessen Seite sie liegen. Diese Fassung ist die
- * allgemeinere und deckt beide Faelle mit demselben Code ab.
- *
- * @returns {{unten: number, oben: number}|null} gutgeschriebene Restkugeln,
- *          oder null, wenn die Partie weiterlaeuft
+ * Beides fuehrt gemaess Regelwerk 3.5 zum sofortigen Ende.
  */
-function pruefeEnde(brett) {
-  const leerOben = muldenSumme(brett, SITZE.oben.reihe) === 0;
-  const leerUnten = muldenSumme(brett, SITZE.unten.reihe) === 0;
+function istSpielende(brett) {
+  return SITZ_NAMEN.some((sitz) => muldenSumme(brett, SITZE[sitz].reihe) === 0);
+}
 
-  if (!leerOben && !leerUnten) return null;
-
+/**
+ * Rechnet die Restkugeln ab: Sie gehen an den Spieler, auf dessen Seite sie
+ * liegen. Veraendert das Brett.
+ *
+ * @returns {{unten: number, oben: number}} gutgeschriebene Restkugeln
+ */
+function verteileRestkugeln(brett) {
   const abrechnung = { unten: 0, oben: 0 };
 
   for (const sitz of SITZ_NAMEN) {
     const reihe = SITZE[sitz].reihe;
     const rest = muldenSumme(brett, reihe);
 
-    if (rest > 0) {
-      erhoehe(brett, SITZE[sitz].haus, rest);
-      for (const zelle of muldenZellen(reihe)) {
-        setze(brett, zelle, 0);
-      }
+    erhoehe(brett, SITZE[sitz].haus, rest);
+    for (const zelle of muldenZellen(reihe)) {
+      setze(brett, zelle, 0);
     }
     abrechnung[sitz] = rest;
   }
@@ -257,106 +311,11 @@ export function ergebnisVon(brett, grund = GRUND.REGULAER) {
     oben: punkteVon(brett, 'oben'),
   };
 
-  let sieger;
+  let sieger = REMIS;
   if (punkte.unten > punkte.oben) sieger = 'unten';
-  else if (punkte.oben > punkte.unten) sieger = 'oben';
-  else sieger = 'remis';
+  if (punkte.oben > punkte.unten) sieger = 'oben';
 
   return { punkte, sieger, grund };
-}
-
-// ---------------------------------------------------------------------------
-// 5.1 / 5.8 Zug ausfuehren
-// ---------------------------------------------------------------------------
-
-/**
- * Fuehrt einen Zug aus. Die einzige Funktion, die den Zustand veraendert.
- *
- * Sie arbeitet auf einer KOPIE des Bretts und gibt das Ergebnis zurueck; der
- * Aufrufer entscheidet, ob er es uebernimmt. Damit kann ein Test einen Zug
- * probeweise rechnen, ohne den Ausgangszustand zu zerstoeren (Test T-22).
- *
- * Reihenfolge der Schritte – die Reihenfolge ist regelrelevant:
- *   1. validieren
- *   2. saeen
- *   3. Beute pruefen (nur wenn nicht im Haus gelandet)
- *   4. Extrazug bestimmen
- *   5. Spielende pruefen – AUCH bei Extrazug (Randfall R-06, Test T-13)
- *   6. Zugrecht weitergeben
- *   7. Invarianten pruefen (Schicht 4 der Absturzsicherung)
- *
- * @returns {{ok: true, partie: object, bericht: object}
- *          |{ok: false, code: string}}
- */
-export function fuehreZugAus(partie, sitz, mulde) {
-  // --- 1. Validierung -----------------------------------------------------
-  const pruefung = pruefeZug(partie, sitz, mulde);
-  if (!pruefung.ok) return pruefung;
-
-  const startZelle = pruefung.zelle;
-  const brettVorher = kopiereBrett(partie.brett);
-  const brett = kopiereBrett(partie.brett);   // auf dieser Kopie wird gerechnet
-
-  // --- 2. Saeen -----------------------------------------------------------
-  const { letzteZelle, pfad } = saee(brett, sitz, startZelle);
-
-  // --- 3. Sonderregel 2: Klauen ------------------------------------------
-  const beute = pruefeBeute(brett, sitz, letzteZelle);
-
-  // --- 4. Sonderregel 1: Extrazug ----------------------------------------
-  // Landet die letzte Kugel im eigenen Haus, bleibt das Zugrecht beim
-  // Spieler (Regelwerk 3.3).
-  const extrazug = zelleGleich(letzteZelle, SITZE[sitz].haus);
-
-  // --- 5. Spielende -------------------------------------------------------
-  // Bewusst VOR der Zugrechtvergabe und auch dann, wenn ein Extrazug
-  // vorliegt: Ein Spieler kann seine Reihe mit genau dem Zug leeren, der ihm
-  // einen Extrazug gibt – dann endet die Partie, statt ihn ins Leere ziehen
-  // zu lassen (Konzept 5.4, Test T-13).
-  const abrechnung = pruefeEnde(brett);
-  const beendet = abrechnung !== null;
-
-  // --- 6. Zugrecht --------------------------------------------------------
-  let amZug = partie.amZug;
-  if (!beendet && !extrazug) {
-    amZug = SITZE[sitz].gegner;
-  }
-
-  // --- 7. Invarianten (Schicht 4, Konzept 7.7) ---------------------------
-  const invarianten = pruefeInvarianten(brett);
-  if (!invarianten.ok) {
-    // Kein throw: Der Aufrufer beendet diese eine Partie kontrolliert, statt
-    // den Prozess oder andere Partien mitzureissen (Fall F-11).
-    return {
-      ok: false,
-      code: FEHLER.INTERNER_FEHLER,
-      verletzungen: invarianten.verletzungen,
-    };
-  }
-
-  const neuePartie = {
-    ...partie,
-    brett,
-    amZug,
-    zugNr: partie.zugNr + 1,
-    status: beendet ? STATUS.BEENDET : STATUS.LAEUFT,
-    ergebnis: beendet ? ergebnisVon(brett, GRUND.REGULAER) : null,
-  };
-
-  // Zugbericht fuer die Animation (Konzept 5.8, Entscheidung E-6). Alle Zellen
-  // sind kanonisch; der Client dreht sie selbst mit ausSicht().
-  const bericht = {
-    sitz,
-    mulde,
-    vonZelle: startZelle,
-    pfad,
-    extrazug: beendet ? false : extrazug,  // nach Partieende gibt es keinen Extrazug mehr
-    beute,
-    abrechnung,
-    brettVorher,
-  };
-
-  return { ok: true, partie: neuePartie, bericht };
 }
 
 /**
@@ -372,6 +331,3 @@ export function moeglicheZuege(partie, sitz) {
   }
   return zuege;
 }
-
-/** Gesamtzahl der Kugeln – fuer Tests und Anzeigen re-exportiert. */
-export { KUGELN_GESAMT };
