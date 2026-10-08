@@ -30,6 +30,19 @@ import {
   wenigerBewegung,
 } from './dom.js';
 
+const ANZEIGE_REIHENFOLGE = [
+  [0, 0],
+  [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6],
+  [1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5],
+  [1, 6],
+];
+
+const TAKT_SAAT = 180;
+
+const TAKT_HINWEIS = 640;
+
+const TAKT_ABRECHNUNG = 700;
+
 // ===========================================================================
 // 1. Sicht
 // ===========================================================================
@@ -152,12 +165,7 @@ export function alleZellen() {
  * Diese Reihenfolge ist zugleich die Tabulatorreihenfolge – sie bleibt beim Umschalten zwischen Hoch- und
  * Querformat unveraendert, weil nur das CSS-Raster umschaltet (Konzept 8.9).
  */
-const ANZEIGE_REIHENFOLGE = [
-  [0, 0],
-  [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6],
-  [1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5],
-  [1, 6],
-];
+
 
 /**
  * Baut das Brett in den uebergebenen Container.
@@ -447,13 +455,13 @@ export function hinweisText(bericht, sitz) {
  * css/02-tokens.css, damit jede Kugel zu Ende gefallen ist, bevor die
  * naechste kommt.
  */
-const TAKT_SAAT = 180;
+
 
 /** Wartezeit fuer Beute- und Extrazug-Hervorhebung. */
-const TAKT_HINWEIS = 640;
+
 
 /** Wartezeit fuer die Endabrechnung. */
-const TAKT_ABRECHNUNG = 700;
+
 
 /**
  * @param {object} deps
