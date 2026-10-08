@@ -1195,3 +1195,31 @@ describe('Handler: Erneut – weitere Fälle', () => {
     expect(anna.letzte(EREIGNIS.PRIVAT).daten.code).toBe(code);   // kein neuer Code
   });
 });
+
+describe('Handler: Auflösen trotz zusätzlichem Fehler', () => {
+  test('ein Fehler beim Raumverlassen hält Maps und den anderen Socket nicht fest', () => {
+    const { anna, ben, manager, raeume } = schnellesSpiel();
+    const partie = manager.holeNachSocket('a');
+    const spielId = partie.id;
+    const kaputterSocket = partie.spieler.unten.socketId === anna.id ? anna : ben;
+    const andererSocket = kaputterSocket === anna ? ben : anna;
+    kaputterSocket.leave = () => { throw new Error('Absichtlicher Testfehler'); };
+
+    expect(() => anna.sende(EREIGNIS.AUFGEBEN)).not.toThrow();
+    expect(manager.anzahl()).toBe(0);
+    expect(raeume.get(spielId).has(andererSocket.id)).toBe(false);
+  });
+
+  test('ein getrennter Socket ohne Sitz verursacht keinen falschen Sieg', () => {
+    const { anna, ben, manager } = schnellesSpiel();
+    const partie = manager.holeNachSocket('a');
+    const sitz = anna.letzte(EREIGNIS.START).daten.sitz;
+    partie.spieler[sitz].socketId = 'fremd';
+
+    anna.trenne();
+
+    expect(ben.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.INTERNER_FEHLER);
+    expect(ben.letzte(EREIGNIS.ABBRUCH).daten.ergebnis.sieger).toBeNull();
+    expect(manager.anzahl()).toBe(0);
+  });
+});

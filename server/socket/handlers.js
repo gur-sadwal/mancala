@@ -268,8 +268,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     const partie = manager.holeNachSocket(socket.id);
     if (partie) {
       const sitz = sitzVon(partie, socket.id);
-      const sieger = SITZE[sitz].gegner;
-      beendeKontrolliert(partie, GRUND.GEGNER_WEG, sieger);
+      if (!sitz) {
+        beendeKontrolliert(partie, GRUND.INTERNER_FEHLER);
+        return;
+      }
+      beendeKontrolliert(partie, GRUND.GEGNER_WEG, SITZE[sitz].gegner);
     }
   }
 
@@ -409,7 +412,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
   function loeseAuf(partie) {
     for (const sitz of SITZ_NAMEN) {
-      socketVon(partie.spieler[sitz].socketId)?.leave(partie.id);
+      try {
+        socketVon(partie.spieler[sitz].socketId)?.leave(partie.id);
+      } catch (fehler) {
+        logger.error('Raumverlassen fehlgeschlagen', fehler);
+      }
     }
     manager.entferne(partie.id);
   }

@@ -96,8 +96,9 @@ export function erzeugeManager() {
     const partie = partien.get(spielId);
     if (!partie) return null;
 
-    zuordnung.delete(partie.spieler.unten.socketId);
-    zuordnung.delete(partie.spieler.oben.socketId);
+    for (const [socketId, id] of zuordnung) {
+      if (id === spielId) zuordnung.delete(socketId);
+    }
     partien.delete(spielId);
 
     return partie;
