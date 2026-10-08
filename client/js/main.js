@@ -13,7 +13,7 @@ import { erzeugeWarteAnsicht } from './warten.js';
 import { erzeugeSpielAnsicht } from './spiel.js';
 import { erzeugeEndeAnsicht } from './ende.js';
 import { erzeugeEinstellungen } from './einstellungen.js';
-import { FEHLER, FEHLER_TEXT, STATUS } from '/shared/protokoll.js';
+import { FEHLER, FEHLER_TEXT, STATUS, REMIS } from '/shared/protokoll.js';
 
 // == 1. Einrichtung ======================================================
 const einstellungen = erzeugeEinstellungen();
@@ -133,7 +133,7 @@ async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
   store.setze({
     ansicht: ANSICHT.ENDE,
     spielstand: spielstand ?? store.lies().spielstand,
-    ergebnis: ergebnis ?? { punkte: { unten: 0, oben: 0 }, sieger: 'remis', grund },
+    ergebnis: ergebnis ?? { punkte: { unten: 0, oben: 0 }, sieger: REMIS, grund },
     revanche: revancheStand(revanche),
     revancheSeit,
   });

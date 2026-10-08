@@ -6,7 +6,7 @@
  */
 
 import { $, setzeText, zeige as zeigeElement, restSekunden } from './dom.js';
-import { GRUND, GRENZEN } from '/shared/protokoll.js';
+import { GRUND, GRENZEN, REMIS } from '/shared/protokoll.js';
 
 // == 1. Bilanz ===========================================================
 const SPEICHER_BILANZ = 'mancala.bilanz';
@@ -190,7 +190,7 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
   function zaehleErgebnis(ergebnis, sitz) {
     if (ergebnis === gezaehltesErgebnis || ohneWertung(ergebnis.grund)) return;
     gezaehltesErgebnis = ergebnis;
-    if (ergebnis.sieger === 'remis') bilanz.remis += 1;
+    if (ergebnis.sieger === REMIS) bilanz.remis += 1;
     else if (ergebnis.sieger === sitz) bilanz.siege += 1;
     else bilanz.niederlagen += 1;
     speichereBilanz(bilanz);
@@ -207,7 +207,7 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     if (ohneWertung(ergebnis.grund)) {
       setzeText(titel, 'Partie abgebrochen');
       setzeText(text, `Stand beim Abbruch: ${meine} zu ${seine}.`);
-    } else if (ergebnis.sieger === 'remis') {
+    } else if (ergebnis.sieger === REMIS) {
       setzeText(titel, 'Unentschieden');
       setzeText(text, `${meine} zu ${seine} – ein Remis.`);
     } else if (ergebnis.sieger === sitz) {
