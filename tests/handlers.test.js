@@ -745,6 +745,35 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     expect(ratenbegrenzer.anzahl()).toBe(1);   // nur noch Ben
   });
 
+  test('wirft ein Zug in einer Partie, bekommen beide nur den Abbruch', () => {
+    const { amZug, wartet, io } = schnellesSpiel();
+    io.to = () => {
+      throw new Error('absichtlicher Testfehler');
+    };
+
+    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+
+    for (const spieler of [amZug, wartet]) {
+      expect(spieler.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.INTERNER_FEHLER);
+      expect(spieler.alle(EREIGNIS.FEHLER)).toHaveLength(0);
+    }
+  });
+
+  test('scheitert auch das Beenden, ist die Partie trotzdem aufgelöst', () => {
+    const { anna, amZug, wartet, manager, raeume } = schnellesSpiel();
+    const { spielId } = anna.letzte(EREIGNIS.START).daten;
+    manager.holeNachSocket(amZug.id).brett = null;
+
+    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+
+    expect(imProtokoll('nach Fehler fehlgeschlagen')).toBe(true);
+    expect(manager.anzahl()).toBe(0);
+    expect(raeume.get(spielId).size).toBe(0);
+    // Der nächste Klick des Gegners führt sichtbar zurück zur Anmeldung.
+    wartet.sende(EREIGNIS.AUFGEBEN);
+    expect(wartet.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.KEINE_PARTIE);
+  });
+
   test('ein Fehler beim Verbindungsabbruch wird nur protokolliert', () => {
     const { anna, manager } = schnellesSpiel();
     manager.holeNachSocket('a').brett = null;

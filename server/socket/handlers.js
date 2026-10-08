@@ -256,26 +256,28 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   function beendeKontrolliert(partie, grund, sieger = null, ausserSocketId = null) {
     if (!partie) return;
 
-    // Schon beendet? Dann ist das der zweite Abbruch derselben Partie – etwa
-    // wenn beide Spieler gleichzeitig gehen (Fall F-03). Still verwerfen.
-    if (partie.status === STATUS.BEENDET || partie.status === STATUS.ABGEBROCHEN) {
+    try {
+      // Schon beendet, aber noch nicht aufgeloest – nur nach einem Fehler in
+      // einem frueheren Schritt moeglich. Dann keine zweite Nachricht.
+      if (partie.status !== STATUS.LAEUFT) return;
+
+      const ergebnis = beendeVorzeitig(partie, grund, sieger);
+      const spielstand = spielstandVon(partie);
+      const revanche = ermoeglicheRevanche(partie, grund);
+
+      for (const sitz of ['unten', 'oben']) {
+        const socketId = partie.spieler[sitz].socketId;
+        if (socketId === ausserSocketId) continue;
+
+        socketVon(socketId)?.emit(EREIGNIS.ABBRUCH, { grund, spielstand, ergebnis, revanche });
+      }
+
+      logger.info('Partie beendet', { spielId: partie.id, grund });
+    } finally {
+      // SCHUTZ: Auch wenn oben etwas scheitert, bleibt keine halb beendete
+      // Partie zurueck.
       loeseAuf(partie);
-      return;
     }
-
-    const ergebnis = beendeVorzeitig(partie, grund, sieger);
-    const spielstand = spielstandVon(partie);
-    const revanche = ermoeglicheRevanche(partie, grund);
-
-    for (const sitz of ['unten', 'oben']) {
-      const socketId = partie.spieler[sitz].socketId;
-      if (socketId === ausserSocketId) continue;
-
-      socketVon(socketId)?.emit(EREIGNIS.ABBRUCH, { grund, spielstand, ergebnis, revanche });
-    }
-
-    logger.info('Partie beendet', { spielId: partie.id, grund });
-    loeseAuf(partie);
   }
 
   // -------------------------------------------------------------------------
@@ -597,9 +599,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
         // Die betroffene Partie kontrolliert beenden – aber nur diese.
         try {
+          // In einer Partie genuegt der Abbruch an beide; sonst bekommt nur
+          // der Verursacher eine Fehlermeldung.
           const partie = manager.holeNachSocket(socket.id);
           if (partie) beendeKontrolliert(partie, GRUND.INTERNER_FEHLER);
-          sendeFehler(socket, FEHLER.INTERNER_FEHLER);
+          else sendeFehler(socket, FEHLER.INTERNER_FEHLER);
         } catch (folgefehler) {
           // Selbst das Aufraeumen darf den Prozess nicht mitreissen.
           logger.error('Aufraeumen nach Fehler fehlgeschlagen', folgefehler);
