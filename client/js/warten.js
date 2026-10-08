@@ -1,23 +1,13 @@
 /**
- * Ansicht WARTEN – der Wartebildschirm (Konzept 8.1).
- *
- * Vom Dozenten ausdruecklich gefordert (Regelwerk 4.1, Folie 3): Der Spieler
- * muss sehen, dass gesucht wird, wie lange er schon wartet und wie er
- * abbrechen kann.
- *
- * Beim privaten Spiel steht hier statt der Warteposition der Einladungslink.
+ * warten.js – Warteposition oder privater Einladungslink.
+ * Die Suche und ihre Position kommen vom Server; Abbrechen ist sofort sichtbar.
+ * Inhalt: == 1. Einrichtung · == 2. Aktionen · == 3. Ansicht
+ * Benutzt von main.js; benutzt dom.js.
  */
 
 import { $, zeige, setzeText } from './dom.js';
 
-/**
- * Baut den Wartebildschirm auf.
- *
- * @param {object} deps
- * @param {object} deps.aktionen       Sendefunktionen
- * @param {Function} deps.beiAbbrechen wird nach "Suche abbrechen" gerufen
- * @returns {{zeige: Function, aktualisiere: Function}}
- */
+// == 1. Einrichtung ======================================================
 export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const abschnitt = $('#ansicht-warten');
   const titel = $('#t-warten');
@@ -29,23 +19,15 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const knopfKopieren = $('#knopf-kopieren');
   const kopierStatus = $('#kopier-status');
 
-  /**
-   * Klick auf "Suche abbrechen".
-   *
-   * Der Server schickt darauf keine Antwort – die Ansicht muss also selbst
-   * zurueck zur Anmeldung wechseln. Das erledigt main.js ueber den Rueckruf.
-   */
+  // == 2. Aktionen =========================================================
   function beiAbbrechenKlick() {
     aktionen.abbrechen();
+    // Der Server schickt keine Bestätigung; main.js wechselt selbst zurück.
     beiAbbrechen();
   }
 
-  /**
-   * Klick auf "Link kopieren".
-   *
-   * Der Link wird zuerst markiert: Klappt das Kopieren nicht, kann man ihn
-   * so direkt selbst kopieren.
-   */
+  // Zuerst markieren: Falls die Zwischenablage fehlt, lässt sich der Link
+  // selbst kopieren.
   async function beiKopieren() {
     feldLink.select();
 
@@ -53,13 +35,11 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       await navigator.clipboard.writeText(feldLink.value);
       setzeText(kopierStatus, 'Link kopiert! Schicke ihn jetzt deinem Mitspieler.');
     } catch {
-      // Die Zwischenablage erlauben Browser nur ueber https oder localhost.
-      // Ueber http (z. B. im Hoersaal-Netz) landet man hier.
       setzeText(kopierStatus, 'Kopieren ging nicht. Der Link ist markiert – kopiere ihn mit Cmd+C bzw. Strg+C.');
     }
   }
 
-  /** Listener nur, solange die Ansicht sichtbar ist (Anforderungen 6.3). */
+  // == 3. Ansicht ==========================================================
   function meldeListenerAn() {
     knopfAbbrechen.addEventListener('click', beiAbbrechenKlick);
     knopfKopieren.addEventListener('click', beiKopieren);
@@ -72,9 +52,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
 
   return {
     zeige(sichtbar) {
-      // Nur beim echten Einblenden fokussieren: main.js ruft zeige() bei jeder
-      // Zustandsaenderung auf, und der Fokus soll nicht vom "Link kopieren"-
-      // Knopf weggerissen werden.
+      // Ein Positionsupdate soll den Fokus nicht vom Kopierknopf wegziehen.
       const wirdEingeblendet = sichtbar && abschnitt.hidden;
 
       zeige(abschnitt, sichtbar);
@@ -90,20 +68,14 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       }
     },
 
-    /**
-     * Aktualisiert Name und Warteposition bzw. den Einladungslink.
-     *
-     * Die Position kommt bei jeder Aenderung der Warteschlange neu vom Server
-     * und verhindert den Eindruck eines eingefrorenen Bildschirms
-     * (Konzept 7.4).
-     */
     aktualisiere({ name, position, einladung }) {
       setzeText(nameAnzeige, name || 'Spieler');
 
       zeige(privatBlock, Boolean(einladung));
 
       if (einladung) {
-        // Derselbe Seitenpfad, nur mit dem Code dahinter.
+        // Der eigene Seitenpfad bleibt erhalten; nur der Einladungscode kommt
+        // dazu.
         feldLink.value = `${window.location.origin}${window.location.pathname}?spiel=${einladung}`;
         setzeText(positionAnzeige, 'Dein privates Spiel ist bereit.');
       } else if (typeof position === 'number') {

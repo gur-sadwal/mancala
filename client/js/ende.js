@@ -1,28 +1,17 @@
 /**
- * Ansicht ENDE – der Ergebnisdialog (Konzept 8.1).
- *
- * Umgesetzt als natives <dialog> mit showModal(): Fokusfalle, Esc-Taste und
- * der abdunkelnde Hintergrund kommen damit vom Browser und muessen nicht
- * nachgebaut werden (Konzept 8.8). Esc fuehrt zurueck zur Anmeldung.
+ * ende.js – Ergebnisdialog, lokale Bilanz und Revanche-Anzeige.
+ * Die Wertung kommt vom Server; die Bilanz bleibt im Browser-Tab.
+ * Inhalt: == 1. Bilanz · == 2. Texte · == 3. Dialog und Revanche
+ * Benutzt von main.js; benutzt dom.js und shared/protokoll.js.
  */
 
 import { $, setzeText, zeige as zeigeElement, restSekunden } from './dom.js';
 import { GRUND, GRENZEN } from '/shared/protokoll.js';
 
-/** Schluessel, unter dem die Bilanz dieser Sitzung gemerkt wird. */
+// == 1. Bilanz ===========================================================
 const SPEICHER_BILANZ = 'mancala.bilanz';
 
-/**
- * Liest die Bilanz aus dem sessionStorage.
- *
- * sessionStorage statt localStorage: Die Bilanz gilt fuer diese Sitzung –
- * sie ueberlebt Neuladen, ist aber weg, sobald der Tab geschlossen wird.
- * Die Bilanz ist reine Anzeige; der Server kennt sie nicht und braucht sie
- * nicht.
- *
- * In try/catch aus demselben Grund wie in anmelden.js: Im privaten Modus
- * mancher Browser wirft der Speicherzugriff eine Ausnahme.
- */
+// sessionStorage überlebt Neuladen; fehlender Speicher darf nicht blockieren.
 function leseBilanz() {
   try {
     return bilanzAusSpeichertext(window.sessionStorage.getItem(SPEICHER_BILANZ));
@@ -31,13 +20,8 @@ function leseBilanz() {
   }
 }
 
-/**
- * Macht aus dem gespeicherten Text eine Bilanz (ohne DOM, mit Jest testbar).
- *
- * SCHUTZ: Den Speicher kann jeder in den Entwicklerwerkzeugen ändern. Nur
- * ganze Zahlen ab 0 werden übernommen, alles andere zählt als 0 – sonst
- * stünde z. B. „abc1“ in der Bilanz.
- */
+// SCHUTZ: Gespeicherte Daten sind veränderbar; nur sichere ganze Zahlen ab 0
+// übernehmen.
 export function bilanzAusSpeichertext(text) {
   const bilanz = { siege: 0, niederlagen: 0, remis: 0 };
 
@@ -56,34 +40,22 @@ export function bilanzAusSpeichertext(text) {
   return bilanz;
 }
 
-/** Schreibt die Bilanz zurueck – scheitert das, zaehlt sie eben nur bis zum Neuladen. */
 function speichereBilanz(bilanz) {
   try {
     window.sessionStorage.setItem(SPEICHER_BILANZ, JSON.stringify(bilanz));
   } catch {
-    // Kein Speicher verfuegbar: Die Bilanz bleibt trotzdem im Arbeitsspeicher.
+    // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
   }
 }
 
-/**
- * Z. B. "Gursharan, dein Ergebnis: 3-1 | 0 Remis" – vorne Siege und
- * Niederlagen, hinter dem Strich die Remis.
- */
+// == 2. Texte ============================================================
 export function bilanzText(name, { siege, niederlagen, remis }) {
   const anrede = name === '' ? 'Dein' : `${name}, dein`;
   return `${anrede} Ergebnis: ${siege}-${niederlagen} | ${remis} Remis`;
 }
 
-/** Revanche-Staende, in denen die Frist laeuft und der Zaehler tickt. */
 const OFFENE_STAENDE = ['moeglich', 'gewuenscht', 'angeboten'];
 
-/**
- * Satz unter den Knoepfen, je nach Stand der Revanche. Solange die Frist
- * laeuft, steht die Restzeit dabei.
- *
- * @param {null|string} stand  Revanche-Stand, siehe kern.js
- * @param {number} rest        verbleibende Sekunden
- */
 export function revancheText(stand, rest) {
   switch (stand) {
     case 'moeglich':
@@ -101,26 +73,14 @@ export function revancheText(stand, rest) {
   }
 }
 
-/**
- * Endete die Partie ohne echte Entscheidung?
- *
- * Bei einem internen Fehler, einem Serverneustart oder wenn zu lange kein
- * Zug kam, hat niemand gewonnen oder verloren. Solche Partien zaehlen nicht in der Bilanz und
- * bekommen die Ueberschrift "Partie abgebrochen".
- */
+// Bei Fehler, Neustart oder Ruhefrist hat niemand gewonnen oder verloren.
 export function ohneWertung(grund) {
   return grund === GRUND.INTERNER_FEHLER
     || grund === GRUND.SERVER_ENDE
     || grund === GRUND.ZU_LANGE_KEIN_ZUG;
 }
 
-/**
- * Erklaert in einem Satz, warum die Partie vorbei ist.
- *
- * @param {string} grund
- * @param {boolean} gewonnen  bei einer Aufgabe: Wer gewinnt, hat NICHT
- *                            aufgegeben – so laesst sich sagen, wer es war
- */
+// REGEL 3.5: Das reguläre Ende rechnet die verbliebenen Kugeln ab.
 export function grundText(grund, gewonnen) {
   switch (grund) {
     case GRUND.GEGNER_WEG:
@@ -139,16 +99,7 @@ export function grundText(grund, gewonnen) {
   }
 }
 
-/**
- * Baut den Ergebnisdialog auf.
- *
- * @param {object} deps
- * @param {Function} deps.beiNeuemSpiel wird bei "Neues Spiel suchen" gerufen
- * @param {Function} deps.beiAbmelden wird beim Klick auf "Abmelden" gerufen
- * @param {Function} deps.beiRevanche wird beim Klick auf "Revanche" gerufen
- * @param {Function} deps.beiSchliessen wird gerufen, wenn der Dialog ohne
- *                                      Knopf zugeht (Esc-Taste)
- */
+// == 3. Dialog und Revanche ===============================================
 export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, beiSchliessen }) {
   const dialog = $('#dialog-ende');
   const titel = $('#t-ende');
@@ -162,61 +113,41 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
   const knopfRevanche = $('#knopf-revanche');
   const revancheHinweis = $('#revanche-hinweis');
 
-  /** Letzter Revanche-Stand aus main.js und Beginn seiner Frist (ms). */
   let aktuelleRevanche = null;
   let fristBeginn = 0;
   let fehlermeldung = '';
   let angezeigtesErgebnis = null;
 
-  /** Kennung des Sekundentakts, solange der Zaehler laeuft – sonst null. */
   let zaehler = null;
 
-  /** Bilanz dieser Sitzung: Siege, Niederlagen, Remis. */
   const bilanz = leseBilanz();
 
-  /**
-   * Das zuletzt gezaehlte Ergebnis.
-   *
-   * main.js ruft `zeige()` bei JEDER Zustandsaenderung erneut auf, solange die
-   * Ansicht ENDE gilt – mit demselben Ergebnisobjekt. Ohne diesen Vergleich
-   * wuerde eine Partie mehrfach gezaehlt.
-   */
+  // Wiederholtes Zeichnen desselben Ergebnisses darf die Bilanz nicht erhöhen.
   let gezaehltesErgebnis = null;
 
-  /** Haelt den Zaehler an. Mehrfach aufrufbar, auch wenn keiner laeuft. */
   function stoppeZaehler() {
     clearInterval(zaehler);
     zaehler = null;
   }
 
-  /**
-   * Zeichnet Revanche-Knopf und Hinweissatz – beim Oeffnen, bei jeder
-   * Zustandsaenderung und einmal je Sekunde, solange die Frist laeuft.
-   *
-   * Der Zaehler ist reine ANZEIGE: Steht er auf 0, sperrt er den Knopf und
-   * zeigt "abgelaufen". Verbindlich ist die Frist auf dem Server
-   * (spiel:revanche-abgelaufen); der hat dafuer 2 s Kulanz, damit ein Klick
-   * in der letzten Sekunde noch ankommt.
-   */
+  // Der Zähler ist nur Anzeige; der Server entscheidet, ob die Frist abgelaufen
+  // ist.
   function zeichneRevanche() {
     const rest = restSekunden(fristBeginn, Date.now(), GRENZEN.REVANCHE_SEKUNDEN);
     const offen = OFFENE_STAENDE.includes(aktuelleRevanche);
     const fristLaeuft = offen && rest > 0;
 
-    // Steht der Zaehler auf 0, gilt die Revanche in der Anzeige als abgelaufen.
     const stand = offen && rest === 0 ? 'abgelaufen' : aktuelleRevanche;
 
-    // Knopf nur nach einem echten Spielende. Gesperrt, solange man selbst schon
-    // wartet, der Gegner weg ist oder die Zeit um ist.
     zeigeElement(knopfRevanche, stand !== null);
     knopfRevanche.disabled = stand !== 'moeglich' && stand !== 'angeboten';
     setzeText(knopfRevanche, stand === 'angeboten' ? 'Revanche annehmen' : 'Revanche');
 
+    // Eine Fehlermeldung bleibt auch beim nächsten Sekundentakt sichtbar.
     const hinweis = fehlermeldung || revancheText(stand, rest);
     setzeText(revancheHinweis, hinweis);
     zeigeElement(revancheHinweis, hinweis !== '');
 
-    // Den Sekundentakt nur laufen lassen, solange es etwas zu zaehlen gibt.
     if (!fristLaeuft) {
       stoppeZaehler();
     } else if (zaehler === null) {
@@ -224,33 +155,23 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     }
   }
 
-  /** Schliesst den Dialog. Ein eigener close()-Aufruf meldet kein `cancel`. */
   function schliesse() {
     stoppeZaehler();
     if (dialog.open) dialog.close();
   }
 
-  /** "Neues Spiel suchen": Dialog schliessen und zurueck in die Warteschlange. */
   function beiErneut() {
     schliesse();
     beiNeuemSpiel();
   }
 
-  /** "Abmelden": Dialog schliessen und zurueck zum Startbildschirm. */
   function beiAbmeldenKlick() {
     schliesse();
     beiAbmelden();
   }
 
-  /**
-   * Listener nur, solange der Dialog gezeigt wird (Anforderungen 6.3).
-   *
-   * Esc-Taste: Der Browser meldet erst `cancel` und schliesst danach selbst.
-   * `cancel` kommt nur von Esc, nie von unserem eigenen close() – so braucht
-   * es keinen Zaehler, um beides zu unterscheiden. Ohne diese Behandlung
-   * bliebe die Anzeige im Zustand ENDE haengen: Dialog weg, nur noch das
-   * tote Brett ohne Knoepfe.
-   */
+  // cancel meldet Esc, eigenes close() dagegen nicht; ein Schließzähler ist
+  // unnötig.
   function meldeListenerAn() {
     knopfErneut.addEventListener('click', beiErneut);
     knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
@@ -265,6 +186,7 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     dialog.removeEventListener('cancel', beiSchliessen);
   }
 
+  // Ein Abbruch ohne Wertung verändert auch bei ungleichem Stand keine Bilanz.
   function zaehleErgebnis(ergebnis, sitz) {
     if (ergebnis === gezaehltesErgebnis || ohneWertung(ergebnis.grund)) return;
     gezaehltesErgebnis = ergebnis;
@@ -297,9 +219,12 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     }
   }
 
+  // WCAG: showModal übernimmt die Fokusbegrenzung. Fokus nur beim Öffnen
+  // setzen.
   function oeffneDialog() {
     if (dialog.open) return;
     dialog.showModal();
+
     // Ein Enter nach dem letzten Zug soll keine Revanche auslösen.
     knopfErneut.focus();
   }
@@ -318,12 +243,10 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     oeffneDialog();
   }
 
-
   function verstecke() {
     schliesse();
     meldeListenerAb();
   }
-
 
   function melde(text) {
     fehlermeldung = text;

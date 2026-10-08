@@ -1,17 +1,9 @@
 /**
- * Einstiegspunkt des Clients (Konzept 8.2).
- *
- * Verdrahtet Netz, Anzeigezustand und Ansichten. Dies ist das einzige Modul,
- * das alle anderen kennt – alle uebrigen kennen jeweils nur ihre eigene
- * Aufgabe.
- *
- * Der Datenfluss ist eine Einbahnstrasse:
- *
- *     Socket  ->  Rueckruf  ->  store  ->  Ansicht
- *
- * Ein Klick geht den umgekehrten Weg, veraendert aber NIE direkt das Bild –
- * er schickt nur `spiel:zug`. Erst die Antwort des Servers zeichnet neu.
- * Damit kann die Anzeige nicht von der Serverwahrheit abweichen.
+ * main.js – verbindet Netzwerk, Anzeigezustand und Ansichten.
+ * Nur der Server entscheidet den Spielstand; der Client zeigt ihn an.
+ * Inhalt: == 1. Einrichtung · == 2. Servernachrichten
+ *         == 3. Ansichten und gemeinsame Helfer · == 4. Zeichnen und Start
+ * Benutzt die Ansichten, kern.js, dom.js und shared/protokoll.js.
  */
 
 import { $, zeige } from './dom.js';
@@ -23,58 +15,25 @@ import { erzeugeEndeAnsicht } from './ende.js';
 import { erzeugeEinstellungen } from './einstellungen.js';
 import { FEHLER, FEHLER_TEXT, STATUS } from '/shared/protokoll.js';
 
-/*
- * Einstellungen ZUERST: Sie setzen z. B. die groessere Schrift. Je frueher das
- * passiert, desto kuerzer sieht man die Seite in der falschen Groesse.
- */
+// == 1. Einrichtung ======================================================
 const einstellungen = erzeugeEinstellungen();
 
 const store = erzeugeStore();
 const verbindungshinweis = $('#verbindungshinweis');
 
-/**
- * Haelt die zuletzt gestartete Zug-Animation fest.
- *
- * Der Server sendet bei einem Partieende zwei Nachrichten kurz hintereinander:
- * erst `spiel:stand` (mit dem letzten Zug), dann `spiel:ende`. Ohne dieses
- * Warten wuerde der Ergebnisdialog ueber der noch laufenden Animation
- * aufspringen.
- */
+// Ende-Nachrichten warten auf diese letzte Zuganimation.
 let letzteAnimation = Promise.resolve();
 
-/**
- * Ist die aktuelle Partie auf dem Server schon vorbei?
- *
- * Der Server loescht eine Partie sofort, der Client zeigt das Ergebnis aber
- * erst nach der letzten Animation. Ein Klick in dieser Luecke (etwa auf
- * "Partie aufgeben") wird mit KEINE_PARTIE beantwortet – diese Antwort darf
- * den Weg zum Ergebnisdialog dann nicht mehr abschneiden.
- */
+// Ein später abgelehnter Klick darf das eintreffende Ergebnis nicht verdrängen.
 let partieVorbei = false;
 
-/**
- * Gab es schon einmal eine Verbindung?
- *
- * Socket.io meldet `connect` beim ersten Verbinden UND nach jedem
- * automatischen Wiederverbinden. Nur im zweiten Fall ist etwas verloren.
- */
+// Die erste Verbindung braucht keinen Hinweis auf verlorene Warteplätze.
 let warSchonVerbunden = false;
 
-/** Alte wartende Rückrufe dürfen einen neuen Ablauf nicht überschreiben. */
+// SCHUTZ: Eine neue Nummer macht wartende alte Endabläufe ungültig.
 let ablaufNr = 0;
 
-// ---------------------------------------------------------------------------
-// Netzwerk
-// ---------------------------------------------------------------------------
-
-/*
- * Die Rueckrufe greifen weiter unten auf `spielAnsicht` und `anmeldeAnsicht`
- * zu, die erst NACH diesem Aufruf entstehen. Das ist Absicht und kein
- * Versehen: Die Ansichten brauchen `aktionen`, `aktionen` braucht die
- * Rueckrufe – eine der beiden Seiten muss spaeter kommen. Aufgerufen werden
- * die Rueckrufe ausschliesslich durch eintreffende Socket-Ereignisse, also
- * lange nachdem dieses Modul fertig ausgewertet ist.
- */
+// Socket-Nachrichten treffen erst nach Einrichtung aller Ansichten ein.
 const aktionen = verbinde({
   beiVerbindung,
   beiTrennung,
@@ -90,49 +49,37 @@ const aktionen = verbinde({
   beiFehler,
 });
 
-/**
-   * Verbindung steht – zum ersten Mal oder nach einem Abbruch.
-   *
-   * Nach einem Abbruch hat der Browser eine NEUE Socket-Kennung. Fuer den
-   * Server ist das ein Fremder: Warteplatz und Partie der alten Verbindung
-   * sind weg. Wer gerade wartete oder spielte, muss deshalb neu beitreten,
-   * sonst sitzt er vor einem Bildschirm, der nie mehr weitergeht.
-   */
+// == 2. Servernachrichten =================================================
 function beiVerbindung() {
   const { ansicht } = store.lies();
   const hingAmServer = ansicht !== ANSICHT.ANMELDEN;
 
   zeige(verbindungshinweis, false);
 
+  // Nach Wiederverbindung kennt der Server den neuen Socket noch nicht.
   if (warSchonVerbunden && hingAmServer) {
     zurueckZurAnmeldung();
-    // Erst NACH dem Ansichtswechsel melden: Beim Einblenden leert die
-    // Anmeldeansicht ihre Fehlermeldung.
+
     anmeldeAnsicht.melde('Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
   }
 
   warSchonVerbunden = true;
 }
 
-
 function beiTrennung() {
   zeige(verbindungshinweis, true);
 }
-
 
 function beiWarteschlange({ position }) {
   store.setze({ ansicht: ANSICHT.WARTEN, position, einladung: null });
 }
 
-/** Privates Spiel ist angelegt: Wartebildschirm mit Einladungslink. */
 function beiPrivat({ code }) {
   store.setze({ ansicht: ANSICHT.WARTEN, einladung: code, position: null });
 }
 
-
+// Ein Start verwirft den alten Ablauf und baut das Brett für diesen Sitz.
 function beiStart({ sitz, spielstand }) {
-  // Ein Einladungslink ist jetzt verbraucht. Aus der Adresszeile nehmen,
-  // damit Neuladen nicht versucht, demselben Spiel noch einmal beizutreten.
   entferneEinladungAusAdresse();
   ablaufNr += 1;
   letzteAnimation = Promise.resolve();
@@ -151,23 +98,21 @@ function beiStart({ sitz, spielstand }) {
   spielAnsicht.starte(spielstand, sitz);
 }
 
-
 function beiStand({ spielstand, bericht }) {
   if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
   store.setze({ spielstand });
   letzteAnimation = warteAufAnimation(spielAnsicht.spieleZug(bericht, spielstand));
 }
 
-
+// Die Revanche-Frist beginnt beim Empfang, bevor die Animation fertig ist.
 async function beiEnde({ spielstand, ergebnis, revanche }) {
   const meineNr = ablaufNr;
-  // Die Revanche-Frist zaehlt ab JETZT, nicht erst nach der Animation – so
-  // passt der Zaehler im Dialog zur Frist auf dem Server.
+
   const revancheSeit = Date.now();
   markierePartieVorbei();
 
-  // Erst die Animation des letzten Zuges zu Ende laufen lassen.
   await warteAufAnimation();
+  // SCHUTZ: Während des Wartens kann eine neue Partie begonnen haben.
   if (meineNr !== ablaufNr) return;
   store.setze({
     ansicht: ANSICHT.ENDE,
@@ -178,16 +123,10 @@ async function beiEnde({ spielstand, ergebnis, revanche }) {
   });
 }
 
-/**
-   * Abbruch: Gegner weg, Aufgabe oder interner Fehler (Konzept 6.6).
-   *
-   * Die Partie ist vorbei, der Prozess auf dem Server laeuft weiter – der
-   * Spieler bekommt einen Dialog und kann sofort neu suchen.
-   */
 async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
   const meineNr = ablaufNr;
   markierePartieVorbei();
-  const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
+  const revancheSeit = Date.now();
   await warteAufAnimation();
   if (meineNr !== ablaufNr) return;
 
@@ -200,12 +139,6 @@ async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
   });
 }
 
-/**
-   * Der Gegner moechte eine Revanche.
-   *
-   * Wer selbst schon "Revanche" gedrueckt hat, bleibt bei "gewuenscht": Die
-   * Partie startet dann ohnehin gleich.
-   */
 function beiRevancheAngebot() {
   if (!partieVorbei) return;
   if (store.lies().revanche !== 'gewuenscht') {
@@ -213,32 +146,23 @@ function beiRevancheAngebot() {
   }
 }
 
-/** Revanche geht nicht mehr – der Gegner ist weg oder spielt etwas anderes. */
+// Auch während der Schlussanimation merken, dass der Gegner weg ist.
 function beiRevancheWeg() {
   if (partieVorbei) {
     store.setze({ revanche: 'weg' });
   }
 }
 
-/**
-   * Die Frist fuer die Revanche ist vorbei – das sagt der Server. Der Zaehler
-   * im Dialog ist nur die Anzeige dazu.
-   */
 function beiRevancheAbgelaufen() {
   if (partieVorbei) {
     store.setze({ revanche: 'abgelaufen' });
   }
 }
 
-/**
-   * Fehlermeldungen des Servers (Konzept 6.7).
-   *
-   * Sie gehen ausschliesslich an den Verursacher. Je nach Code wird still
-   * ignoriert, kurz an der Mulde abgelehnt oder im Formular gemeldet.
-   */
+// Ein abgelaufener Warteplatz und eine fehlende Partie brauchen einen Neustart.
 function beiFehler({ code, text }) {
   const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
-  // Ein später Klick darf das bereits eintreffende Ergebnis nicht verdrängen.
+
   if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
 
   if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
@@ -251,17 +175,10 @@ function beiFehler({ code, text }) {
   meldeFehler(meldung, code);
 }
 
-// ---------------------------------------------------------------------------
-// Ansichten
-// ---------------------------------------------------------------------------
-
+// == 3. Ansichten und gemeinsame Helfer ===================================
 const anmeldeAnsicht = erzeugeAnmeldeAnsicht({
   aktionen,
 
-  /**
-   * Den Namen fuer den Wartebildschirm merken – genau so, wie er an den
-   * Server geht (bereinigt). Die verbindliche Fassung fuehrt der Server.
-   */
   beiAnmeldung(name) {
     store.setze({ name });
   },
@@ -270,23 +187,18 @@ const anmeldeAnsicht = erzeugeAnmeldeAnsicht({
 const warteAnsicht = erzeugeWarteAnsicht({
   aktionen,
   beiAbbrechen() {
-    // Der Server antwortet auf das Abbrechen nicht – also selbst zurueck.
     zurueckZurAnmeldung();
   },
 });
 const spielAnsicht = erzeugeSpielAnsicht({ aktionen });
 
-/**
- * Die Partie ist auf dem Server vorbei: Ein später Klick darf nicht mehr zur
- * Anmeldung führen (siehe partieVorbei), und die Spielansicht sperrt
- * „Partie aufgeben“ und schließt eine offene Rückfrage.
- */
 function markierePartieVorbei() {
   partieVorbei = true;
   spielAnsicht.beende();
 }
 
-/** Die Anzeige zurücksetzen; der eingegebene Name bleibt erhalten. */
+// Der Name bleibt erhalten; Partie, Einladung und Revanche werden
+// zurückgesetzt.
 function zurueckZurAnmeldung() {
   ablaufNr += 1;
   partieVorbei = false;
@@ -303,7 +215,7 @@ function zurueckZurAnmeldung() {
   });
 }
 
-/** Jede Ansicht hat einen sichtbaren Platz für eine Fehlermeldung. */
+// Fehler immer in der gerade sichtbaren Ansicht anzeigen.
 function meldeFehler(text, code) {
   switch (store.lies().ansicht) {
     case ANSICHT.SPIEL:
@@ -322,10 +234,7 @@ function meldeFehler(text, code) {
   }
 }
 
-/**
- * Wartet, bis die letzte Zug-Animation fertig ist – scheitert sie, geht es
- * trotzdem weiter. Sonst käme der Ergebnisdialog nach einem Fehler nie.
- */
+// SCHUTZ: Eine abgelehnte Animation darf das Ergebnis nicht verhindern.
 async function warteAufAnimation(animation = letzteAnimation) {
   try {
     await animation;
@@ -334,26 +243,15 @@ async function warteAufAnimation(animation = letzteAnimation) {
   }
 }
 
-/**
- * Revanche-Stand, sobald das Ergebnis da ist.
- *
- * Das Angebot des Gegners kann schneller ankommen als das eigene Ergebnis,
- * weil hier erst die letzte Animation abgewartet wird. Ein schon
- * eingetroffenes Angebot darf deshalb nicht ueberschrieben werden.
- *
- * @param {boolean} moeglich  vom Server: echtes Ende und beide noch verbunden?
- */
+// Frühe Servernachrichten zur Revanche haben Vorrang vor „möglich“.
 function revancheStand(moeglich) {
   if (!moeglich) return null;
   return store.lies().revanche ?? 'moeglich';
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
-  /**
-   * "Neues Spiel suchen": sofort in die Warteansicht, nicht erst, wenn der
-   * Server antwortet. Bliebe die Ansicht so lange ENDE, oeffnete jede
-   * Zustandsaenderung (etwa ein Revanche-Angebot) den Dialog wieder.
-   */
+  // Sofort warten: Ein fremdes Ereignis darf den alten Dialog nicht erneut
+  // öffnen.
   beiNeuemSpiel() {
     ablaufNr += 1;
     partieVorbei = false;
@@ -361,7 +259,6 @@ const endeAnsicht = erzeugeEndeAnsicht({
     aktionen.erneut();
   },
 
-  /** "Revanche": Wunsch an den Server – der Dialog bleibt offen, bis beide wollen. */
   beiRevanche() {
     aktionen.revanche();
     store.setze({ revanche: 'gewuenscht' });
@@ -372,33 +269,14 @@ const endeAnsicht = erzeugeEndeAnsicht({
     zurueckZurAnmeldung();
   },
 
-  /**
-   * Dialog ohne Knopf geschlossen (Esc-Taste).
-   *
-   * Die Partie ist auf dem Server bereits aufgeloest; ohne diesen Rueckruf
-   * bliebe nur das tote Brett stehen. Also zurueck zur Anmeldung – die
-   * Verbindung bleibt dabei bestehen.
-   */
   beiSchliessen() {
-    // Dem Server sagen: Ich warte auf nichts mehr – auch auf keine Revanche.
-    // Sonst wartete der Gegner umsonst.
     aktionen.abbrechen();
 
     zurueckZurAnmeldung();
   },
 });
 
-/**
- * Der einzige Ort, an dem Ansichten ein- und ausgeblendet werden. Jede
- * Ansicht meldet dabei in zeige() ihre eigenen Listener an bzw. ab.
- *
- * Dieser Abonnent selbst gilt fuer die ganze Seite und wird nie abgemeldet:
- * Er ist es ja, der die Ansichten wechselt.
- *
- * Gewechselt wird ueber das `hidden`-Attribut, nicht durch Neuladen
- * (Konzept 8.1). Waehrend des Ergebnisdialogs bleibt das Brett sichtbar –
- * der Dialog liegt darueber.
- */
+// == 4. Zeichnen und Start ================================================
 store.abonniere((zustand) => {
   const { ansicht } = zustand;
 
@@ -427,39 +305,21 @@ store.abonniere((zustand) => {
   }
 });
 
-/**
- * Der eigene Name fuer die Bilanz im Ergebnisdialog.
- *
- * Bevorzugt die Fassung aus dem Spielstand: So, wie der Server den Namen
- * bereinigt hat, steht er auch auf dem Brett. Nur falls der Spielstand fehlt,
- * gilt der eingegebene Name.
- */
+// Für die Bilanz gilt bevorzugt der vom Server bereinigte Name.
 function eigenerName(zustand) {
   const spieler = zustand.spielstand?.spieler[zustand.sitz];
   return spieler ? spieler.name : zustand.name;
 }
 
-/**
- * Entfernt `?spiel=...` aus der Adresszeile, ohne die Seite neu zu laden.
- *
- * `replaceState` statt `pushState`: Der Zurueck-Knopf des Browsers soll nicht
- * wieder beim alten Einladungslink landen.
- */
+// replaceState verhindert eine zusätzliche Station beim Zurück-Knopf.
 function entferneEinladungAusAdresse() {
   window.history.replaceState(null, '', window.location.pathname);
 }
 
-// Startansicht setzen und damit den ersten Zeichendurchlauf ausloesen.
 store.setze({ ansicht: ANSICHT.ANMELDEN });
 
-// Beim ersten Besuch die Einstellungen anbieten – danach nie wieder von selbst.
 einstellungen.zeigeBeimErstenBesuch();
 
-/*
- * Ladehinweis ausblenden – bewusst als LETZTE Zeile der Einrichtung.
- * Ist bis hierhin irgendetwas gescheitert (Skript fehlt, Element fehlt,
- * Socket.io nicht geladen), wird diese Zeile nie erreicht und der Hinweis
- * "Bitte neu laden" bleibt sichtbar. So braucht es fuer Ladefehler keinen
- * eigenen Fehlercode.
- */
+// ACHTUNG: Erst nach erfolgreicher Einrichtung ausblenden. Bei Ladefehlern
+// bleibt er.
 zeige($('#ladehinweis'), false);

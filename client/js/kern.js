@@ -1,41 +1,14 @@
 /**
- * Kern des Clients: Anzeigezustand und Netzverbindung (Konzept 8.2).
- *
- * Beide Bausteine werden je GENAU EINMAL erzeugt, und zwar in main.js.
- * Sie liegen deshalb in einer Datei, sind aber in zwei Abschnitte getrennt –
- * die Grenzen aus Konzept 8.2 gelten weiter: Der Zustand kennt Socket.io
- * nicht, die Netzschicht kennt das DOM nicht.
- *
- * Diese Datei ist NUR im Browser ladbar: `/shared/protokoll.js` und
- * `/socket.io/socket.io.esm.min.js` sind absolute Pfade, die der Server
- * ausliefert und die Node nicht aufloest. Die DOM-Helfer stehen deshalb in
- * dom.js und nicht hier – sonst waere die Brettgeometrie aus spiel.js nicht
- * mehr unter Jest testbar.
+ * kern.js – lokaler Anzeigezustand und die einzige Socket-Verbindung.
+ * Der Store kennt kein DOM; die Netzverbindung kennt keine Ansichten.
+ * Inhalt: == 1. Anzeigezustand · == 2. Netzverbindung
+ * Benutzt von main.js; Protokoll und Socket.io liefert der Server.
  */
 
-// Den Socket.io-Client liefert der Socket.io-Server selbst aus, passend zu
-// seiner eigenen Version. Die ESM-Fassung ist ein normales ES-Modul: kein
-// klassisches <script>, kein globales `io`.
 import { io } from '/socket.io/socket.io.esm.min.js';
 import { EREIGNIS } from '/shared/protokoll.js';
 
-// ===========================================================================
-// 1. Anzeigezustand
-// ===========================================================================
-
-/**
- * Der Datenfluss ist eine Einbahnstrasse: Socket -> store -> Ansicht. Ein
- * Klick geht den umgekehrten Weg, aendert aber NIE direkt den Anzeigezustand –
- * er schickt nur `spiel:zug`. Erst die Antwort des Servers veraendert das
- * Bild.
- *
- * Damit kann die Anzeige gar nicht von der Serverwahrheit abweichen, und die
- * Regel "dem Client nicht trauen" gilt auch innerhalb des Clients.
- *
- * Dieser Abschnitt kennt Socket.io nicht und das DOM nicht.
- */
-
-/** Die vier Ansichten aus dem Zustandsautomaten (Konzept 8.1). */
+// == 1. Anzeigezustand ====================================================
 export const ANSICHT = Object.freeze({
   ANMELDEN: 'ANMELDEN',
   WARTEN: 'WARTEN',
@@ -43,40 +16,28 @@ export const ANSICHT = Object.freeze({
   ENDE: 'ENDE',
 });
 
-/**
- * Erzeugt einen Anzeigezustand mit Abonnenten.
- *
- * Bewusst eine Fabrikfunktion statt eines Moduls mit globalen Variablen: So
- * gibt es keinen versteckten Zustand, der zwischen zwei Partien ueberlebt.
- */
+// Eine Fabrik kapselt Zustand und Abonnenten in einer gemeinsamen Umgebung.
 export function erzeugeStore() {
-  /** @type {object} */
   let zustand = {
     ansicht: ANSICHT.ANMELDEN,
-    name: '',            // eigener Spielername
-    sitz: null,          // 'unten' | 'oben', erst ab Partiestart bekannt
-    spielstand: null,    // letzter vom Server gelieferter Stand
-    position: null,      // Platz in der Warteschlange
-    einladung: null,     // Code des eigenen privaten Spiels, z. B. "K7M2QX"
-    ergebnis: null,      // Endergebnis, sobald die Partie vorbei ist
-    revanche: null,      // nach Partieende: 'moeglich' | 'gewuenscht' | 'angeboten' | 'weg' | 'abgelaufen'
-    revancheSeit: 0,     // Zeitpunkt (ms), ab dem die Revanche-Frist laeuft
+    name: '',
+    sitz: null,
+    spielstand: null,
+    position: null,
+    einladung: null,
+    ergebnis: null,
+    revanche: null,
+    revancheSeit: 0,
   };
 
-  /** @type {Set<Function>} */
   const abonnenten = new Set();
 
-  /** Liefert eine flache Kopie – niemand soll den Zustand direkt veraendern. */
+  // Flache Kopie: Die Felder selbst sollen nicht von außen ersetzt werden.
   function lies() {
     return { ...zustand };
   }
 
-  /**
-   * Uebernimmt Aenderungen und benachrichtigt alle Abonnenten.
-   *
-   * Ein Fehler in einem Abonnenten darf die uebrigen nicht verhindern –
-   * deshalb steht jeder Aufruf in seinem eigenen try/catch.
-   */
+  // Ein gescheiterter Abonnent darf die anderen nicht anhalten.
   function setze(aenderungen) {
     zustand = { ...zustand, ...aenderungen };
 
@@ -89,10 +50,7 @@ export function erzeugeStore() {
     }
   }
 
-  /**
-   * Meldet einen Abonnenten an.
-   * @returns {Function} Abmeldefunktion – wichtig gegen Speicherlecks.
-   */
+  // Die zurückgegebene Funktion meldet genau diesen Abonnenten wieder ab.
   function abonniere(abonnent) {
     abonnenten.add(abonnent);
     return () => abonnenten.delete(abonnent);
@@ -101,46 +59,18 @@ export function erzeugeStore() {
   return { lies, setze, abonniere };
 }
 
-// ===========================================================================
-// 2. Netzverbindung
-// ===========================================================================
-
-/**
- * Socket.io-Client: Ereignisse rein und raus (Konzept 8.2).
- *
- * Dieser Abschnitt kennt das DOM NICHT. Er uebersetzt Socket-Ereignisse in
- * Rueckrufe und stellt die fuenf Aktionen bereit, die der Client ausloesen
- * darf. Damit bleibt die gesamte Netzwerkkenntnis an einer Stelle.
- *
- * `io` kommt per import aus /socket.io/socket.io.esm.min.js (siehe oben).
- */
-
-/**
- * @param {object} rueckrufe  je Ereignis eine Funktion
- * @returns {object} die Aktionen, die der Client senden darf
- */
+// == 2. Netzverbindung ====================================================
 export function verbinde(rueckrufe) {
-  // Ohne Adresse (nur Optionen) verbindet sich Socket.io mit dem Ursprung,
-  // von dem die Seite geladen wurde – genau das ist gewollt.
   const socket = io({
-    // Verbindungsabbrueche selbst ueberbruecken: Bei einem kurzen Netzloch im
-    // Hoersaal-WLAN soll der Client von sich aus wiederkommen (Fall F-02).
     reconnection: true,
     reconnectionDelay: 500,
     reconnectionDelayMax: 4000,
   });
 
-  // Alle socket.on-Listener gelten fuer die ganze Seite und werden nie
-  // abgemeldet: Nachrichten des Servers koennen in jeder Ansicht ankommen,
-  // und es gibt genau eine Verbindung, die so lange lebt wie die Seite.
-
-  // ----- Verbindungszustand -------------------------------------------------
-
+  // Seitenweite Listener: Servernachrichten können in jeder Ansicht eintreffen.
   socket.on('connect', () => rueckrufe.beiVerbindung?.());
   socket.on('disconnect', (grund) => rueckrufe.beiTrennung?.(grund));
   socket.on('connect_error', (fehler) => rueckrufe.beiTrennung?.(fehler.message));
-
-  // ----- Spielereignisse ----------------------------------------------------
 
   socket.on(EREIGNIS.WARTESCHLANGE, (daten) => rueckrufe.beiWarteschlange?.(daten));
   socket.on(EREIGNIS.PRIVAT, (daten) => rueckrufe.beiPrivat?.(daten));
@@ -153,33 +83,19 @@ export function verbinde(rueckrufe) {
   socket.on(EREIGNIS.REVANCHE_WEG, () => rueckrufe.beiRevancheWeg?.());
   socket.on(EREIGNIS.REVANCHE_ABGELAUFEN, () => rueckrufe.beiRevancheAbgelaufen?.());
 
-  // ----- Aktionen -----------------------------------------------------------
-
-  /**
-   * Zuletzt beim Beitreten benutzter Name.
-   *
-   * `spiel:erneut` schickt ihn mit: Nach einem Verbindungsabbruch ist der
-   * Socket auf dem Server ein neuer und kennt den Namen sonst nicht mehr.
-   */
+  // Nach einer neuen Verbindung muss die erneute Suche den Namen mitsenden.
   let letzterName = '';
 
-  /*
-   * Der Client sendet AUSSCHLIESSLICH diese sechs Nachrichten – und bei
-   * einem Zug nur eine Zahl zwischen 0 und 5. Er sendet kein Brett, keine
-   * Punktzahl und keine Spiel-ID: Die Zuordnung Socket zu Partie kennt
-   * allein der Server (Konzept 3.2).
-   */
   return {
-    /**
-     * Beitreten: schnelles Spiel, privates Spiel erstellen oder per Code.
-     * Ein Code gewinnt – wer einen Link hat, will genau diesem Spiel beitreten.
-     */
+    // Ein Einladungscode gewinnt vor der Wahl „schnell“ oder „privat“.
     beitreten(name, { privat = false, code = null } = {}) {
       letzterName = name;
       const nutzdaten = code ? { name, code } : { name, privat };
       socket.emit(EREIGNIS.BEITRETEN, nutzdaten);
     },
     abbrechen: () => socket.emit(EREIGNIS.ABBRECHEN),
+    // SCHUTZ: Nur die Muldennummer senden; Spielstand und Punkte bestimmt der
+    // Server.
     zug: (mulde) => socket.emit(EREIGNIS.ZUG, { mulde }),
     aufgeben: () => socket.emit(EREIGNIS.AUFGEBEN),
     erneut: () => socket.emit(EREIGNIS.ERNEUT, { name: letzterName }),

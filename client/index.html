@@ -2,15 +2,12 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <!--
-    user-scalable=no wird bewusst NICHT gesetzt: Das Sperren des Zooms ist ein
-    bekannter Barrierefreiheitsfehler. Stattdessen sind die Klickziele von
-    vornherein gross genug (Konzept 8.9).
-  -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- WCAG: Zoom bleibt erlaubt; keine Skalierungssperre setzen. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Mancala (Kalaha) – verteiltes 2-Personen-Webspiel nach den BrainKing-Regeln. Studienprojekt von Gursharan S. Sadwal." />
   <meta name="author" content="Gursharan S. Sadwal" />
-  <!-- Nur ein helles Farbschema, auch bei Dunkelmodus des Systems (css/02-tokens.css). -->
+
   <meta name="color-scheme" content="light" />
   <title>Mancala (Kalaha) – Gursharan S. Sadwal</title>
   <link rel="stylesheet" href="css/haupt.css" />
@@ -18,16 +15,20 @@
 </head>
 <body>
   <!--
-    Sprungmarke: erste Station der Tabulatortaste, damit Tastaturnutzende die
-    Kopfzeile ueberspringen koennen (WCAG 2.4.1).
+    index.html – native Formulare, Brettcontainer und Dialoge.
+    Inhalt: == 1. Anmeldung · == 2. Warten · == 3. Spiel
+            == 4. Ergebnis · == 5. Aufgabe · == 6. Einstellungen
+    Benutzt js/main.js; Zustände werden über hidden und dialog angezeigt.
   -->
-  <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
+
+  <!-- WCAG: Die erste Tabstation führt direkt zum Spielbereich. -->
+    <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
 
   <header class="kopf">
     <h1 class="kopf__titel">Mancala</h1>
     <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>
     <p class="kopf__autor">von Gursharan S. Sadwal</p>
-    <!-- Oeffnet #dialog-einstellungen (Klick-Listener in js/einstellungen.js). -->
+
     <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf">
       Einstellungen
     </button>
@@ -35,13 +36,6 @@
 
   <main id="ansichten" class="ansichten">
 
-    <!--
-      Ladehinweis: steht im HTML und wird erst von js/main.js ausgeblendet,
-      wenn wirklich alles geladen ist. Scheitert irgendetwas beim Laden
-      (Skript nicht gefunden, Server nicht erreichbar, JavaScript
-      ausgeschaltet), bleibt dieser Hinweis einfach stehen – dafuer braucht es
-      keinen eigenen Fehlercode.
-    -->
     <div id="ladehinweis" class="ladehinweis">
       <p>Das Spiel wird geladen…</p>
       <p>
@@ -50,15 +44,16 @@
       </p>
     </div>
 
-    <!-- ===================================================================
-         Ansicht 1: ANMELDEN
-         =================================================================== -->
+    <!-- == 1. Anmeldung == -->
     <section id="ansicht-anmelden" class="ansicht" hidden>
       <h2 id="t-anmelden"  tabindex="-1">Spiel beitreten</h2>
 
       <form id="form-anmelden" class="formular" novalidate>
         <div class="feld">
           <label class="feld__beschriftung" for="feld-name">Dein Spielername</label>
+          <!--
+            ACHTUNG: maxlength zählt UTF-16-Einheiten, Emoji brauchen oft zwei.
+          -->
           <input
            id="feld-name"
             class="feld__eingabe"
@@ -74,10 +69,6 @@
           </p>
         </div>
 
-        <!--
-          Spielart als zwei Radiobuttons: Pfeiltasten, Tab und Klick
-          funktionieren damit vom Browser aus, ohne eigenen Code.
-        -->
         <fieldset id="spielart" class="umschalter">
           <legend class="feld__beschriftung">Spielart</legend>
 
@@ -92,14 +83,12 @@
           </label>
         </fieldset>
 
-        <!-- Nur sichtbar, wenn die Seite ueber einen Einladungslink geoeffnet wurde. -->
         <p id="einladung" class="meldung meldung--info" hidden>
           Du wurdest zu einem privaten Spiel eingeladen. Gib deinen Namen ein und tritt bei.
         </p>
 
         <button type="submit" id="knopf-anmelden" class="knopf knopf--haupt">Gegner suchen</button>
 
-        <!-- Fehlermeldungen des Formulars -->
         <p id="anmelden-fehler" class="meldung meldung--fehler" hidden></p>
       </form>
 
@@ -124,14 +113,10 @@
       </details>
     </section>
 
-    <!-- ===================================================================
-         Ansicht 2: WARTEN (Wartebildschirm – vom Dozenten ausdruecklich
-         gefordert, Regelwerk 4.1 Folie 3)
-         =================================================================== -->
+    <!-- == 2. Warten == -->
     <section id="ansicht-warten" class="ansicht" hidden>
       <h2 id="t-warten"  tabindex="-1">Warte auf Gegenspieler…</h2>
 
-      <!-- Der Ladeindikator ist rein dekorativ; die Information steckt im Text daneben. -->
       <div class="lader">
         <span class="lader__kugel"></span>
         <span class="lader__kugel"></span>
@@ -144,7 +129,6 @@
         <span id="warten-position"></span>
       </p>
 
-      <!-- Nur beim privaten Spiel: der Link zum Weitergeben. -->
       <div id="warten-privat" class="einladungslink" hidden>
         <label class="feld__beschriftung" for="feld-link">
           Schicke diesen Link an deinen Mitspieler:
@@ -166,12 +150,9 @@
       </button>
     </section>
 
-    <!-- ===================================================================
-         Ansicht 3: SPIEL
-         =================================================================== -->
+    <!-- == 3. Spiel == -->
     <section id="ansicht-spiel" class="ansicht ansicht--spiel" hidden>
 
-      <!-- Punktestaende und Zuganzeige -->
       <div class="stand">
         <p class="stand__spieler" id="stand-gegner">
           <span class="stand__name" id="name-gegner">Gegner</span>
@@ -184,22 +165,14 @@
         </p>
       </div>
 
-      <!-- Wer ist am Zug? Dazu kurze Hinweise auf Extrazug und Klauen. -->
       <p id="zuganzeige" class="zuganzeige">Die Partie beginnt…</p>
 
       <!--
-        Das Brett ist eine geordnete Liste, weil es TATSAECHLICH eine
-        Reihenfolge ist: die Laufrichtung der Kugeln. Die 14 Zellen werden
-        einmalig von js/spiel.js erzeugt und danach nur noch
-        aktualisiert – kein innerHTML, kein Neuaufbau (Konzept 8.3).
+        spiel.js baut und aktualisiert die Zellen; der Server liefert den
+        Spielstand.
       -->
-      <ol id="brett" class="brett"></ol>
+    <ol id="brett" class="brett"></ol>
 
-      <!--
-        Tastaturhilfe: Die Nummern 1 bis 6 stehen zusaetzlich auf den eigenen
-        Mulden. Beides ist immer sichtbar – nur auf Handys blendet
-        css/07-zustaende.css es aus.
-      -->
       <p class="tastaturhinweis">
         Tastatur: <kbd>1</kbd> bis <kbd>6</kbd> spielt die Mulde mit dieser Nummer ·
         <kbd>Tab</kbd> springt zur nächsten Mulde ·
@@ -207,7 +180,7 @@
       </p>
 
       <div class="spiel__aktionen">
-        <!-- Oeffnet die Rueckfrage #dialog-aufgeben (Klick-Listener in js/spiel.js). -->
+
         <button type="button" id="knopf-aufgeben" class="knopf knopf--still">
           Partie aufgeben
         </button>
@@ -216,11 +189,8 @@
 
   </main>
 
-  <!-- =====================================================================
-       Ansicht 4: ENDE – als <dialog>, damit Fokusfalle und Esc vom Browser
-       kommen und nicht nachgebaut werden muessen (Konzept 8.8).
-       ===================================================================== -->
-  <dialog id="dialog-ende" class="dialog">
+  <!-- == 4. Ergebnis == -->
+    <dialog id="dialog-ende" class="dialog">
     <h2 id="t-ende" class="dialog__titel">Partie beendet</h2>
 
     <p id="ende-grund" class="dialog__grund"></p>
@@ -233,11 +203,8 @@
 
     <p id="ende-text" class="dialog__text"></p>
 
-    <!-- Bilanz dieser Sitzung ("Siege-Niederlagen | Remis"), gezaehlt von js/ende.js -->
     <p id="ende-bilanz" class="dialog__bilanz"></p>
 
-    <!-- Revanche: nach jedem echten Spielende, 15 Sekunden lang (js/ende.js).
-         Der Satz darunter zeigt die Restzeit. -->
     <p id="revanche-hinweis" class="dialog__hinweis" hidden></p>
 
     <div class="dialog__aktionen">
@@ -253,14 +220,8 @@
     </div>
   </dialog>
 
-  <!-- =====================================================================
-       Rueckfrage "Partie aufgeben?" – ein <dialog> statt window.confirm():
-       confirm() haelt das gesamte JavaScript an, auch Socket.io (js/spiel.js).
-       method="dialog": Jeder Knopf schliesst den Dialog, sein value landet in
-       dialog.returnValue. "Weiterspielen" steht zuerst und hat autofocus,
-       damit ein schnelles Enter nicht aus Versehen aufgibt.
-       ===================================================================== -->
-  <dialog id="dialog-aufgeben" class="dialog">
+  <!-- == 5. Aufgabe == -->
+    <dialog id="dialog-aufgeben" class="dialog">
     <form class="formular" method="dialog">
       <h2 class="dialog__titel">Partie aufgeben?</h2>
 
@@ -279,13 +240,8 @@
     </form>
   </dialog>
 
-  <!-- =====================================================================
-       Einstellungen – beim ersten Besuch automatisch, spaeter ueber den Knopf
-       in der Kopfzeile (js/einstellungen.js).
-       method="dialog": "Übernehmen" schliesst den Dialog ohne eigenes
-       JavaScript; gespeichert wird beim Schliessen.
-       ===================================================================== -->
-  <dialog id="dialog-einstellungen" class="dialog">
+  <!-- == 6. Einstellungen == -->
+    <dialog id="dialog-einstellungen" class="dialog">
     <form id="form-einstellungen" class="formular" method="dialog">
       <h2 class="dialog__titel">Einstellungen</h2>
 
@@ -314,16 +270,13 @@
     </form>
   </dialog>
 
-  <!-- Verbindungshinweis: erscheint, wenn die WebSocket-Verbindung wegbricht. -->
   <p id="verbindungshinweis" class="verbindungshinweis" hidden>
     Keine Verbindung zum Server. Es wird automatisch erneut versucht…
   </p>
 
   <!--
-    Einziger Einstiegspunkt: ein ES-Modul. Auch Socket.io wird als Modul
-    importiert (js/kern.js) – es gibt kein klassisches Skript und kein
-    globales `io` mehr.
+    main.js blendet den Ladehinweis erst nach erfolgreicher Einrichtung aus.
   -->
-  <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

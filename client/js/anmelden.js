@@ -1,31 +1,16 @@
 /**
- * Ansicht ANMELDEN (Konzept 8.1).
- *
- * Zeigt das Namensformular und schickt `spiel:beitreten`. Sie kennt die
- * Spielregeln nicht – nur ein Textfeld, die Wahl der Spielart und einen Knopf.
- *
- * Spielart:
- *   schnell   oeffentliche Warteschlange
- *   privat    eigenes Spiel erstellen, Link an einen Freund schicken
- *   Einladung Seite wurde ueber einen Link (?spiel=K7M2QX) geoeffnet – dann
- *             gibt es nichts zu waehlen, man tritt genau diesem Spiel bei
+ * anmelden.js – Namensformular und Auswahl der Spielart.
+ * Der Client prüft für direkte Rückmeldung; verbindlich prüft der Server.
+ * Inhalt: == 1. Einrichtung · == 2. Formularaktionen · == 3. Ansicht
+ * Benutzt von main.js; benutzt dom.js und shared/protokoll.js.
  */
 
 import { $, zeige, setzeText } from './dom.js';
 import { bereinigeName, NAME_VERBOTEN } from '/shared/protokoll.js';
 
-/** Schluessel, unter dem der zuletzt benutzte Name gemerkt wird. */
+// == 1. Einrichtung ======================================================
 const SPEICHER_NAME = 'mancala.name';
 
-/**
- * Baut die Anmeldeansicht auf.
- *
- * @param {object} deps
- * @param {object} deps.aktionen        die Sendefunktionen aus kern.js
- * @param {Function} deps.beiAnmeldung  bekommt den bereinigten Namen, kurz
- *                                      bevor er an den Server geht
- * @returns {{zeige: Function, melde: Function}}
- */
 export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const abschnitt = $('#ansicht-anmelden');
   const formular = $('#form-anmelden');
@@ -36,37 +21,27 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const einladungHinweis = $('#einladung');
   const knopf = $('#knopf-anmelden');
 
-  /** Code aus dem Einladungslink – oder null, wenn es keinen gibt. */
   let einladung = null;
 
-  /**
-   * Namen aus dem letzten Besuch vorausfuellen.
-   *
-   * In try/catch, weil der Zugriff auf localStorage im privaten Modus
-   * mancher Browser eine Ausnahme wirft – eine Bequemlichkeit darf die
-   * Anmeldung nicht verhindern.
-   */
+  // Speicher ist optional: Ein gesperrter Browser-Speicher darf nicht
+  // blockieren.
   try {
     const gemerkt = window.localStorage.getItem(SPEICHER_NAME);
     if (gemerkt) feldName.value = gemerkt;
   } catch {
-    // Kein Speicher verfuegbar: Das Feld bleibt leer, sonst aendert sich nichts.
+    // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
   }
 
-  /** Zeigt eine Fehlermeldung an oder blendet sie aus (leerer Text). */
+  // == 2. Formularaktionen =================================================
   function zeigeFehler(text) {
     setzeText(fehler, text);
     zeige(fehler, Boolean(text));
   }
 
-  /** Ist im Umschalter "Privates Spiel" gewaehlt? */
   function istPrivatGewaehlt() {
-    // `elements.spielart` fasst beide Radiobuttons zusammen; `value` ist der
-    // Wert des angekreuzten.
     return formular.elements.spielart.value === 'privat';
   }
 
-  /** Knopftext passend zur Auswahl – man soll vorher wissen, was passiert. */
   function aktualisiereKnopf() {
     if (einladung) {
       setzeText(knopf, 'Spiel beitreten');
@@ -77,12 +52,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     }
   }
 
-  /**
-   * Liest den Einladungscode aus der Adresse und passt das Formular an.
-   *
-   * Wird bei jedem Anzeigen neu gelesen, weil main.js den Code nach dem
-   * Partiestart (oder bei einem ungueltigen Link) aus der Adresse entfernt.
-   */
+  // Beim Anzeigen neu lesen: main.js entfernt verbrauchte oder ungültige Links.
   function aktualisiereEinladung() {
     einladung = new URLSearchParams(window.location.search).get('spiel') || null;
 
@@ -91,22 +61,11 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     aktualisiereKnopf();
   }
 
-  /**
-   * Absenden des Formulars.
-   *
-   * `preventDefault`, weil das Formular nichts an eine URL schickt, sondern
-   * ein Socket-Ereignis ausloest.
-   */
+  // SCHUTZ: Die gemeinsame Namensregel vermeidet abweichende Vorprüfungen.
   function beiAbsenden(ereignis) {
     ereignis.preventDefault();
 
-    // ERSTE Pruefung des Namens, hier im Browser – mit derselben Regel wie
-    // auf dem Server (bereinigeName aus shared/protokoll.js). Sie ist reine
-    // Bequemlichkeit: Man erfaehrt sofort, was nicht geht. Verbindlich prueft
-    // danach der Server noch einmal (server/socket/validation.js).
-
-    // < und > werden nicht still entfernt, sondern gemeldet: Wer sie tippt,
-    // soll wissen, warum sein Name anders aussieht.
+    // Verbotene Zeichen erklären, statt den Namen unbemerkt zu verändern.
     const verboten = [...feldName.value].some((zeichen) => NAME_VERBOTEN.includes(zeichen));
     if (verboten) {
       zeigeFehler('Die Zeichen < und > sind im Namen nicht erlaubt.');
@@ -122,25 +81,21 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
       return;
     }
 
-    // Das Feld zeigt jetzt genau den Namen, der beim Server ankommt.
     feldName.value = name;
     zeigeFehler('');
 
     try {
       window.localStorage.setItem(SPEICHER_NAME, name);
     } catch {
-      // Siehe oben: Speichern ist optional.
+      // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
     }
 
+    // Nur dieser Absende-Listener reicht den fertig bereinigten Namen weiter.
     beiAnmeldung(name);
     aktionen.beitreten(name, { privat: istPrivatGewaehlt(), code: einladung });
   }
 
-  /**
-   * Listener nur, solange die Ansicht sichtbar ist (Anforderungen 6.3).
-   * Doppeltes Anmelden derselben Funktion ist wirkungslos – zeige() darf
-   * deshalb bei jeder Zustandsaenderung erneut anmelden.
-   */
+  // == 3. Ansicht ==========================================================
   function meldeListenerAn() {
     formular.addEventListener('submit', beiAbsenden);
     formular.addEventListener('change', aktualisiereKnopf);
@@ -151,11 +106,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     formular.removeEventListener('change', aktualisiereKnopf);
   }
 
+  // Listener nur während der sichtbaren Ansicht; gleiche Referenz verhindert
+  // Doppelung.
   return {
     zeige(sichtbar) {
-      // main.js ruft zeige() bei JEDER Zustandsaenderung auf. Fokus und
-      // Fehlermeldung deshalb nur beim echten Einblenden anfassen – sonst
-      // wuerde z. B. ein Verbindungswechsel eine Meldung wieder loeschen.
+      // Fokus und Fehlertext nur beim echten Wechsel anfassen, nicht bei jedem
+      // Store-Update.
       const wirdEingeblendet = sichtbar && abschnitt.hidden;
 
       zeige(abschnitt, sichtbar);
@@ -168,14 +124,11 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
       aktualisiereEinladung();
 
       if (wirdEingeblendet) {
-        // Fokus auf die Ueberschrift, damit der Wechsel bemerkt wird; von dort
-        // geht es per Tabulator ins Feld.
         titel.focus();
         zeigeFehler('');
       }
     },
 
-    /** Meldet einen Fehler des Servers im Formular. */
     melde(text) {
       zeigeFehler(text);
     },
