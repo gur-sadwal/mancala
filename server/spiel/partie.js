@@ -71,7 +71,8 @@ export function beendeVorzeitig(partie, grund, sieger = null) {
   return partie.ergebnis;
 }
 
-// Nur gültige Züge verlängern die Frist; der Handler ruft diese Funktion auf.
+// In laufenden Partien verlängern nur gültige Züge die Frist.
+// Beim vorzeitigen Ende wird ebenfalls der letzte Zeitpunkt vermerkt.
 export function beruehre(partie) {
   partie.letzteAktivitaet = Date.now();
 }

@@ -34,7 +34,7 @@ export function erzeugeManager() {
   };
 
   // == 2. Partie starten =================================================
-  // REGEL 3.1: Unten beginnt. Zufällige Sitze verteilen diesen Startvorteil.
+  // Implementationsentscheidung: Unten beginnt. Die Sitze werden ausgelost.
   function starte(a, b) {
     const [unten, oben] = Math.random() < 0.5 ? [a, b] : [b, a];
 
