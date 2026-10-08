@@ -25,16 +25,10 @@ jede geänderte Zeile selbst erklären können. README.md beschreibt Regeln und 
 - Keine fremden Änderungen überschreiben. Eigene Agents in getrennten Worktrees
   mit klar zugewiesenen Dateien koordinieren.
 
-## Im vollständigen Mancala-Arbeitsordner
+## Regelquelle und Prüfung
 
-Dort gelten zusätzlich ../AGENTS.md und ../ANFORDERUNGEN_UND_REGELWERK.md
-(die verbindliche Regelquelle). Vor Fortsetzung des großen Reviews lesen:
-../.codex/plans/code-review-2026-10.md, ../.codex/fortschritt.md und
-../.codex/konventionen.md. Alle Phasen 0–10 gehören zum Auftrag.
-Projektwissen liegt unter ../.codex/memory/, Browserwerkzeuge unter ../Browsertests/.
-Nach jeder Session passendes Lern-PDF pflegen. ../TODOs/TODO.md enthält private
-Zugangsdaten im Vorspann: niemals vollständig öffnen oder veröffentlichen.
-
-Der Nutzer hat den gesamten Plan einschließlich paralleler Agents, Fixes, tiefem
-Umbau, Commits und abschließendem Push/Deployment nach grüner Prüfung freigegeben.
-Neue Funktionen außerhalb des Plans vorher abstimmen.
+Die Spielregeln stehen vollständig in README.md, Abschnitt3.1–3.5.
+Regeländerungen sind keine Refaktorierung; bei Unklarheiten mit dem Auftraggeber
+abstimmen. Vor Änderungen den Git-Status prüfen und fremde Arbeit erhalten.
+Nach funktionalen Änderungen alle Tests ausführen; Fehlerbehebung und Kommentare
+in getrennten, nachvollziehbaren Commits festhalten.
