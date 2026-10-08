@@ -781,6 +781,14 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   knopfAufgeben.addEventListener('click', beiAufgeben);
   dialogAufgeben.addEventListener('close', beiAufgebenGeschlossen);
 
+  /** Zeigt den Hinweis zu Extrazug oder Klauen – ohne Sonderregel nichts. */
+  function zeigeSonderregel(bericht) {
+    const hinweis = hinweisText(bericht, sitz);
+    if (hinweis === '') return;
+    setzeText(elemente.zuganzeige, hinweis);
+    schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
+  }
+
   return {
     zeige(sichtbar) {
       zeige(abschnitt, sichtbar);
@@ -834,18 +842,15 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     async spieleZug(bericht, spielstand) {
       if (!zellen || !sitz || !animator) return;
 
-      zeichneStand(elemente, spielstand, sitz);
+      // Punktestand und „am Zug“ werden erst NACH der Animation gezeichnet –
+      // sonst stünde oben schon der Endstand, während die Kugeln noch fallen.
 
       // Nach dem letzten Zug gibt es nichts mehr aufzugeben. Sonst liefe ein
       // Klick waehrend der Schlussanimation ins Leere (KEINE_PARTIE).
       knopfAufgeben.disabled = spielstand.status !== 'LAEUFT';
 
-      // Sichtbarer Hinweis fuer die beiden Sonderregeln (FA-13).
-      const hinweis = hinweisText(bericht, sitz);
-      if (hinweis !== '') {
-        setzeText(elemente.zuganzeige, hinweis);
-        schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
-      }
+      // Der Hinweis zur Sonderregel erscheint dagegen sofort.
+      zeigeSonderregel(bericht);
 
       const zuEnde = await animator.spiele(bericht, spielstand);
 
@@ -855,6 +860,10 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
       // Nach der Animation gilt wieder der normale Text.
       zeichneStand(elemente, spielstand, sitz);
+
+      // Ohne Animation wäre der Hinweis sofort wieder überschrieben und nie zu
+      // sehen. Er bleibt dann bis zum nächsten Zug stehen.
+      if (wenigerBewegung()) zeigeSonderregel(bericht);
       wartetAufAntwort = false;
       stelleFokusWiederHer(spielstand.amZug === sitz);
     },
