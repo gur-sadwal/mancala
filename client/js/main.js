@@ -60,6 +60,9 @@ let partieVorbei = false;
  */
 let warSchonVerbunden = false;
 
+/** Alte wartende Rückrufe dürfen einen neuen Ablauf nicht überschreiben. */
+let ablaufNr = 0;
+
 // ---------------------------------------------------------------------------
 // Netzwerk
 // ---------------------------------------------------------------------------
@@ -116,6 +119,8 @@ const aktionen = verbinde({
     // Ein Einladungslink ist jetzt verbraucht. Aus der Adresszeile nehmen,
     // damit Neuladen nicht versucht, demselben Spiel noch einmal beizutreten.
     entferneEinladungAusAdresse();
+    ablaufNr += 1;
+    letzteAnimation = Promise.resolve();
     partieVorbei = false;
 
     store.setze({
@@ -135,10 +140,11 @@ const aktionen = verbinde({
   beiStand({ spielstand, bericht }) {
     if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
     store.setze({ spielstand });
-    letzteAnimation = spielAnsicht.spieleZug(bericht, spielstand);
+    letzteAnimation = warteAufAnimation(spielAnsicht.spieleZug(bericht, spielstand));
   },
 
   async beiEnde({ spielstand, ergebnis, revanche }) {
+    const meineNr = ablaufNr;
     // Die Revanche-Frist zaehlt ab JETZT, nicht erst nach der Animation – so
     // passt der Zaehler im Dialog zur Frist auf dem Server.
     const revancheSeit = Date.now();
@@ -146,6 +152,7 @@ const aktionen = verbinde({
 
     // Erst die Animation des letzten Zuges zu Ende laufen lassen.
     await warteAufAnimation();
+    if (meineNr !== ablaufNr) return;
     store.setze({
       ansicht: ANSICHT.ENDE,
       spielstand,
@@ -162,9 +169,11 @@ const aktionen = verbinde({
    * Spieler bekommt einen Dialog und kann sofort neu suchen.
    */
   async beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
+    const meineNr = ablaufNr;
     markierePartieVorbei();
     const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
     await warteAufAnimation();
+    if (meineNr !== ablaufNr) return;
 
     store.setze({
       ansicht: ANSICHT.ENDE,
@@ -182,6 +191,7 @@ const aktionen = verbinde({
    * Partie startet dann ohnehin gleich.
    */
   beiRevancheAngebot() {
+    if (!partieVorbei) return;
     if (store.lies().revanche !== 'gewuenscht') {
       store.setze({ revanche: 'angeboten' });
     }
@@ -189,7 +199,7 @@ const aktionen = verbinde({
 
   /** Revanche geht nicht mehr – der Gegner ist weg oder spielt etwas anderes. */
   beiRevancheWeg() {
-    if (store.lies().revanche !== null) {
+    if (partieVorbei) {
       store.setze({ revanche: 'weg' });
     }
   },
@@ -199,7 +209,7 @@ const aktionen = verbinde({
    * im Dialog ist nur die Anzeige dazu.
    */
   beiRevancheAbgelaufen() {
-    if (store.lies().revanche !== null) {
+    if (partieVorbei) {
       store.setze({ revanche: 'abgelaufen' });
     }
   },
@@ -288,6 +298,7 @@ function markierePartieVorbei() {
 
 /** Die Anzeige zurücksetzen; der eingegebene Name bleibt erhalten. */
 function zurueckZurAnmeldung() {
+  ablaufNr += 1;
   partieVorbei = false;
   letzteAnimation = Promise.resolve();
   store.setze({
@@ -306,9 +317,9 @@ function zurueckZurAnmeldung() {
  * Wartet, bis die letzte Zug-Animation fertig ist – scheitert sie, geht es
  * trotzdem weiter. Sonst käme der Ergebnisdialog nach einem Fehler nie.
  */
-async function warteAufAnimation() {
+async function warteAufAnimation(animation = letzteAnimation) {
   try {
-    await letzteAnimation;
+    await animation;
   } catch (fehler) {
     console.error('Zug-Animation gescheitert – zeige trotzdem das Ergebnis.', fehler);
   }
@@ -325,7 +336,7 @@ async function warteAufAnimation() {
  */
 function revancheStand(moeglich) {
   if (!moeglich) return null;
-  return store.lies().revanche === 'angeboten' ? 'angeboten' : 'moeglich';
+  return store.lies().revanche ?? 'moeglich';
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
@@ -335,8 +346,10 @@ const endeAnsicht = erzeugeEndeAnsicht({
    * Zustandsaenderung (etwa ein Revanche-Angebot) den Dialog wieder.
    */
   beiNeuemSpiel() {
-    aktionen.erneut();
+    ablaufNr += 1;
+    partieVorbei = false;
     store.setze({ ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null });
+    aktionen.erneut();
   },
 
   /** "Revanche": Wunsch an den Server – der Dialog bleibt offen, bis beide wollen. */

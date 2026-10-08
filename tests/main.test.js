@@ -104,3 +104,44 @@ describe('Zurück zur Anmeldung', () => {
     expect(elemente['#verbindungshinweis'].hidden).toBe(true);
   });
 });
+
+describe('Nachrichten während der Schlussanimation', () => {
+  function halteAnimationAn() {
+    let fertig;
+    ansichten.spiel.spieleZug.mockReturnValue(new Promise((resolve) => { fertig = resolve; }));
+    sende(protokoll.EREIGNIS.STAND, { spielstand: spielstand(protokoll.STATUS.BEENDET), bericht: {} });
+    return fertig;
+  }
+
+  test.each([protokoll.EREIGNIS.ENDE, protokoll.EREIGNIS.ABBRUCH])(
+    'ein altes %s öffnet nach Wiederverbindung keinen Dialog', async (ereignis) => {
+      starte();
+      const fertig = halteAnimationAn();
+      const ende = sende(ereignis, { spielstand: spielstand(), ergebnis: {}, revanche: true });
+      sende('disconnect', 'transport close');
+      sende('connect');
+      fertig();
+      await ende;
+
+      expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+      expect(ansichten.ende.zeige).not.toHaveBeenCalled();
+      expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+        'Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
+    },
+  );
+
+  test.each([
+    [protokoll.EREIGNIS.REVANCHE_WEG, 'weg'],
+    [protokoll.EREIGNIS.REVANCHE_ABGELAUFEN, 'abgelaufen'],
+    [protokoll.EREIGNIS.REVANCHE_ANGEBOT, 'angeboten'],
+  ])('bewahrt %s bis zum Ergebnis', async (ereignis, stand) => {
+    starte();
+    const fertig = halteAnimationAn();
+    const ende = beende();
+    sende(ereignis);
+    fertig();
+    await ende;
+
+    expect(ansichten.ende.zeige.mock.lastCall[0].revanche).toBe(stand);
+  });
+});
