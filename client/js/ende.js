@@ -82,12 +82,14 @@ export function revancheText(stand, rest) {
 /**
  * Endete die Partie ohne echte Entscheidung?
  *
- * Bei einem internen Fehler oder einem Serverneustart hat niemand
- * gewonnen oder verloren. Solche Partien zaehlen nicht in der Bilanz und
+ * Bei einem internen Fehler, einem Serverneustart oder wenn zu lange kein
+ * Zug kam, hat niemand gewonnen oder verloren. Solche Partien zaehlen nicht in der Bilanz und
  * bekommen die Ueberschrift "Partie abgebrochen".
  */
 export function ohneWertung(grund) {
-  return grund === GRUND.INTERNER_FEHLER || grund === GRUND.SERVER_ENDE;
+  return grund === GRUND.INTERNER_FEHLER
+    || grund === GRUND.SERVER_ENDE
+    || grund === GRUND.ZU_LANGE_KEIN_ZUG;
 }
 
 /**
@@ -107,6 +109,9 @@ export function grundText(grund, gewonnen) {
       return 'Die Partie musste wegen eines Fehlers abgebrochen werden.';
     case GRUND.SERVER_ENDE:
       return 'Der Server wurde beendet.';
+    case GRUND.ZU_LANGE_KEIN_ZUG:
+      return `${GRENZEN.PARTIE_RUHE_MINUTEN} Minuten lang kam kein Zug – `
+        + 'die Partie wurde beendet und zählt nicht.';
     default:
       return 'Eine Reihe ist leer – die restlichen Kugeln wurden verteilt.';
   }

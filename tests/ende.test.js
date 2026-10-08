@@ -56,6 +56,10 @@ describe('Partien ohne Wertung', () => {
     expect(ohneWertung(GRUND.SERVER_ENDE)).toBe(true);
   });
 
+  test('zu lange kein Zug zählt nicht – niemand hat gewonnen oder verloren', () => {
+    expect(ohneWertung(GRUND.ZU_LANGE_KEIN_ZUG)).toBe(true);
+  });
+
   test('reguläres Ende, Aufgabe und Verlassen zählen', () => {
     expect(ohneWertung(GRUND.REGULAER)).toBe(false);
     expect(ohneWertung(GRUND.AUFGEGEBEN)).toBe(false);
@@ -74,6 +78,13 @@ describe('Satz zum Grund des Endes', () => {
     expect(grundText(GRUND.INTERNER_FEHLER, false))
       .toBe('Die Partie musste wegen eines Fehlers abgebrochen werden.');
     expect(grundText(GRUND.SERVER_ENDE, false)).toBe('Der Server wurde beendet.');
+  });
+
+  test('zu lange kein Zug: der Satz nennt die Frist, nicht eine leere Reihe', () => {
+    const satz = grundText(GRUND.ZU_LANGE_KEIN_ZUG, false);
+
+    expect(satz).toBe(`${protokoll.GRENZEN.PARTIE_RUHE_MINUTEN} Minuten lang kam kein Zug – `
+      + 'die Partie wurde beendet und zählt nicht.');
   });
 
   test('reguläres Ende: eine Reihe ist leer', () => {
