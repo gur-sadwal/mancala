@@ -42,7 +42,9 @@
     transform var(--dauer-kurz) ease;
 
   &:disabled {
-    opacity: 0.5;
+    /* WCAG: Die Projektvorgabe verlangt auch hier lesbaren Textkontrast. */
+    border-color: currentColor;
+    border-style: dashed;
     cursor: not-allowed;
   }
 
