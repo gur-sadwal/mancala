@@ -577,6 +577,19 @@ describe('Handler: Aufgeben', () => {
     expect(raeume.get(spielId).size).toBe(0);
   });
 
+  test('ein Socket ohne Sitz in der Partie kann nicht aufgeben', () => {
+    const { anna, ben, manager } = schnellesSpiel();
+    // Simulierter Zuordnungsfehler: Die Partie kennt Annas Kennung nicht mehr.
+    const partie = manager.holeNachSocket('a');
+    const sitzAnna = anna.letzte(EREIGNIS.START).daten.sitz;
+    partie.spieler[sitzAnna].socketId = 'fremd';
+
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.KEINE_PARTIE);
+    expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+  });
+
   test('ohne Partie gibt es nichts aufzugeben', () => {
     const { verbinde } = erzeugeUmgebung();
     const anna = verbinde('a');

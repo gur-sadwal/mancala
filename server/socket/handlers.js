@@ -458,9 +458,14 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
+    // SCHUTZ: Ohne Sitz gaebe es keinen Gegner, der gewinnen koennte.
     const sitz = sitzVon(partie, socket.id);
-    const sieger = sitz === 'unten' ? 'oben' : 'unten';
+    if (!sitz) {
+      sendeFehler(socket, FEHLER.KEINE_PARTIE);
+      return;
+    }
 
+    const sieger = sitz === 'unten' ? 'oben' : 'unten';
     beendeKontrolliert(partie, GRUND.AUFGEGEBEN, sieger);
   }
 
