@@ -186,6 +186,15 @@ describe('Schemapruefung der Ereignisse', () => {
     expect(istGueltig(EREIGNIS.REVANCHE, undefined)).toBe(true);
   });
 
+  test('spiel:erneut: der Name ist freiwillig, aber wenn, dann eine Zeichenkette', () => {
+    expect(istGueltig(EREIGNIS.ERNEUT, { name: 'Anna' })).toBe(true);
+    expect(istGueltig(EREIGNIS.ERNEUT, {})).toBe(true);
+
+    expect(istGueltig(EREIGNIS.ERNEUT, { name: 42 })).toBe(false);
+    expect(istGueltig(EREIGNIS.ERNEUT, null)).toBe(false);
+    expect(istGueltig(EREIGNIS.ERNEUT, 'Anna')).toBe(false);
+  });
+
   test('ein unbekanntes Ereignis gilt als ungueltig', () => {
     expect(istGueltig('spiel:hack', { mulde: 1 })).toBe(false);
   });

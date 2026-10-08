@@ -337,6 +337,17 @@ describe('Handler: schnelles Spiel beitreten', () => {
     expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.BEREITS_IN_WARTESCHLANGE);
   });
 
+  test('ein abgelehnter zweiter Beitritt überschreibt den gemerkten Namen nicht', () => {
+    const { verbinde } = erzeugeUmgebung();
+    const anna = verbinde('a');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna2' });
+
+    expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.BEREITS_IN_WARTESCHLANGE);
+    expect(anna.data.name).toBe('Anna');
+  });
+
   test('wer schon spielt, kann nicht beitreten', () => {
     const { anna } = schnellesSpiel();
 

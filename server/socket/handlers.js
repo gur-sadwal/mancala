@@ -301,34 +301,35 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     // Wer etwas Neues anfaengt, will keine Revanche mehr.
     lasseRevancheVerfallen(socket.id);
 
-    const name = saubererName(nutzdaten?.name);
+    const name = saubererName(nutzdaten.name);
+    let angenommen;
+    if (typeof nutzdaten.code === 'string') {
+      angenommen = betreteMitCode(socket, name, nutzdaten.code);
+    } else if (nutzdaten.privat === true) {
+      angenommen = erstellePrivat(socket, name);
+    } else {
+      angenommen = stelleAn(socket, name);
+    }
 
     // Der Name wird am Socket vermerkt, damit ein spaeteres `spiel:erneut`
-    // ohne erneute Namenseingabe funktioniert.
-    socket.data.name = name;
+    // ohne erneute Namenseingabe funktioniert – erst nach Erfolg, damit ein
+    // abgelehnter zweiter Beitritt ihn nicht ueberschreibt.
+    if (angenommen) socket.data.name = name;
+  }
 
-    if (typeof nutzdaten.code === 'string') {
-      betreteMitCode(socket, name, nutzdaten.code);
-      return;
-    }
-
-    if (nutzdaten.privat === true) {
-      erstellePrivat(socket, name);
-      return;
-    }
-
+  /** Schnelles Spiel: anstellen und, wenn moeglich, sofort paaren. */
+  function stelleAn(socket, name) {
     const ergebnis = lobby.beitreten(socket.id, name);
-
     if (!ergebnis.ok) {
       sendeFehler(socket, ergebnis.code);
-      return;
+      return false;
     }
 
     logger.info('Beitritt', { socketId: socket.id, name });
-
     // Die Position schickt fuehreZusammen (sendePositionen) – wer sofort
     // gepaart wird, bekommt gleich START.
     fuehreZusammen();
+    return true;
   }
 
   /** Privates Spiel anlegen: Der Ersteller bekommt den Code fuer den Link. */
@@ -337,11 +338,12 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     if (!ergebnis.ok) {
       sendeFehler(socket, ergebnis.code);
-      return;
+      return false;
     }
 
     socket.emit(EREIGNIS.PRIVAT, { code: ergebnis.einladung });
     logger.info('Privates Spiel erstellt', { socketId: socket.id, name });
+    return true;
   }
 
   /**
@@ -356,7 +358,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     // Wer selbst schon wartet – etwa auf den eigenen Link –, tritt nicht bei.
     if (lobby.enthaelt(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_WARTESCHLANGE);
-      return;
+      return false;
     }
 
     // Grossschreibung angleichen: Ein abgetippter Code "k7m2qx" soll passen.
@@ -365,10 +367,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     // Unbekannter Code – oder der Ersteller ist in genau diesem Moment weg.
     if (!ersteller || !socketVon(ersteller.socketId)) {
       sendeFehler(socket, FEHLER.CODE_UNBEKANNT);
-      return;
+      return false;
     }
 
     starteMitPaar(ersteller, { socketId: socket.id, name });
+    return true;
   }
 
   /** `spiel:abbrechen` – Suche abbrechen. */
@@ -486,7 +489,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
-    const name = socket.data.name ?? saubererName(nutzdaten?.name);
+    const name = socket.data.name ?? saubererName(nutzdaten.name);
     aufBeitreten(socket, { name });
   }
 

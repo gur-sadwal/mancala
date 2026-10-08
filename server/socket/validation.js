@@ -77,7 +77,10 @@ export const SCHEMA = Object.freeze({
     && istGanzzahlIm(d.mulde, GRENZEN.MULDE_MIN, GRENZEN.MULDE_MAX),
   [EREIGNIS.ABBRECHEN]: () => true,
   [EREIGNIS.AUFGEBEN]: () => true,
-  [EREIGNIS.ERNEUT]: () => true,
+  // Der Name ist freiwillig: Nach einem Verbindungsabbruch kennt der neue
+  // Socket ihn nicht und bekommt ihn hier mitgeschickt.
+  [EREIGNIS.ERNEUT]: (d) => istObjekt(d)
+    && (d.name === undefined || typeof d.name === 'string'),
   [EREIGNIS.REVANCHE]: () => true,
 });
 
