@@ -407,6 +407,29 @@ function zeichneStand(elemente, spielstand, sitz) {
   schalte(elemente.zuganzeige, 'zuganzeige--gegner', !ichBinDran);
   schalte(elemente.zuganzeige, 'zuganzeige--hinweis', false);
 }
+/**
+ * Hinweis zu einer Sonderregel (Klauen, Extrazug) – oder '' ohne Sonderregel.
+ *
+ * @param {object} bericht  Zugbericht des Servers
+ * @param {'unten'|'oben'} sitz  eigener Sitz
+ */
+export function hinweisText(bericht, sitz) {
+  const ichWars = bericht.sitz === sitz;
+
+  // REGEL 3.4: `anzahl` sind die Kugeln von gegenüber plus die eigene letzte
+  // Kugel. Der Satz nennt deshalb, was ins Haus wandert, nicht „N geklaut“.
+  // Es sind immer mindestens 2 – die Mehrzahl stimmt also immer.
+  if (bericht.beute) {
+    const anzahl = bericht.beute.anzahl;
+    return ichWars
+      ? `Du klaust! ${anzahl} Kugeln wandern in dein Haus.`
+      : `Gegner klaut! ${anzahl} Kugeln wandern in sein Haus.`;
+  }
+  if (bericht.extrazug) {
+    return ichWars ? 'Extrazug! Du bist noch einmal dran.' : 'Extrazug für den Gegner.';
+  }
+  return '';
+}
 // ===========================================================================
 // 4. Animation
 // ===========================================================================
@@ -818,14 +841,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
       knopfAufgeben.disabled = spielstand.status !== 'LAEUFT';
 
       // Sichtbarer Hinweis fuer die beiden Sonderregeln (FA-13).
-      if (bericht.beute) {
-        const wer = bericht.sitz === sitz ? 'Du klaust' : 'Gegner klaut';
-        setzeText(elemente.zuganzeige, `${wer} ${bericht.beute.anzahl} Kugeln!`);
-        schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
-      } else if (bericht.extrazug) {
-        setzeText(elemente.zuganzeige, bericht.sitz === sitz
-          ? 'Extrazug! Du bist noch einmal dran.'
-          : 'Extrazug für den Gegner.');
+      const hinweis = hinweisText(bericht, sitz);
+      if (hinweis !== '') {
+        setzeText(elemente.zuganzeige, hinweis);
         schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
       }
 
