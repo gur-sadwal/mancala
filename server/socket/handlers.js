@@ -341,7 +341,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
         if (socketA) uebrig = a;
         if (socketB) uebrig = b;
         if (uebrig) lobby.beitreten(uebrig.socketId, uebrig.name);
-        logger.warn('Zusammenfuehrung abgebrochen, ein Socket war weg');
+        logger.warn('Zusammenführung abgebrochen, ein Socket war weg');
         paar = lobby.naechstesPaar();
         continue;
       }
