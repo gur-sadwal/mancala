@@ -532,6 +532,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   function aufTrennen(socket, grund) {
     logger.info('Verbindung getrennt', { socketId: socket.id, grund });
 
+    // Zuerst den Zaehler der Ratenbegrenzung freigeben: Scheitert ein
+    // spaeterer Schritt, bliebe er sonst fuer immer in der Map liegen.
+    ratenbegrenzer.vergiss(socket.id);
+
     // 1. Aus der Warteschlange – einer der drei Pfade aus Konzept 7.4 – und
     //    eine offene Revanche verfallen lassen.
     if (lobby.entferne(socket.id)) sendePositionen();
@@ -545,9 +549,6 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       const sieger = sitz === 'unten' ? 'oben' : 'unten';
       beendeKontrolliert(partie, GRUND.GEGNER_WEG, sieger, socket.id);
     }
-
-    // 3. Zaehler der Ratenbegrenzung freigeben (NFA-10).
-    ratenbegrenzer.vergiss(socket.id);
   }
 
   // -------------------------------------------------------------------------

@@ -734,6 +734,17 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     expect(imProtokoll('Handler spiel:zug fehlgeschlagen')).toBe(true);
   });
 
+  test('auch nach einem Fehler beim Verbindungsabbruch ist der Zähler weg', () => {
+    const { anna, manager, ratenbegrenzer } = schnellesSpiel();
+    expect(ratenbegrenzer.anzahl()).toBe(2);   // Anna und Ben sind beigetreten
+    manager.holeNachSocket('a').brett = null;
+
+    anna.trenne();
+
+    expect(imProtokoll('disconnect-Handler fehlgeschlagen')).toBe(true);
+    expect(ratenbegrenzer.anzahl()).toBe(1);   // nur noch Ben
+  });
+
   test('ein Fehler beim Verbindungsabbruch wird nur protokolliert', () => {
     const { anna, manager } = schnellesSpiel();
     manager.holeNachSocket('a').brett = null;
