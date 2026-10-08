@@ -265,89 +265,70 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     dialog.removeEventListener('cancel', beiSchliessen);
   }
 
-  return {
-    /**
-     * Zeigt das Ergebnis.
-     *
-     * @param {object} daten
-     * @param {object} daten.ergebnis  { punkte, sieger, grund }
-     * @param {'unten'|'oben'} daten.sitz
-     * @param {null|string} daten.revanche  Revanche-Stand, siehe kern.js;
-     *        null = keine Revanche moeglich (Abbruch), dann gibt es keinen Knopf
-     * @param {number} daten.revancheSeit  Beginn der Revanche-Frist (ms)
-     * @param {string} daten.name  eigener Spielername fuer die Bilanz
-     */
-    zeige({ ergebnis, sitz, revanche = null, revancheSeit = 0, name = '' }) {
-      if (ergebnis !== angezeigtesErgebnis || revanche !== aktuelleRevanche) {
-        fehlermeldung = '';
-      }
-      angezeigtesErgebnis = ergebnis;
-      meldeListenerAn();
-      const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
+  function zaehleErgebnis(ergebnis, sitz) {
+    if (ergebnis === gezaehltesErgebnis || ohneWertung(ergebnis.grund)) return;
+    gezaehltesErgebnis = ergebnis;
+    if (ergebnis.sieger === 'remis') bilanz.remis += 1;
+    else if (ergebnis.sieger === sitz) bilanz.siege += 1;
+    else bilanz.niederlagen += 1;
+    speichereBilanz(bilanz);
+  }
 
-      const meine = ergebnis.punkte[sitz];
-      const seine = ergebnis.punkte[gegnerSitz];
+  function zeichneErgebnis(ergebnis, sitz, name) {
+    const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
+    const meine = ergebnis.punkte[sitz];
+    const seine = ergebnis.punkte[gegnerSitz];
+    setzeText(bilanzAnzeige, bilanzText(name, bilanz));
+    setzeText(punkteEigen, meine);
+    setzeText(punkteGegner, seine);
+    setzeText(grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz));
+    if (ohneWertung(ergebnis.grund)) {
+      setzeText(titel, 'Partie abgebrochen');
+      setzeText(text, `Stand beim Abbruch: ${meine} zu ${seine}.`);
+    } else if (ergebnis.sieger === 'remis') {
+      setzeText(titel, 'Unentschieden');
+      setzeText(text, `${meine} zu ${seine} – ein Remis.`);
+    } else if (ergebnis.sieger === sitz) {
+      setzeText(titel, 'Du hast gewonnen!');
+      setzeText(text, `${meine} zu ${seine} – Glückwunsch.`);
+    } else {
+      setzeText(titel, 'Du hast verloren');
+      setzeText(text, `${meine} zu ${seine} – viel Glück beim nächsten Mal.`);
+    }
+  }
 
-      // Jede Partie genau einmal zaehlen. Ein Abbruch ohne Wertung ist keine
-      // echte Partie und zaehlt deshalb nicht.
-      if (ergebnis !== gezaehltesErgebnis && !ohneWertung(ergebnis.grund)) {
-        gezaehltesErgebnis = ergebnis;
+  function oeffneDialog() {
+    if (dialog.open) return;
+    dialog.showModal();
+    // Ein Enter nach dem letzten Zug soll keine Revanche auslösen.
+    knopfErneut.focus();
+  }
 
-        if (ergebnis.sieger === 'remis') {
-          bilanz.remis += 1;
-        } else if (ergebnis.sieger === sitz) {
-          bilanz.siege += 1;
-        } else {
-          bilanz.niederlagen += 1;
-        }
-        speichereBilanz(bilanz);
-      }
-      setzeText(bilanzAnzeige, bilanzText(name, bilanz));
+  function zeige({ ergebnis, sitz, revanche = null, revancheSeit = 0, name = '' }) {
+    if (ergebnis !== angezeigtesErgebnis || revanche !== aktuelleRevanche) {
+      fehlermeldung = '';
+    }
+    angezeigtesErgebnis = ergebnis;
+    meldeListenerAn();
+    zaehleErgebnis(ergebnis, sitz);
+    zeichneErgebnis(ergebnis, sitz, name);
+    aktuelleRevanche = revanche;
+    fristBeginn = revancheSeit;
+    zeichneRevanche();
+    oeffneDialog();
+  }
 
-      setzeText(punkteEigen, meine);
-      setzeText(punkteGegner, seine);
-      setzeText(grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz));
 
-      if (ohneWertung(ergebnis.grund)) {
-        setzeText(titel, 'Partie abgebrochen');
-        setzeText(text, `Stand beim Abbruch: ${meine} zu ${seine}.`);
-      } else if (ergebnis.sieger === 'remis') {
-        setzeText(titel, 'Unentschieden');
-        setzeText(text, `${meine} zu ${seine} – ein Remis.`);
-      } else if (ergebnis.sieger === sitz) {
-        setzeText(titel, 'Du hast gewonnen!');
-        setzeText(text, `${meine} zu ${seine} – Glückwunsch.`);
-      } else {
-        setzeText(titel, 'Du hast verloren');
-        setzeText(text, `${meine} zu ${seine} – viel Glück beim nächsten Mal.`);
-      }
+  function verstecke() {
+    schliesse();
+    meldeListenerAb();
+  }
 
-      // Revanche-Knopf, Hinweissatz und Zaehler.
-      aktuelleRevanche = revanche;
-      fristBeginn = revancheSeit;
-      zeichneRevanche();
 
-      // showModal() statt show(): nur so gibt es Fokusfalle und Backdrop.
-      // Fokus nur beim Oeffnen setzen – main.js ruft zeige() bei jeder
-      // Zustandsaenderung erneut auf, und wer per Tab auf "Abmelden" steht,
-      // soll nicht zurueckgerissen werden.
-      if (!dialog.open) {
-        dialog.showModal();
-        // Immer "Neues Spiel suchen", auch wenn eine Revanche moeglich ist:
-        // Ein Enter direkt nach dem letzten Zug soll nicht aus Versehen eine
-        // Revanche anfragen.
-        knopfErneut.focus();
-      }
-    },
+  function melde(text) {
+    fehlermeldung = text;
+    zeichneRevanche();
+  }
 
-    verstecke() {
-      schliesse();
-      meldeListenerAb();
-    },
-
-    melde(text) {
-      fehlermeldung = text;
-      zeichneRevanche();
-    },
-  };
+  return { zeige, verstecke, melde };
 }
