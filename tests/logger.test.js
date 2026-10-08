@@ -106,4 +106,10 @@ describe('Logger: Schwelle aus LOG_LEVEL', () => {
     expect(ausgabe).toContain('[INFO] normal');
     expect(ausgabe).not.toContain('[DEBUG]');
   });
+  test.each(['constructor', '__proto__'])('geerbter Schlüssel %s ist keine Protokollebene', (wert) => {
+    const ausgabe = protokolliereMit(wert);
+    expect(ausgabe).toContain('[INFO] normal');
+    expect(ausgabe).not.toContain('[DEBUG]');
+  });
+
 });

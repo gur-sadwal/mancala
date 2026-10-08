@@ -18,7 +18,8 @@
 const EBENEN = { debug: 10, info: 20, warn: 30, error: 40 };
 
 const gewuenscht = (process.env.LOG_LEVEL ?? '').toLowerCase();
-const schwelle = EBENEN[gewuenscht] ?? EBENEN.info;
+const schwelle = Object.hasOwn(EBENEN, gewuenscht)
+  ? EBENEN[gewuenscht] : EBENEN.info;
 
 // == 2. Zeitstempel ======================================================
 // UTC bleibt ganzjährig eindeutig, unabhängig von Sommer- und Winterzeit.
