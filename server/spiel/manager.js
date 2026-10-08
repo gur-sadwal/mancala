@@ -12,7 +12,7 @@
  */
 
 import { neueSpielId } from '../util/ids.js';
-import { neuePartie, sitzVon } from './partie.js';
+import { neuePartie } from './partie.js';
 import { STATUS } from '../../shared/protokoll.js';
 
 /**
@@ -28,6 +28,15 @@ export function erzeugeManager() {
 
   /** @type {Map<string, string>} socketId -> spielId */
   const zuordnung = new Map();
+
+  return {
+    starte,
+    holeNachSocket,
+    entferne,
+    findeRuhendePartien,
+    anzahl,
+    alle,
+  };
 
   /**
    * Legt eine Partie aus zwei Wartenden an.
@@ -58,9 +67,6 @@ export function erzeugeManager() {
   }
 
   /** Partie zu einer Kennung. */
-  function holeNachId(spielId) {
-    return partien.get(spielId) ?? null;
-  }
 
   /**
    * Partie zu einem Socket – der Weg, den jeder Handler geht.
@@ -77,10 +83,6 @@ export function erzeugeManager() {
   }
 
   /** Welchen Sitz belegt dieser Socket in seiner Partie? */
-  function sitzVonSocket(socketId) {
-    const partie = holeNachSocket(socketId);
-    return partie ? sitzVon(partie, socketId) : null;
-  }
 
   /**
    * Entfernt eine Partie vollstaendig aus beiden Maps.
@@ -136,14 +138,5 @@ export function erzeugeManager() {
     return [...partien.values()];
   }
 
-  return {
-    starte,
-    holeNachId,
-    holeNachSocket,
-    sitzVonSocket,
-    entferne,
-    findeRuhendePartien,
-    anzahl,
-    alle,
-  };
+
 }

@@ -392,16 +392,15 @@ describe('Partieverwaltung', () => {
 
     expect(manager.holeNachSocket('a').id).toBe(partie.id);
     expect(manager.holeNachSocket('b').id).toBe(partie.id);
-    expect(manager.holeNachId(partie.id)).toBe(partie);
     expect(manager.holeNachSocket('unbekannt')).toBeNull();
   });
 
   test('kennt den Sitz zu jedem Socket', () => {
     const { manager, partie } = mitPartie();
 
-    expect(manager.sitzVonSocket('a')).toBe(sitzVon(partie, 'a'));
-    expect(['unten', 'oben']).toContain(manager.sitzVonSocket('a'));
-    expect(manager.sitzVonSocket('unbekannt')).toBeNull();
+    expect(sitzVon(manager.holeNachSocket('a'), 'a')).toBe(sitzVon(partie, 'a'));
+    expect(['unten', 'oben']).toContain(sitzVon(manager.holeNachSocket('a'), 'a'));
+    expect(sitzVon(partie, 'unbekannt')).toBeNull();
   });
 
   test('haelt mehrere Partien voneinander getrennt (NFA-02)', () => {
@@ -436,7 +435,6 @@ describe('Partieverwaltung', () => {
     expect(manager.anzahl()).toBe(0);
     expect(manager.holeNachSocket('a')).toBeNull();
     expect(manager.holeNachSocket('b')).toBeNull();
-    expect(manager.holeNachId(partie.id)).toBeNull();
   });
 
   test('eine unbekannte Spiel-ID zu entfernen ändert nichts', () => {
