@@ -23,6 +23,21 @@ import.meta.jest.unstable_mockModule('../server/util/ids.js', () => ({
 }));
 
 const { erzeugeLobby } = await import('../server/spiel/lobby.js');
+const { erzeugeManager } = await import('../server/spiel/manager.js');
+
+describe('Kollision bei der Spiel-ID', () => {
+  test('eine schon vergebene Spiel-ID überschreibt keine laufende Partie', () => {
+    const manager = erzeugeManager();
+
+    const erste = manager.starte({ socketId: 'a', name: 'A' }, { socketId: 'b', name: 'B' });
+    const zweite = manager.starte({ socketId: 'c', name: 'C' }, { socketId: 'd', name: 'D' });
+
+    expect(erste.id).toBe('g-gleich');
+    expect(zweite.id).toBe('g-anders');
+    expect(manager.anzahl()).toBe(2);
+    expect(manager.holeNachSocket('a')).toBe(erste);
+  });
+});
 
 describe('Kollision beim Einladungscode', () => {
   test('ein schon vergebener Code wird nicht ein zweites Mal vergeben', () => {

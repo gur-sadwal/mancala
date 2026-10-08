@@ -42,7 +42,12 @@ export function erzeugeManager() {
   function starte(a, b) {
     const [unten, oben] = Math.random() < 0.5 ? [a, b] : [b, a];
 
-    const id = neueSpielId();
+    // Zwei gleiche IDs sind extrem unwahrscheinlich, aber nicht unmoeglich –
+    // dann einfach eine neue ziehen (wie beim Einladungscode in lobby.js).
+    let id = neueSpielId();
+    while (partien.has(id)) {
+      id = neueSpielId();
+    }
     const partie = neuePartie(id, unten, oben);
 
     partien.set(id, partie);
