@@ -466,8 +466,11 @@ describe('Handler: Abbrechen', () => {
   test('kommt Abbrechen erst nach dem Start an, läuft die Partie normal weiter', () => {
     const { anna, ben, manager } = schnellesSpiel();
 
+    const vorher = anna.empfangen.length;
+
     anna.sende(EREIGNIS.ABBRECHEN);   // der Klick war unterwegs, als START kam
 
+    expect(anna.empfangen.length).toBe(vorher);   // keine Antwort, auch kein Fehler
     expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(manager.holeNachSocket('a')).not.toBeNull();
@@ -484,6 +487,29 @@ describe('Handler: Abbrechen', () => {
 
     expect(anna.alle(EREIGNIS.ABBRUCH)).toHaveLength(1);   // nur die erste Partie
     expect(manager.holeNachSocket('b')).not.toBeNull();
+  });
+
+  test('privat: Abbrechen nach dem Beitritt des Freundes wird ebenso ignoriert', () => {
+    const { anna, code, verbinde, manager } = privatesSpiel();
+    const ben = verbinde('b');
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+
+    anna.sende(EREIGNIS.ABBRECHEN);
+
+    expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('ein ignoriertes Abbrechen in der Revanche verhindert keine weitere Revanche', () => {
+    const { anna, ben } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    ben.sende(EREIGNIS.REVANCHE);
+    anna.sende(EREIGNIS.ABBRECHEN);
+
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    expect(ben.letzte(EREIGNIS.ABBRUCH).daten.revanche).toBe(true);
   });
 
   test('ohne Warteplatz und ohne Partie passiert nichts', () => {
@@ -547,7 +573,9 @@ describe('Handler: Zug', () => {
     amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
 
     for (const spieler of [amZug, wartet]) {
-      expect(spieler.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.INTERNER_FEHLER);
+      const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
+      expect(abbruch.grund).toBe(GRUND.INTERNER_FEHLER);
+      expect(abbruch.ergebnis.sieger).toBeNull();   // nicht gewertet
     }
     expect(amZug.alle(EREIGNIS.FEHLER)).toHaveLength(0);
     expect(manager.anzahl()).toBe(0);
@@ -801,7 +829,9 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
 
     for (const spieler of [amZug, wartet]) {
-      expect(spieler.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.INTERNER_FEHLER);
+      const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
+      expect(abbruch.grund).toBe(GRUND.INTERNER_FEHLER);
+      expect(abbruch.ergebnis.sieger).toBeNull();   // nicht gewertet
       expect(spieler.alle(EREIGNIS.FEHLER)).toHaveLength(0);
     }
   });
@@ -819,6 +849,9 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     // Der nächste Klick des Gegners führt sichtbar zurück zur Anmeldung.
     wartet.sende(EREIGNIS.AUFGEBEN);
     expect(wartet.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.KEINE_PARTIE);
+    // Und beide können sofort neu suchen – nicht erst nach dem nächsten Takt.
+    amZug.sende(EREIGNIS.BEITRETEN, { name: 'Neu' });
+    expect(amZug.letzte(EREIGNIS.WARTESCHLANGE)).toBeDefined();
   });
 
   test('ein Fehler beim Verbindungsabbruch wird nur protokolliert', () => {
@@ -845,10 +878,72 @@ describe('Handler: Aufräumen nach Fristen', () => {
     for (const spieler of [anna, ben]) {
       const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
       expect(abbruch.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+      expect(abbruch.ergebnis.sieger).toBeNull();   // nicht gewertet
       expect(abbruch.revanche).toBe(false);
     }
     expect(manager.anzahl()).toBe(0);
     expect(raeume.get(spielId).size).toBe(0);
+  });
+
+  test('ein gültiger Zug setzt die Frist zurück – sie läuft ab dem letzten Zug', () => {
+    const { amZug, wartet, handler, manager } = schnellesSpiel();
+    manager.holeNachSocket(amZug.id).letzteAktivitaet = 0;   // Start 1970
+
+    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    handler.raeumeAuf(Date.now() + MINUTE);
+
+    expect(wartet.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('abgelehnte Züge und Müll verlängern die Frist nicht', () => {
+    const { amZug, wartet, handler, manager } = schnellesSpiel();
+    manager.holeNachSocket(amZug.id).letzteAktivitaet = 0;
+
+    wartet.sende(EREIGNIS.ZUG, { mulde: 0 });     // nicht am Zug
+    amZug.sende(EREIGNIS.ZUG, { mulde: 99 });     // Schema verletzt
+    handler.raeumeAuf();
+
+    expect(amZug.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+  });
+
+  test('Grenze: 1 ms vor der Frist bleibt die Partie, genau an der Frist endet sie', () => {
+    const { anna, handler, manager } = schnellesSpiel();
+    const letzte = manager.holeNachSocket('a').letzteAktivitaet;
+
+    handler.raeumeAuf(letzte + PARTIE_FRIST - 1);
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+
+    handler.raeumeAuf(letzte + PARTIE_FRIST);
+    expect(anna.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+  });
+
+  test('zweimal aufräumen: kein zweiter Abbruch', () => {
+    const { anna, handler } = schnellesSpiel();
+    handler.raeumeAuf(Date.now() + PARTIE_FRIST);
+
+    expect(() => handler.raeumeAuf(Date.now() + 2 * PARTIE_FRIST)).not.toThrow();
+    expect(anna.alle(EREIGNIS.ABBRUCH)).toHaveLength(1);
+  });
+
+  test('ist ein Socket schon weg, erfährt es der andere trotzdem', () => {
+    const { anna, ben, handler, manager, io } = schnellesSpiel();
+    io.sockets.sockets.delete('a');
+
+    expect(() => handler.raeumeAuf(Date.now() + PARTIE_FRIST)).not.toThrow();
+    expect(ben.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(0);
+  });
+
+  test('Abbrechen nach dem Fristende bewirkt nichts', () => {
+    const { anna, handler } = schnellesSpiel();
+    handler.raeumeAuf(Date.now() + PARTIE_FRIST);
+    const vorher = anna.empfangen.length;
+
+    anna.sende(EREIGNIS.ABBRECHEN);
+
+    expect(anna.empfangen.length).toBe(vorher);
   });
 
   test('eine Minute vor der Frist bleibt die Partie unberührt', () => {
@@ -888,6 +983,36 @@ describe('Handler: Aufräumen nach Fristen', () => {
       expect(spieler.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.WARTEZEIT_ABGELAUFEN);
     }
     expect(lobby.anzahl()).toBe(0);
+  });
+
+  test('Grenze: 1 ms vor der Wartefrist bleibt man, genau an der Frist nicht', () => {
+    const { verbinde, handler, lobby } = erzeugeUmgebung();
+    const anna = verbinde('a');
+    lobby.beitreten('a', 'Anna', 1000);
+
+    handler.raeumeAuf(1000 + WARTE_FRIST - 1);
+    expect(lobby.enthaelt('a')).toBe(true);
+
+    handler.raeumeAuf(1000 + WARTE_FRIST);
+    expect(lobby.enthaelt('a')).toBe(false);
+    expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.WARTEZEIT_ABGELAUFEN);
+  });
+
+  test('Wartende, deren Socket schon weg ist, bringen das Aufräumen nicht zum Absturz', () => {
+    const { handler, lobby } = erzeugeUmgebung();
+    lobby.beitreten('geist', 'Geist', 0);
+
+    expect(() => handler.raeumeAuf()).not.toThrow();
+    expect(lobby.anzahl()).toBe(0);
+  });
+
+  test('die Wartefrist trifft keine laufende Partie', () => {
+    const { anna, handler } = schnellesSpiel();
+
+    handler.raeumeAuf(Date.now() + WARTE_FRIST);
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(anna.letzte(EREIGNIS.FEHLER)).toBeUndefined();
   });
 
   test('eine Minute vor der Wartefrist passiert nichts', () => {

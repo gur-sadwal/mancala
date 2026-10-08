@@ -148,7 +148,9 @@ describe('Gateway: Herunterfahren', () => {
     gateway.herunterfahren();
 
     for (const spieler of [anna, ben]) {
-      expect((await spieler.erhalte(EREIGNIS.ABBRUCH)).grund).toBe(GRUND.SERVER_ENDE);
+      const abbruch = await spieler.erhalte(EREIGNIS.ABBRUCH);
+      expect(abbruch.grund).toBe(GRUND.SERVER_ENDE);
+      expect(abbruch.ergebnis.sieger).toBeNull();   // nicht gewertet
     }
     await warteBis(() => !httpServer.listening);
     expect(manager.anzahl()).toBe(0);
@@ -166,6 +168,29 @@ describe('Gateway: Herunterfahren mit await', () => {
 });
 
 describe('Gateway: Takte', () => {
+  test('der Aufräumtakt prüft jede Minute die Fristen', async () => {
+    const jest = import.meta.jest;
+    const andererManager = erzeugeManager();
+    const pruefe = jest.spyOn(andererManager, 'findeRuhendePartien');
+    jest.useFakeTimers();
+    try {
+      const anderer = erzeugeGateway(http.createServer(), {
+        lobby: erzeugeLobby(),
+        manager: andererManager,
+      });
+
+      jest.advanceTimersByTime(60 * 1000 - 1);
+      expect(pruefe).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1);
+      expect(pruefe).toHaveBeenCalledTimes(1);
+
+      anderer.herunterfahren();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+
   test('ein Fehler in einem Takt wird nur protokolliert', async () => {
     const jest = import.meta.jest;
     // Ein Manager, der beim Suchen ruhender Partien wirft – wie ein
