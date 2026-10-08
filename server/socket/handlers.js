@@ -324,9 +324,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
-    socket.emit(EREIGNIS.WARTESCHLANGE, { position: ergebnis.position });
     logger.info('Beitritt', { socketId: socket.id, name });
 
+    // Die Position schickt fuehreZusammen (sendePositionen) – wer sofort
+    // gepaart wird, bekommt gleich START.
     fuehreZusammen();
   }
 

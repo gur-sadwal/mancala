@@ -299,6 +299,15 @@ describe('Handler: schnelles Spiel beitreten', () => {
     expect(anna.letzte(EREIGNIS.START)).toBeUndefined();
   });
 
+  test('die Position kommt genau einmal an, nicht doppelt', () => {
+    const { verbinde } = erzeugeUmgebung();
+    const anna = verbinde('a');
+
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+
+    expect(anna.alle(EREIGNIS.WARTESCHLANGE)).toHaveLength(1);
+  });
+
   test('mit dem Zweiten startet die Partie: Sitz, Gegner und Spielstand', () => {
     const { anna, ben } = schnellesSpiel();
     const startAnna = anna.letzte(EREIGNIS.START).daten;
