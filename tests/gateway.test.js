@@ -215,3 +215,17 @@ describe('Gateway: Takte', () => {
     }
   });
 });
+
+describe('Gateway: Herunterfahren trotz kaputter Partie', () => {
+  test('benachrichtigt weitere Partien und schließt auch bei einem Fehler', async () => {
+    const kaputt = manager.starte(
+      { socketId: 'kaputt-a', name: 'A' }, { socketId: 'kaputt-b', name: 'B' },
+    );
+    manager.starte({ socketId: 'c', name: 'C' }, { socketId: 'd', name: 'D' });
+    kaputt.brett = null;
+
+    await expect(gateway.herunterfahren()).resolves.toBeUndefined();
+    expect(manager.anzahl()).toBe(0);
+    expect(httpServer.listening).toBe(false);
+  });
+});

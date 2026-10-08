@@ -111,7 +111,11 @@ export function erzeugeGateway(httpServer, { lobby, manager }) {
     clearInterval(revancheTakt);
 
     for (const partie of manager.alle()) {
-      handler.beendeKontrolliert(partie, GRUND.SERVER_ENDE);
+      try {
+        handler.beendeKontrolliert(partie, GRUND.SERVER_ENDE);
+      } catch (fehler) {
+        logger.error('Partie beim Herunterfahren fehlgeschlagen', fehler);
+      }
     }
     await io.close();
   }
