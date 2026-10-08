@@ -729,8 +729,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     aktionen.zug(mulde);
   }
 
-  brettElement.addEventListener('click', beiKlick);
-
   /**
    * Direkttasten 1 bis 6: spielen die eigene Mulde mit dieser Nummer.
    *
@@ -738,8 +736,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * `beiKlick`, und es gibt keine zweite Zuglogik.
    */
   function beiTaste(ereignis) {
-    // Nur, wenn die Spielansicht sichtbar ist und kein Dialog darueber liegt.
-    if (abschnitt.hidden || document.querySelector('dialog[open]')) return;
+    // Nicht, wenn ein Dialog darueber liegt (Ergebnis, Rueckfrage,
+    // Einstellungen) – die Spielansicht bleibt unter dem Ergebnis sichtbar.
+    if (document.querySelector('dialog[open]')) return;
 
     // Kuerzel wie Cmd+1 (Browser-Tab wechseln) sind nicht gemeint.
     if (ereignis.metaKey || ereignis.ctrlKey || ereignis.altKey) return;
@@ -751,8 +750,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     if (knopf && !knopf.disabled) knopf.click();
   }
 
-  document.addEventListener('keydown', beiTaste);
-
   /**
    * Klick auf "Partie aufgeben" – mit Rueckfrage, weil es endgueltig ist.
    *
@@ -760,7 +757,13 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * confirm() haelt das gesamte JavaScript an, auch Socket.io.
    */
   function beiAufgeben() {
-    if (!dialogAufgeben.open) dialogAufgeben.showModal();
+    if (dialogAufgeben.open) return;
+    // Beim Oeffnen leeren: Esc setzt returnValue nicht in jedem Browser
+    // zurueck (Chromium tut es, die aeltere HTML-Spezifikation nicht), und
+    // das close-Ereignis kann nach einem Ansichtswechsel ohne Listener
+    // verpuffen. So gilt nie eine alte Wahl.
+    dialogAufgeben.returnValue = '';
+    dialogAufgeben.showModal();
   }
 
   /**
@@ -777,20 +780,30 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
   /**
    * Rueckfrage geschlossen – mit einem der zwei Knoepfe oder mit Esc.
-   *
-   * Nur "Ja, aufgeben" (value="aufgeben") gibt auf. returnValue wird danach
-   * geleert, weil Esc ihn nicht in jedem Browser leert (Chromium tut es, die
-   * aeltere HTML-Spezifikation nicht). Sonst gaelte beim naechsten Mal noch
-   * die alte Wahl.
+   * Nur "Ja, aufgeben" (value="aufgeben") gibt auf.
    */
   function beiAufgebenGeschlossen() {
-    const wahl = dialogAufgeben.returnValue;
-    dialogAufgeben.returnValue = '';
-    if (wahl === 'aufgeben') aktionen.aufgeben();
+    if (dialogAufgeben.returnValue === 'aufgeben') aktionen.aufgeben();
   }
 
-  knopfAufgeben.addEventListener('click', beiAufgeben);
-  dialogAufgeben.addEventListener('close', beiAufgebenGeschlossen);
+  /**
+   * Listener nur, solange die Spielansicht sichtbar ist (Anforderungen 6.3).
+   * Waehrend des Ergebnisdialogs gilt sie als sichtbar (main.js) – deshalb
+   * prueft beiTaste, ob ein Dialog offen ist.
+   */
+  function meldeListenerAn() {
+    brettElement.addEventListener('click', beiKlick);
+    document.addEventListener('keydown', beiTaste);
+    knopfAufgeben.addEventListener('click', beiAufgeben);
+    dialogAufgeben.addEventListener('close', beiAufgebenGeschlossen);
+  }
+
+  function meldeListenerAb() {
+    brettElement.removeEventListener('click', beiKlick);
+    document.removeEventListener('keydown', beiTaste);
+    knopfAufgeben.removeEventListener('click', beiAufgeben);
+    dialogAufgeben.removeEventListener('close', beiAufgebenGeschlossen);
+  }
 
   /** Zeigt den Hinweis zu Extrazug oder Klauen – ohne Sonderregel nichts. */
   function zeigeSonderregel(bericht) {
@@ -803,10 +816,16 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   return {
     zeige(sichtbar) {
       zeige(abschnitt, sichtbar);
-      if (!sichtbar) {
-        animator?.brichAb();
-        schliesseRueckfrage();
+
+      // ACHTUNG: zeige(true) kommt bei jeder Zustandsaenderung, auch mitten
+      // im Zug. Hier darf deshalb nichts zurueckgesetzt werden – nur anmelden.
+      if (sichtbar) {
+        meldeListenerAn();
+        return;
       }
+      animator?.brichAb();
+      schliesseRueckfrage();
+      meldeListenerAb();
     },
 
     /**
@@ -910,14 +929,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
       // Nach einer Ablehnung bin ich weiter am Zug, sonst waere sie nicht
       // gekommen – der Fokus darf also zurueck aufs Brett.
       stelleFokusWiederHer(true);
-    },
-
-    raeumeAuf() {
-      brettElement.removeEventListener('click', beiKlick);
-      document.removeEventListener('keydown', beiTaste);
-      knopfAufgeben.removeEventListener('click', beiAufgeben);
-      dialogAufgeben.removeEventListener('close', beiAufgebenGeschlossen);
-      animator?.brichAb();
     },
   };
 }

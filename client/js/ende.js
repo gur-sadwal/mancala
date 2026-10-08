@@ -240,16 +240,28 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
     beiAbmelden();
   }
 
-  knopfErneut.addEventListener('click', beiErneut);
-  knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
-  knopfRevanche.addEventListener('click', beiRevanche);
+  /**
+   * Listener nur, solange der Dialog gezeigt wird (Anforderungen 6.3).
+   *
+   * Esc-Taste: Der Browser meldet erst `cancel` und schliesst danach selbst.
+   * `cancel` kommt nur von Esc, nie von unserem eigenen close() – so braucht
+   * es keinen Zaehler, um beides zu unterscheiden. Ohne diese Behandlung
+   * bliebe die Anzeige im Zustand ENDE haengen: Dialog weg, nur noch das
+   * tote Brett ohne Knoepfe.
+   */
+  function meldeListenerAn() {
+    knopfErneut.addEventListener('click', beiErneut);
+    knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
+    knopfRevanche.addEventListener('click', beiRevanche);
+    dialog.addEventListener('cancel', beiSchliessen);
+  }
 
-  // Esc-Taste: Der Browser meldet erst `cancel` und schliesst danach selbst.
-  // `cancel` kommt nur von Esc, nie von unserem eigenen close() – so braucht
-  // es keinen Zaehler, um beides zu unterscheiden. Ohne diese Behandlung
-  // bliebe die Anzeige im Zustand ENDE haengen: Dialog weg, nur noch das
-  // tote Brett ohne Knoepfe.
-  dialog.addEventListener('cancel', beiSchliessen);
+  function meldeListenerAb() {
+    knopfErneut.removeEventListener('click', beiErneut);
+    knopfAbmelden.removeEventListener('click', beiAbmeldenKlick);
+    knopfRevanche.removeEventListener('click', beiRevanche);
+    dialog.removeEventListener('cancel', beiSchliessen);
+  }
 
   return {
     /**
@@ -264,6 +276,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
      * @param {string} daten.name  eigener Spielername fuer die Bilanz
      */
     zeige({ ergebnis, sitz, revanche = null, revancheSeit = 0, name = '' }) {
+      meldeListenerAn();
       const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
 
       const meine = ergebnis.punkte[sitz];
@@ -323,14 +336,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
 
     verstecke() {
       schliesse();
-    },
-
-    raeumeAuf() {
-      stoppeZaehler();
-      knopfErneut.removeEventListener('click', beiErneut);
-      knopfAbmelden.removeEventListener('click', beiAbmeldenKlick);
-      knopfRevanche.removeEventListener('click', beiRevanche);
-      dialog.removeEventListener('cancel', beiSchliessen);
+      meldeListenerAb();
     },
   };
 }

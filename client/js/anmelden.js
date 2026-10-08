@@ -21,7 +21,7 @@ const SPEICHER_NAME = 'mancala.name';
  * Baut die Anmeldeansicht auf und meldet ihre Listener an.
  *
  * @param {{aktionen: object}} deps  die Sendefunktionen aus kern.js
- * @returns {{zeige: Function, melde: Function, raeumeAuf: Function}}
+ * @returns {{zeige: Function, melde: Function}}
  */
 export function erzeugeAnmeldeAnsicht({ aktionen }) {
   const abschnitt = $('#ansicht-anmelden');
@@ -132,8 +132,20 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
     aktionen.beitreten(name, { privat: istPrivatGewaehlt(), code: einladung });
   }
 
-  formular.addEventListener('submit', beiAbsenden);
-  formular.addEventListener('change', aktualisiereKnopf);
+  /**
+   * Listener nur, solange die Ansicht sichtbar ist (Anforderungen 6.3).
+   * Doppeltes Anmelden derselben Funktion ist wirkungslos – zeige() darf
+   * deshalb bei jeder Zustandsaenderung erneut anmelden.
+   */
+  function meldeListenerAn() {
+    formular.addEventListener('submit', beiAbsenden);
+    formular.addEventListener('change', aktualisiereKnopf);
+  }
+
+  function meldeListenerAb() {
+    formular.removeEventListener('submit', beiAbsenden);
+    formular.removeEventListener('change', aktualisiereKnopf);
+  }
 
   return {
     zeige(sichtbar) {
@@ -143,8 +155,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
       const wirdEingeblendet = sichtbar && abschnitt.hidden;
 
       zeige(abschnitt, sichtbar);
-      if (!sichtbar) return;
+      if (!sichtbar) {
+        meldeListenerAb();
+        return;
+      }
 
+      meldeListenerAn();
       aktualisiereEinladung();
 
       if (wirdEingeblendet) {
@@ -158,12 +174,6 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
     /** Meldet einen Fehler des Servers im Formular. */
     melde(text) {
       zeigeFehler(text);
-    },
-
-    /** Listener abmelden – gegen Speicherlecks (Konzept 6.3 der Anforderungen). */
-    raeumeAuf() {
-      formular.removeEventListener('submit', beiAbsenden);
-      formular.removeEventListener('change', aktualisiereKnopf);
     },
   };
 }

@@ -16,7 +16,7 @@ import { $, zeige, setzeText } from './dom.js';
  * @param {object} deps
  * @param {object} deps.aktionen       Sendefunktionen
  * @param {Function} deps.beiAbbrechen wird nach "Suche abbrechen" gerufen
- * @returns {{zeige: Function, aktualisiere: Function, raeumeAuf: Function}}
+ * @returns {{zeige: Function, aktualisiere: Function}}
  */
 export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const abschnitt = $('#ansicht-warten');
@@ -59,8 +59,16 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
     }
   }
 
-  knopfAbbrechen.addEventListener('click', beiAbbrechenKlick);
-  knopfKopieren.addEventListener('click', beiKopieren);
+  /** Listener nur, solange die Ansicht sichtbar ist (Anforderungen 6.3). */
+  function meldeListenerAn() {
+    knopfAbbrechen.addEventListener('click', beiAbbrechenKlick);
+    knopfKopieren.addEventListener('click', beiKopieren);
+  }
+
+  function meldeListenerAb() {
+    knopfAbbrechen.removeEventListener('click', beiAbbrechenKlick);
+    knopfKopieren.removeEventListener('click', beiKopieren);
+  }
 
   return {
     zeige(sichtbar) {
@@ -70,6 +78,11 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       const wirdEingeblendet = sichtbar && abschnitt.hidden;
 
       zeige(abschnitt, sichtbar);
+      if (sichtbar) {
+        meldeListenerAn();
+      } else {
+        meldeListenerAb();
+      }
 
       if (wirdEingeblendet) {
         setzeText(kopierStatus, '');
@@ -103,11 +116,6 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       } else {
         setzeText(positionAnzeige, '');
       }
-    },
-
-    raeumeAuf() {
-      knopfAbbrechen.removeEventListener('click', beiAbbrechenKlick);
-      knopfKopieren.removeEventListener('click', beiKopieren);
     },
   };
 }

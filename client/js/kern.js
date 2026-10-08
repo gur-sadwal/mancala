@@ -132,6 +132,10 @@ export function verbinde(rueckrufe) {
     reconnectionDelayMax: 4000,
   });
 
+  // Alle socket.on-Listener gelten fuer die ganze Seite und werden nie
+  // abgemeldet: Nachrichten des Servers koennen in jeder Ansicht ankommen,
+  // und es gibt genau eine Verbindung, die so lange lebt wie die Seite.
+
   // ----- Verbindungszustand -------------------------------------------------
 
   socket.on('connect', () => rueckrufe.beiVerbindung?.());

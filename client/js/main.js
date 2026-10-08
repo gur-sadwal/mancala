@@ -353,7 +353,11 @@ const endeAnsicht = erzeugeEndeAnsicht({
 });
 
 /**
- * Der einzige Ort, an dem Ansichten ein- und ausgeblendet werden.
+ * Der einzige Ort, an dem Ansichten ein- und ausgeblendet werden. Jede
+ * Ansicht meldet dabei in zeige() ihre eigenen Listener an bzw. ab.
+ *
+ * Dieser Abonnent selbst gilt fuer die ganze Seite und wird nie abgemeldet:
+ * Er ist es ja, der die Ansichten wechselt.
  *
  * Gewechselt wird ueber das `hidden`-Attribut, nicht durch Neuladen
  * (Konzept 8.1). Waehrend des Ergebnisdialogs bleibt das Brett sichtbar –
@@ -433,19 +437,3 @@ einstellungen.zeigeBeimErstenBesuch();
  * eigenen Fehlercode.
  */
 zeige($('#ladehinweis'), false);
-
-/**
- * Aufraeumen beim Verlassen der Seite.
- *
- * Alle Ansichten melden ihre Listener ab. Auf einer Seite, die ohnehin
- * entladen wird, ist das nicht zwingend – es ist aber die Stelle, an der im
- * Review sichtbar wird, dass jeder Listener einen Gegenpart hat
- * (Anforderungen 6.3: Memory Leaks vermeiden).
- */
-window.addEventListener('pagehide', () => {
-  anmeldeAnsicht.raeumeAuf();
-  warteAnsicht.raeumeAuf();
-  spielAnsicht.raeumeAuf();
-  endeAnsicht.raeumeAuf();
-  einstellungen.raeumeAuf();
-});

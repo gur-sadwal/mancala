@@ -65,7 +65,7 @@ export function ausSpeichertext(text, standard) {
  * Baut den Einstellungsdialog auf und wendet die gespeicherten Einstellungen
  * SOFORT an – also schon, bevor irgendeine Ansicht gezeichnet wird.
  *
- * @returns {{zeigeBeimErstenBesuch: Function, raeumeAuf: Function}}
+ * @returns {{zeigeBeimErstenBesuch: Function}}
  */
 export function erzeugeEinstellungen() {
   const dialog = $('#dialog-einstellungen');
@@ -161,6 +161,9 @@ export function erzeugeEinstellungen() {
     dialog.showModal();
   }
 
+  // Seitenweit angemeldet und nie abgemeldet – bewusst: Die Einstellungen
+  // gehoeren zu keiner Ansicht. Der Knopf steht in der Kopfzeile und der
+  // Dialog liegt ueber jeder Ansicht; beide leben so lange wie die Seite.
   formular.addEventListener('change', beiAenderung);
   dialog.addEventListener('close', beiSchliessen);
   knopfOeffnen.addEventListener('click', beiOeffnen);
@@ -169,12 +172,6 @@ export function erzeugeEinstellungen() {
     /** Oeffnet den Dialog nur, wenn noch nie etwas gespeichert wurde. */
     zeigeBeimErstenBesuch() {
       if (gespeichert === null) beiOeffnen();
-    },
-
-    raeumeAuf() {
-      formular.removeEventListener('change', beiAenderung);
-      dialog.removeEventListener('close', beiSchliessen);
-      knopfOeffnen.removeEventListener('click', beiOeffnen);
     },
   };
 }
