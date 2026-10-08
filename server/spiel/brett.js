@@ -21,16 +21,22 @@ export const OBEN = 0;
 export const UNTEN = 1;
 
 /** Mulden je Spieler. */
-export const MULDEN_JE_SEITE = 6;
+const MULDEN_JE_SEITE = 6;
 
 /** Kugeln, mit denen jede Mulde startet. */
-export const START_KUGELN = 4;
+const START_KUGELN = 4;
 
 /** 12 Mulden * 4 Kugeln = 48. Diese Zahl ist die Grundlage von Invariante I-1. */
 export const KUGELN_GESAMT = MULDEN_JE_SEITE * 2 * START_KUGELN;
 
 /** Spalten je Reihe: 6 Mulden + 1 Haus. */
-export const SPALTEN = MULDEN_JE_SEITE + 1;
+const SPALTEN = MULDEN_JE_SEITE + 1;
+
+/** Haus des oberen Sitzes: ganz links in der oberen Reihe. */
+const HAUS_OBEN = Object.freeze([OBEN, 0]);
+
+/** Haus des unteren Sitzes: ganz rechts in der unteren Reihe. */
+const HAUS_UNTEN = Object.freeze([UNTEN, MULDEN_JE_SEITE]);
 
 // ---------------------------------------------------------------------------
 // Sitz-Konfiguration (Konzept 4.4)
@@ -49,8 +55,8 @@ export const SPALTEN = MULDEN_JE_SEITE + 1;
 export const SITZE = Object.freeze({
   unten: Object.freeze({
     reihe: UNTEN,
-    haus: Object.freeze([UNTEN, 6]),
-    gegnerHaus: Object.freeze([OBEN, 0]),
+    haus: HAUS_UNTEN,
+    gegnerHaus: HAUS_OBEN,
     gegner: 'oben',
     // Muldennummer aus Spielersicht -> Zelle. 0 = am weitesten vom eigenen
     // Haus entfernt, 5 = direkt daneben (Konzept 4.5).
@@ -58,12 +64,12 @@ export const SITZE = Object.freeze({
   }),
   oben: Object.freeze({
     reihe: OBEN,
-    haus: Object.freeze([OBEN, 0]),
-    gegnerHaus: Object.freeze([UNTEN, 6]),
+    haus: HAUS_OBEN,
+    gegnerHaus: HAUS_UNTEN,
     gegner: 'unten',
     // Der obere Spieler sitzt gegenueber: seine Zaehlung laeuft auf dem
     // Bildschirm von rechts nach links, deshalb 6 - n.
-    mulde: (n) => [OBEN, 6 - n],
+    mulde: (n) => [OBEN, MULDEN_JE_SEITE - n],
   }),
 });
 
@@ -72,7 +78,7 @@ export const SITZ_NAMEN = Object.freeze(['unten', 'oben']);
 
 /** Prueft, ob eine Zeichenkette ein gueltiger Sitzname ist. */
 export function istSitz(sitz) {
-  return sitz === 'unten' || sitz === 'oben';
+  return SITZ_NAMEN.includes(sitz);
 }
 
 // ---------------------------------------------------------------------------
@@ -145,8 +151,8 @@ export function zelleGleich(a, b) {
  * Haeuser sind genau [0,0] (oben) und [1,6] (unten) – jeweils das Feld am
  * aeusseren Ende der eigenen Reihe.
  */
-export function istHaus([reihe, spalte]) {
-  return (reihe === OBEN && spalte === 0) || (reihe === UNTEN && spalte === 6);
+export function istHaus(zelle) {
+  return zelleGleich(zelle, HAUS_OBEN) || zelleGleich(zelle, HAUS_UNTEN);
 }
 
 /** Gehoert die Zelle zur Reihe dieses Sitzes? */
@@ -177,7 +183,8 @@ export function naechsteZelle([reihe, spalte]) {
   if (reihe === UNTEN) {
     // Untere Reihe laeuft nach rechts; hinter dem Haus [1,6] geht es in der
     // oberen Reihe ganz rechts weiter.
-    return spalte < 6 ? [UNTEN, spalte + 1] : [OBEN, 6];
+    if (spalte < MULDEN_JE_SEITE) return [UNTEN, spalte + 1];
+    return [OBEN, MULDEN_JE_SEITE];
   }
   // Obere Reihe laeuft nach links; hinter dem Haus [0,0] geht es unten links
   // weiter.
@@ -215,19 +222,17 @@ export function gegenueber([reihe, spalte]) {
  * Spieler keinen legalen Zug mehr machen (Konzept 5.6).
  */
 export function muldenSumme(brett, reihe) {
-  const zeile = brett[reihe];
-  // Obere Reihe: Spalten 1..6 sind Mulden (Spalte 0 ist das Haus).
-  // Untere Reihe: Spalten 0..5 sind Mulden (Spalte 6 ist das Haus).
-  const von = reihe === OBEN ? 1 : 0;
   let summe = 0;
-  for (let s = von; s < von + MULDEN_JE_SEITE; s += 1) {
-    summe += zeile[s];
+  for (const zelle of muldenZellen(reihe)) {
+    summe += lies(brett, zelle);
   }
   return summe;
 }
 
 /** Alle Muldenzellen einer Reihe, in Array-Reihenfolge. */
 export function muldenZellen(reihe) {
+  // Obere Reihe: Spalten 1..6 sind Mulden (Spalte 0 ist das Haus).
+  // Untere Reihe: Spalten 0..5 sind Mulden (Spalte 6 ist das Haus).
   const von = reihe === OBEN ? 1 : 0;
   const zellen = [];
   for (let s = von; s < von + MULDEN_JE_SEITE; s += 1) {
