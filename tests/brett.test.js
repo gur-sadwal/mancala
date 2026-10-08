@@ -20,6 +20,8 @@ import {
   muldenZellen,
   gesamtSumme,
   pruefeInvarianten,
+  SITZ_NAMEN,
+  istSitz,
 } from '../server/spiel/brett.js';
 
 describe('T-03: Startbrett', () => {
@@ -219,5 +221,40 @@ describe('Invarianten (Konzept 4.8)', () => {
   test('I-3 schlaegt bei falscher Form an', () => {
     expect(pruefeInvarianten([[1, 2, 3]]).ok).toBe(false);
     expect(pruefeInvarianten(null).ok).toBe(false);
+  });
+});
+
+describe('Sicherheitsnetz vor dem Umbau', () => {
+  test('I-3 schlägt an, wenn ein Feld keine ganze Zahl ist', () => {
+    const brett = neuesBrett();
+    brett[UNTEN][0] = 3.5;
+    brett[UNTEN][1] = 4.5;   // Summe bleibt 48
+
+    const ergebnis = pruefeInvarianten(brett);
+
+    expect(ergebnis.ok).toBe(false);
+    expect(ergebnis.verletzungen).toEqual(['I-3: Feld ist keine ganze Zahl']);
+  });
+
+  test('muldenSumme zählt genau die Felder aus muldenZellen', () => {
+    const brett = [
+      [7, 1, 2, 3, 4, 5, 6],
+      [8, 9, 10, 11, 12, 13, 14],
+    ];
+
+    for (const reihe of [OBEN, UNTEN]) {
+      let erwartet = 0;
+      for (const [r, s] of muldenZellen(reihe)) erwartet += brett[r][s];
+      expect(muldenSumme(brett, reihe)).toBe(erwartet);
+    }
+    expect(muldenSumme(brett, OBEN)).toBe(21);
+    expect(muldenSumme(brett, UNTEN)).toBe(63);
+  });
+
+  test('istSitz kennt genau die beiden Sitznamen', () => {
+    expect(SITZ_NAMEN.every((sitz) => istSitz(sitz))).toBe(true);
+    for (const falsch of ['links', '', null, undefined, '__proto__', 'Unten']) {
+      expect(istSitz(falsch)).toBe(false);
+    }
   });
 });

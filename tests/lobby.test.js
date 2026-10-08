@@ -426,6 +426,13 @@ describe('Partieverwaltung', () => {
     expect(manager.holeNachId(partie.id)).toBeNull();
   });
 
+  test('eine unbekannte Spiel-ID zu entfernen ändert nichts', () => {
+    const { manager } = mitPartie();
+
+    expect(() => manager.entferne('g-gibt-es-nicht')).not.toThrow();
+    expect(manager.anzahl()).toBe(1);
+  });
+
   test('findet ruhende Partien genau ab der Frist, ohne sie zu entfernen', () => {
     const { manager, partie } = mitPartie();
     partie.letzteAktivitaet = 1000;

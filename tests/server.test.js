@@ -74,3 +74,36 @@ describe('Startpunkt server/index.js', () => {
     expect(await lauf.ende).toBe(0);
   }, ZEITGRENZE_MS);
 });
+
+describe('Startpunkt: falsche Aufrufe', () => {
+  test('ein Port ohne Zahl wird abgelehnt (Code 1)', async () => {
+    const lauf = starte('abc');
+
+    expect(await lauf.ende).toBe(1);
+    expect(lauf.ausgabe()).toContain('Port');
+  }, ZEITGRENZE_MS);
+
+  test('ein belegter Port wird verständlich gemeldet (Code 1)', async () => {
+    const port = await freierPort();
+    const belegt = net.createServer();
+    await new Promise((fertig) => belegt.listen(port, '0.0.0.0', fertig));
+
+    try {
+      const lauf = starte(String(port));
+      expect(await lauf.ende).toBe(1);
+      expect(lauf.ausgabe()).toContain('belegt');
+    } finally {
+      await new Promise((fertig) => belegt.close(fertig));
+    }
+  }, ZEITGRENZE_MS);
+
+  test('auch SIGINT (Control+C) beendet geordnet mit Code 0', async () => {
+    const port = await freierPort();
+    const lauf = starte(String(port));
+    await warteAuf(lauf, 'lauscht');
+
+    kind.kill('SIGINT');
+
+    expect(await lauf.ende).toBe(0);
+  }, ZEITGRENZE_MS);
+});

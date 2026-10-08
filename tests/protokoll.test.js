@@ -1,0 +1,34 @@
+/**
+ * Tests von shared/protokoll.js: die Tabellen, die Server und Browser teilen.
+ * (Die Namensregel `bereinigeName` steht in tests/validation.test.js.)
+ */
+
+import { EREIGNIS, FEHLER, FEHLER_TEXT, GRUND, STATUS } from '../shared/protokoll.js';
+
+describe('Protokoll', () => {
+  test('jeder Fehlercode hat einen Text für Menschen', () => {
+    for (const code of Object.values(FEHLER)) {
+      expect(typeof FEHLER_TEXT[code]).toBe('string');
+      expect(FEHLER_TEXT[code].length).toBeGreaterThan(0);
+    }
+  });
+
+  test('jeder Fehlercode, jeder Grund und jeder Zustand heißt wie sein Schlüssel', () => {
+    for (const tabelle of [FEHLER, GRUND, STATUS]) {
+      for (const [schluessel, wert] of Object.entries(tabelle)) {
+        expect(wert).toBe(schluessel);
+      }
+    }
+  });
+
+  test('kein Ereignisname kommt doppelt vor', () => {
+    const namen = Object.values(EREIGNIS);
+    expect(new Set(namen).size).toBe(namen.length);
+  });
+
+  test('die Tabellen sind eingefroren und lassen sich nicht ändern', () => {
+    for (const tabelle of [EREIGNIS, FEHLER, FEHLER_TEXT, GRUND, STATUS]) {
+      expect(Object.isFrozen(tabelle)).toBe(true);
+    }
+  });
+});

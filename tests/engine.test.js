@@ -506,3 +506,98 @@ describe('pruefeZug ohne Seiteneffekte', () => {
     expect(moeglicheZuege(startPartie(), 'oben')).toEqual([]);   // nicht am Zug
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sicherheitsnetz vor dem Umbau: Fälle, die bisher nur mit Sitz unten oder
+// nur indirekt (über die Handler) geprüft waren.
+// ---------------------------------------------------------------------------
+
+describe('T-23: kaputtes Brett im Zug', () => {
+  test('49 Kugeln: der Zug wird mit INTERNER_FEHLER und Begründung abgelehnt', () => {
+    const partie = partieMit([
+      [0, 4, 4, 4, 4, 4, 4],
+      [4, 4, 4, 4, 4, 4, 1],
+    ]);
+
+    const ergebnis = fuehreZugAus(partie, 'unten', 0);
+
+    expect(ergebnis.ok).toBe(false);
+    expect(ergebnis.code).toBe(FEHLER.INTERNER_FEHLER);
+    expect(ergebnis.verletzungen.join(' ')).toContain('I-1');
+  });
+});
+
+describe('T-24 bis T-26: Klauen und Spielende für den Sitz oben', () => {
+  test('T-24: oben klaut aus der gegenüberliegenden unteren Mulde', () => {
+    // Oben spielt Mulde 0 = [0,6] mit 1 Kugel; sie fällt in die leere [0,5],
+    // gegenüber liegt [1,4] mit 7 Kugeln.
+    const partie = partieMit([
+      [3, 4, 4, 4, 4, 0, 1],
+      [4, 4, 4, 4, 7, 5, 0],
+    ], 'oben');
+
+    const { partie: neu, bericht } = zug(partie, 'oben', 0);
+
+    expect(bericht.beute).toEqual({ eigeneZelle: [0, 5], gegnerZelle: [1, 4], anzahl: 8 });
+    expect(neu.brett[OBEN][0]).toBe(11);
+    expect(neu.amZug).toBe('unten');
+  });
+
+  test('T-25: oben, Gegenmulde leer – die Kugel bleibt liegen', () => {
+    const partie = partieMit([
+      [6, 4, 4, 4, 4, 0, 1],
+      [5, 5, 5, 5, 0, 5, 0],
+    ], 'oben');
+
+    const { partie: neu, bericht } = zug(partie, 'oben', 0);
+
+    expect(bericht.beute).toBeNull();
+    expect(neu.brett[OBEN][5]).toBe(1);
+    expect(neu.amZug).toBe('unten');
+  });
+
+  test('T-26: oben leert mit einem Extrazug die eigene Reihe – Spielende', () => {
+    const partie = partieMit([
+      [30, 1, 0, 0, 0, 0, 0],
+      [3, 3, 3, 3, 3, 2, 0],
+    ], 'oben');
+
+    const { partie: neu, bericht } = zug(partie, 'oben', 5);
+
+    expect(neu.status).toBe(STATUS.BEENDET);
+    expect(bericht.extrazug).toBe(false);
+    expect(bericht.abrechnung).toEqual({ unten: 17, oben: 0 });
+    expect(neu.ergebnis).toEqual({
+      punkte: { unten: 17, oben: 31 },
+      sieger: 'oben',
+      grund: GRUND.REGULAER,
+    });
+  });
+});
+
+describe('T-27: ein normaler Zug leert die eigene Reihe', () => {
+  test('die Restkugeln gehen an den Gegner, er gewinnt 26:22', () => {
+    const partie = partieMit([
+      [0, 4, 4, 4, 4, 4, 4],
+      [0, 0, 0, 0, 0, 3, 21],
+    ]);
+
+    const { partie: neu, bericht } = zug(partie, 'unten', 5);
+
+    expect(neu.status).toBe(STATUS.BEENDET);
+    expect(bericht.extrazug).toBe(false);
+    expect(bericht.beute).toBeNull();
+    expect(bericht.abrechnung).toEqual({ unten: 0, oben: 26 });
+    expect(neu.ergebnis.punkte).toEqual({ unten: 22, oben: 26 });
+    expect(neu.ergebnis.sieger).toBe('oben');
+    expect(neu.amZug).toBe('unten');   // bleibt beim Ziehenden
+  });
+});
+
+describe('T-34: kaputter Sitzname', () => {
+  test('ein Sitz namens __proto__ führt nicht zum Absturz', () => {
+    const partie = startPartie('__proto__');
+
+    expect(pruefeZug(partie, '__proto__', 0)).toEqual({ ok: false, code: FEHLER.NICHT_AM_ZUG });
+  });
+});

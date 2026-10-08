@@ -11,7 +11,7 @@ import { erzeugeHandler } from '../server/socket/handlers.js';
 import { erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
 import { erzeugeManager } from '../server/spiel/manager.js';
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
-import { EREIGNIS, FEHLER, GRUND, GRENZEN } from '../shared/protokoll.js';
+import { EREIGNIS, FEHLER, GRUND, GRENZEN, STATUS } from '../shared/protokoll.js';
 
 /*
  * Die Handler protokollieren jeden Schritt (Konzept 7.10). Im Test waere das
@@ -825,5 +825,129 @@ describe('Handler: Aufräumen nach Fristen', () => {
     ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
 
     expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
+  });
+});
+
+describe('Handler: Partie von außen beenden (Herunterfahren, Takt)', () => {
+  test('beim Herunterfahren erfahren beide davon – ohne Sieger, ohne Revanche', () => {
+    const { anna, ben, handler, manager } = schnellesSpiel();
+
+    handler.beendeKontrolliert(manager.holeNachSocket('a'), GRUND.SERVER_ENDE);
+
+    for (const spieler of [anna, ben]) {
+      const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
+      expect(abbruch.grund).toBe(GRUND.SERVER_ENDE);
+      expect(abbruch.ergebnis.sieger).toBeNull();
+      expect(abbruch.revanche).toBe(false);
+    }
+    expect(manager.anzahl()).toBe(0);
+  });
+
+  test('eine beendete, aber nicht aufgelöste Partie löst der Takt still auf', () => {
+    const { anna, ben, handler, manager, raeume } = schnellesSpiel();
+    const { spielId } = anna.letzte(EREIGNIS.START).daten;
+    manager.holeNachSocket('a').status = STATUS.ABGEBROCHEN;
+
+    handler.raeumeAuf();
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+    expect(manager.anzahl()).toBe(0);
+    expect(raeume.get(spielId).size).toBe(0);
+  });
+});
+
+describe('Handler: Verbindung weg, disconnect noch nicht verarbeitet', () => {
+  // Socket.io nimmt einen Socket aus io.sockets.sockets, bevor es
+  // `disconnect` meldet. Der Test stellt genau diesen Augenblick nach.
+
+  test('der Link eines nicht mehr verbundenen Erstellers gilt nicht', () => {
+    const { code, io, verbinde } = privatesSpiel();
+    io.sockets.sockets.delete('a');
+    const ben = verbinde('b');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+
+    expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
+    expect(ben.letzte(EREIGNIS.START)).toBeUndefined();
+  });
+
+  test('eine Revanche startet nicht, wenn einer schon weg ist', () => {
+    const { anna, ben, io } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    io.sockets.sockets.delete('a');
+
+    ben.sende(EREIGNIS.REVANCHE);
+
+    expect(ben.letzte(EREIGNIS.REVANCHE_WEG)).toBeDefined();
+    expect(ben.alle(EREIGNIS.START)).toHaveLength(1);
+  });
+
+  test('nach einer Aufgabe gibt es keine Revanche, wenn der Gegner schon weg ist', () => {
+    const { anna, ben, io } = schnellesSpiel();
+    io.sockets.sockets.delete('b');
+
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    expect(anna.letzte(EREIGNIS.ABBRUCH).daten.revanche).toBe(false);
+    expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+  });
+});
+
+describe('Handler: Ratenbegrenzung – das nächste Fenster', () => {
+  test('nach Ablauf des Fensters wird wieder bearbeitet', () => {
+    let jetzt = 0;
+    const ratenbegrenzer = erzeugeRatenbegrenzer(1, 1000, () => jetzt);
+    const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
+    const anna = verbinde('a');
+
+    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    jetzt = 1000;
+    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+
+    const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
+    expect(codes).toEqual([
+      FEHLER.KEINE_PARTIE,
+      FEHLER.ZU_VIELE_ANFRAGEN,
+      FEHLER.KEINE_PARTIE,
+    ]);
+  });
+
+  test('die Grenze greift vor der Schemaprüfung', () => {
+    const ratenbegrenzer = erzeugeRatenbegrenzer(1, 1000, () => 0);
+    const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
+    const anna = verbinde('a');
+
+    anna.sende(EREIGNIS.ZUG, 'Müll');
+    anna.sende(EREIGNIS.ZUG, 'Müll');
+
+    const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
+    expect(codes).toEqual([FEHLER.NUTZDATEN_UNGUELTIG, FEHLER.ZU_VIELE_ANFRAGEN]);
+  });
+});
+
+describe('Handler: Erneut – weitere Fälle', () => {
+  test('wer schon wartet, bekommt BEREITS_IN_WARTESCHLANGE', () => {
+    const { verbinde } = erzeugeUmgebung();
+    const anna = verbinde('a');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+
+    anna.sende(EREIGNIS.ERNEUT, { name: 'Anna' });
+
+    expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.BEREITS_IN_WARTESCHLANGE);
+  });
+
+  test('nach einem privaten Spiel geht es in die öffentliche Warteschlange', () => {
+    const { anna, code, verbinde } = privatesSpiel();
+    const ben = verbinde('b');
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    anna.sende(EREIGNIS.ERNEUT, { name: 'Anna' });
+
+    expect(anna.letzte(EREIGNIS.WARTESCHLANGE).daten).toEqual({ position: 1 });
+    expect(anna.letzte(EREIGNIS.PRIVAT).daten.code).toBe(code);   // kein neuer Code
   });
 });

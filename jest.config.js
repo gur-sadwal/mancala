@@ -15,13 +15,13 @@ export default {
 
   testMatch: ['**/tests/**/*.test.js'],
 
-  // Abdeckung nur fuer den Servercode, der ohne Netzwerk getestet wird: die
-  // Spiel-Engine (Konzept 10.1), die Eingabepruefung und die Handler (mit
-  // Attrappen fuer io und Socket, siehe tests/handlers.test.js).
+  // Abdeckung für den ganzen Servercode und das gemeinsame Protokoll.
+  // server/index.js fehlt mit Absicht: Die Datei startet beim Laden sofort
+  // einen Server und läuft deshalb nur als eigener Prozess
+  // (tests/server.test.js) – was dort passiert, misst Jest nicht.
   collectCoverageFrom: [
-    'server/spiel/**/*.js',
-    'server/socket/validation.js',
-    'server/socket/handlers.js',
-    'server/socket/rateLimit.js',
+    'server/**/*.js',
+    '!server/index.js',
+    'shared/protokoll.js',
   ],
 };
