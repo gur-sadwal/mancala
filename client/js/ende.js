@@ -181,17 +181,6 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
    */
   let gezaehltesErgebnis = null;
 
-  /**
-   * Wie oft dieses Modul den Dialog selbst geschlossen hat, ohne dass das
-   * `close`-Ereignis schon eingetroffen ist.
-   *
-   * Der Browser feuert `close` bei JEDEM Schliessen – auch bei unseren
-   * eigenen Aufrufen, und zwar erst etwas spaeter. Ein Zaehler statt eines
-   * true/false, damit zwei schnelle eigene Schliessungen sich nicht
-   * gegenseitig aufheben.
-   */
-  let eigeneSchliessungen = 0;
-
   /** Haelt den Zaehler an. Mehrfach aufrufbar, auch wenn keiner laeuft. */
   function stoppeZaehler() {
     clearInterval(zaehler);
@@ -233,26 +222,10 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
     }
   }
 
-  /** Schliesst den Dialog und merkt sich, dass das Absicht war. */
+  /** Schliesst den Dialog. Ein eigener close()-Aufruf meldet kein `cancel`. */
   function schliesse() {
     stoppeZaehler();
-    if (!dialog.open) return;
-    eigeneSchliessungen += 1;
-    dialog.close();
-  }
-
-  /**
-   * `close`-Ereignis: Kam es nicht von uns, wurde Esc gedrueckt.
-   *
-   * Ohne diese Behandlung bliebe die Anzeige im Zustand ENDE haengen – der
-   * Dialog waere weg, und man saehe nur noch das tote Brett ohne Knoepfe.
-   */
-  function beiClose() {
-    if (eigeneSchliessungen > 0) {
-      eigeneSchliessungen -= 1;
-      return;
-    }
-    beiSchliessen();
+    if (dialog.open) dialog.close();
   }
 
   /** "Neues Spiel suchen": Dialog schliessen und zurueck in die Warteschlange. */
@@ -270,7 +243,13 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
   knopfErneut.addEventListener('click', beiErneut);
   knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
   knopfRevanche.addEventListener('click', beiRevanche);
-  dialog.addEventListener('close', beiClose);
+
+  // Esc-Taste: Der Browser meldet erst `cancel` und schliesst danach selbst.
+  // `cancel` kommt nur von Esc, nie von unserem eigenen close() – so braucht
+  // es keinen Zaehler, um beides zu unterscheiden. Ohne diese Behandlung
+  // bliebe die Anzeige im Zustand ENDE haengen: Dialog weg, nur noch das
+  // tote Brett ohne Knoepfe.
+  dialog.addEventListener('cancel', beiSchliessen);
 
   return {
     /**
@@ -351,7 +330,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
       knopfErneut.removeEventListener('click', beiErneut);
       knopfAbmelden.removeEventListener('click', beiAbmeldenKlick);
       knopfRevanche.removeEventListener('click', beiRevanche);
-      dialog.removeEventListener('close', beiClose);
+      dialog.removeEventListener('cancel', beiSchliessen);
     },
   };
 }
