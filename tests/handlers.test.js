@@ -474,7 +474,9 @@ describe('Handler: Abbrechen', () => {
     expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(manager.holeNachSocket('a')).not.toBeNull();
-    expect(imProtokoll('ignoriert')).toBe(true);
+    // Nur auf Ebene debug: Sonst könnte ein Spieler bis zu 20 Zeilen je
+    // Sekunde ins normale Protokoll schreiben.
+    expect(imProtokoll('ignoriert')).toBe(false);
   });
 
   test('ebenso nach dem Start einer Revanche (Esc im Ergebnisdialog)', () => {

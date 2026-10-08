@@ -387,7 +387,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     // unterwegs war. Sie läuft normal weiter – der Client wechselt mit START
     // ohnehin ins Spiel. Kein Sieg ohne Zug für den Gegner.
     if (manager.holeNachSocket(socket.id)) {
-      logger.info('Abbrechen ignoriert, Partie läuft schon', { socketId: socket.id });
+      logger.debug('Abbrechen ignoriert, Partie läuft schon', { socketId: socket.id });
       return;
     }
 
