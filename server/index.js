@@ -128,17 +128,17 @@ httpServer.listen(port, '0.0.0.0', () => {
  * Die Notbremse nach 5 Sekunden verhindert, dass ein haengender Socket das
  * Beenden blockiert.
  */
-function beendeGeordnet(signal) {
+async function beendeGeordnet(signal) {
   logger.info(`${signal} empfangen, fahre herunter`);
+  setTimeout(() => process.exit(0), 5000).unref();
 
+  // herunterfahren schliesst auch den HTTP-Server (io.close).
   try {
-    herunterfahren();
+    await herunterfahren();
   } catch (fehler) {
     logger.error('Herunterfahren fehlgeschlagen', fehler);
   }
-
-  httpServer.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 5000).unref();
+  process.exit(0);
 }
 
 process.on('SIGTERM', () => beendeGeordnet('SIGTERM'));

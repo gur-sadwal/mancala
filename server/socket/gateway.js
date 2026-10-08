@@ -103,16 +103,17 @@ export function erzeugeGateway(httpServer, { lobby, manager }) {
    * Geordnetes Herunterfahren (SIGTERM/SIGINT, Konzept 7.7).
    *
    * Laufende Partien bekommen `spiel:abbruch`, damit niemand vor einem
-   * eingefrorenen Brett sitzt, danach schliesst der Server.
+   * eingefrorenen Brett sitzt. `io.close()` trennt dann alle Sockets und
+   * schliesst auch den HTTP-Server; das Promise erfuellt sich erst danach.
    */
-  function herunterfahren() {
+  async function herunterfahren() {
     clearInterval(aufraeumer);
     clearInterval(revancheTakt);
 
     for (const partie of manager.alle()) {
       handler.beendeKontrolliert(partie, GRUND.SERVER_ENDE);
     }
-    io.close();
+    await io.close();
   }
 
   return { io, herunterfahren };

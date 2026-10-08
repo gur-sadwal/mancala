@@ -155,6 +155,16 @@ describe('Gateway: Herunterfahren', () => {
   });
 });
 
+describe('Gateway: Herunterfahren mit await', () => {
+  test('herunterfahren liefert ein Promise – danach ist der Server zu', async () => {
+    const versprechen = gateway.herunterfahren();
+
+    expect(versprechen).toBeInstanceOf(Promise);
+    await versprechen;
+    expect(httpServer.listening).toBe(false);
+  });
+});
+
 describe('Gateway: Takte', () => {
   test('ein Fehler in einem Takt wird nur protokolliert', async () => {
     const jest = import.meta.jest;
