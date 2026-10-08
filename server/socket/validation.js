@@ -11,6 +11,8 @@
 
 import { EREIGNIS, GRENZEN, bereinigeName } from '../../shared/protokoll.js';
 
+const ERSATZ_NAME = 'Spieler';
+
 /**
  * Ist der Wert ein einfaches Objekt?
  *
@@ -28,7 +30,7 @@ export const istObjekt = (wert) => typeof wert === 'object'
  * `null` gemeinsam aus. Auch ein Objekt mit eigener `valueOf`-Methode kommt
  * hier nicht durch, weil ueberhaupt keine Umwandlung stattfindet.
  */
-export const istGanzzahlIm = (wert, min, max) => Number.isInteger(wert)
+export const istGanzzahlZwischen = (wert, min, max) => Number.isInteger(wert)
   && wert >= min
   && wert <= max;
 
@@ -50,12 +52,12 @@ export const istGanzzahlIm = (wert, min, max) => Number.isInteger(wert)
  * (Konzept 6.2), und ohne `<` und `>` kann ein Name gar kein HTML-Tag
  * enthalten.
  */
-export function saubererName(wert) {
-  if (typeof wert !== 'string') return 'Spieler';
+export function ermittleSpielername(wert) {
+  if (typeof wert !== 'string') return ERSATZ_NAME;
 
   const bereinigt = bereinigeName(wert);
 
-  return bereinigt.length > 0 ? bereinigt : 'Spieler';
+  return bereinigt.length > 0 ? bereinigt : ERSATZ_NAME;
 }
 
 /**
@@ -65,7 +67,7 @@ export function saubererName(wert) {
  * absichtlich mit in dieser Tabelle und akzeptieren alles: So bleibt die
  * Pruefung in `istGueltig` eine einzige Stelle ohne Sonderfaelle.
  */
-export const SCHEMA = Object.freeze({
+const SCHEMA = Object.freeze({
   // `privat` und `code` sind freiwillig. Der Code wird hier nur als
   // Zeichenkette geprueft: Ob er stimmt, entscheidet die Lobby – ein falscher
   // Code bekommt dort eine verstaendliche Meldung (siehe handlers.js).
@@ -74,7 +76,7 @@ export const SCHEMA = Object.freeze({
     && (d.privat === undefined || typeof d.privat === 'boolean')
     && (d.code === undefined || typeof d.code === 'string'),
   [EREIGNIS.ZUG]: (d) => istObjekt(d)
-    && istGanzzahlIm(d.mulde, GRENZEN.MULDE_MIN, GRENZEN.MULDE_MAX),
+    && istGanzzahlZwischen(d.mulde, GRENZEN.MULDE_MIN, GRENZEN.MULDE_MAX),
   [EREIGNIS.ABBRECHEN]: () => true,
   [EREIGNIS.AUFGEBEN]: () => true,
   // Der Name ist freiwillig: Nach einem Verbindungsabbruch kennt der neue

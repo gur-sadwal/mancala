@@ -7,7 +7,7 @@ import {
   beendeVorzeitig,
   beruehre,
 } from '../spiel/partie.js';
-import { istGueltig, saubererName } from './validation.js';
+import { istGueltig, ermittleSpielername } from './validation.js';
 import { logger } from '../util/logger.js';
 import {
   EREIGNIS,
@@ -87,7 +87,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     lasseRevancheVerfallen(socket.id);
 
-    const name = saubererName(nutzdaten.name);
+    const name = ermittleSpielername(nutzdaten.name);
     let angenommen;
     if (typeof nutzdaten.code === 'string') {
       angenommen = betreteMitCode(socket, name, nutzdaten.code);
@@ -221,7 +221,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   }
 
   function aufErneut(socket, nutzdaten) {
-    const name = socket.data.name ?? saubererName(nutzdaten.name);
+    const name = socket.data.name ?? ermittleSpielername(nutzdaten.name);
     aufBeitreten(socket, { name });
   }
 

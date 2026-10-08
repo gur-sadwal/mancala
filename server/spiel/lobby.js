@@ -33,7 +33,9 @@ export const REVANCHE_STATUS = Object.freeze({
  * erst, wenn das Ergebnis dort ankommt, und ein Klick bei "noch 1 s" braucht
  * noch einen Moment bis zum Server. Er soll trotzdem zaehlen.
  */
-export const REVANCHE_FRIST_MS = (GRENZEN.REVANCHE_SEKUNDEN + 2) * 1000;
+const REVANCHE_KULANZ_MS = 2000;
+export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
+  + REVANCHE_KULANZ_MS;
 
 /** Abstand, in dem der Server abgelaufene Revanchen sucht (gateway.js). */
 export const REVANCHE_TAKT_MS = 1000;
@@ -171,7 +173,8 @@ export function erzeugeLobby() {
    * `splice` entfernt sie zugleich aus der Warteschlange.
    */
   function naechstesPaar() {
-    return warteschlange.length >= 2 ? warteschlange.splice(0, 2) : null;
+    if (warteschlange.length < 2) return null;
+    return warteschlange.splice(0, 2);
   }
 
   /**

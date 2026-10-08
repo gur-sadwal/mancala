@@ -7,8 +7,8 @@
 
 import {
   istObjekt,
-  istGanzzahlIm,
-  saubererName,
+  istGanzzahlZwischen,
+  ermittleSpielername,
   istGueltig,
 } from '../server/socket/validation.js';
 
@@ -32,16 +32,16 @@ describe('istObjekt', () => {
   });
 });
 
-describe('istGanzzahlIm', () => {
+describe('istGanzzahlZwischen', () => {
   test('akzeptiert Ganzzahlen im Bereich', () => {
-    expect(istGanzzahlIm(0, 0, 5)).toBe(true);
-    expect(istGanzzahlIm(5, 0, 5)).toBe(true);
+    expect(istGanzzahlZwischen(0, 0, 5)).toBe(true);
+    expect(istGanzzahlZwischen(5, 0, 5)).toBe(true);
   });
 
   test('lehnt alles ab, was keine Ganzzahl im Bereich ist', () => {
     const schlecht = [6, -1, 1.5, '3', null, undefined, NaN, Infinity, {}, []];
     for (const wert of schlecht) {
-      expect(istGanzzahlIm(wert, 0, 5)).toBe(false);
+      expect(istGanzzahlZwischen(wert, 0, 5)).toBe(false);
     }
   });
 
@@ -49,50 +49,50 @@ describe('istGanzzahlIm', () => {
     // Ein Objekt, das sich als 3 ausgeben will: Da gar keine Umwandlung
     // stattfindet, kommt es nicht durch.
     const tarnung = { valueOf: () => 3 };
-    expect(istGanzzahlIm(tarnung, 0, 5)).toBe(false);
+    expect(istGanzzahlZwischen(tarnung, 0, 5)).toBe(false);
   });
 });
 
-describe('saubererName', () => {
+describe('ermittleSpielername', () => {
   test('behaelt einen normalen Namen', () => {
-    expect(saubererName('Gursharan')).toBe('Gursharan');
+    expect(ermittleSpielername('Gursharan')).toBe('Gursharan');
   });
 
   test('entfernt umgebende Leerzeichen', () => {
-    expect(saubererName('  Nico  ')).toBe('Nico');
+    expect(ermittleSpielername('  Nico  ')).toBe('Nico');
   });
 
   test('kuerzt auf 20 Zeichen', () => {
     const lang = 'A'.repeat(500);
-    expect(saubererName(lang)).toHaveLength(20);
+    expect(ermittleSpielername(lang)).toHaveLength(20);
   });
 
   test('ersetzt leere und falsch getypte Eingaben durch "Spieler"', () => {
-    expect(saubererName('')).toBe('Spieler');
-    expect(saubererName('   ')).toBe('Spieler');
-    expect(saubererName(null)).toBe('Spieler');
-    expect(saubererName(42)).toBe('Spieler');
-    expect(saubererName({})).toBe('Spieler');
-    expect(saubererName(undefined)).toBe('Spieler');
+    expect(ermittleSpielername('')).toBe('Spieler');
+    expect(ermittleSpielername('   ')).toBe('Spieler');
+    expect(ermittleSpielername(null)).toBe('Spieler');
+    expect(ermittleSpielername(42)).toBe('Spieler');
+    expect(ermittleSpielername({})).toBe('Spieler');
+    expect(ermittleSpielername(undefined)).toBe('Spieler');
   });
 
   test('entfernt Steuerzeichen', () => {
     // Zeilenumbruch und Nullbyte wuerden die Anzeige zerlegen, ohne selbst
     // sichtbar zu sein.
     const mitSteuerzeichen = `Ni${String.fromCharCode(10)}co${String.fromCharCode(0)}`;
-    expect(saubererName(mitSteuerzeichen)).toBe('Nico');
+    expect(ermittleSpielername(mitSteuerzeichen)).toBe('Nico');
   });
 
   test('entfernt < und > – ohne sie gibt es kein HTML-Tag (XSS)', () => {
     // Der Browser meldet diese Zeichen schon vor dem Absenden. Kommen sie
     // trotzdem an (manipulierter Client), entfernt der Server sie.
-    expect(saubererName('<b>Nico</b>')).toBe('bNico/b');
-    expect(saubererName('<script>alert(1)</script>')).not.toMatch(/[<>]/);
-    expect(saubererName('<>')).toBe('Spieler');
+    expect(ermittleSpielername('<b>Nico</b>')).toBe('bNico/b');
+    expect(ermittleSpielername('<script>alert(1)</script>')).not.toMatch(/[<>]/);
+    expect(ermittleSpielername('<>')).toBe('Spieler');
   });
 
   test('zerschneidet keine Emoji', () => {
-    expect(saubererName('Anna 🎲')).toBe('Anna 🎲');
+    expect(ermittleSpielername('Anna 🎲')).toBe('Anna 🎲');
   });
 });
 
@@ -112,7 +112,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
     const eingaben = ['Gursharan', '  Nico  ', 'A'.repeat(30), 'Anna 🎲',
       `Ni${String.fromCharCode(10)}co`, '<b>Nico</b>', 'Ölmühle Ärger'];
     for (const eingabe of eingaben) {
-      expect(saubererName(eingabe)).toBe(bereinigeName(eingabe));
+      expect(ermittleSpielername(eingabe)).toBe(bereinigeName(eingabe));
     }
   });
 
@@ -139,7 +139,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
   });
 
   test('ein Name nur aus unsichtbaren Zeichen wird auf dem Server zu „Spieler“', () => {
-    expect(saubererName('\u200B\u202E')).toBe('Spieler');
+    expect(ermittleSpielername('\u200B\u202E')).toBe('Spieler');
   });
 
   test('sichtbare Sonderzeichen und Emoji-Varianten bleiben', () => {

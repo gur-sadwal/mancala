@@ -12,10 +12,10 @@
  */
 
 /** Erlaubte Ereignisse je Fenster (Konzept 11.3). */
-export const GRENZE_JE_FENSTER = 20;
+const GRENZE_JE_FENSTER = 20;
 
 /** Fensterlaenge in Millisekunden. */
-export const FENSTER_MS = 1000;
+const FENSTER_MS = 1000;
 
 /**
  * @param {number} grenze     erlaubte Ereignisse je Fenster

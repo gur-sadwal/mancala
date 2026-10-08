@@ -13,7 +13,7 @@ import { CODE_ZEICHEN, GRENZEN } from '../../shared/protokoll.js';
 
 /** Erzeugt eine Partie-Kennung der Form `g-7f3a2b1c`. */
 export function neueSpielId() {
-  return `g-${randomUUID().replaceAll('-', '').slice(0, 8)}`;
+  return `g-${randomUUID().slice(0, 8)}`;
 }
 
 /**
