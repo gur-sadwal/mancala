@@ -86,6 +86,11 @@
   }
 }
 
+/* Auch die rechteckigen Zellenecken lösen einen Zug aus. */
+.zelle:has(.mulde--spielbar) {
+  cursor: pointer;
+}
+
 /* Nur die Kugeln verblassen – die Zahl bleibt voll lesbar. 0.7 statt 0.6:
    So haben auch verblasste Kugeln noch mindestens 3,5:1 auf der Mulde
    (nachgerechnet; mit 0.6 waeren es genau 3,0:1 gewesen). */
