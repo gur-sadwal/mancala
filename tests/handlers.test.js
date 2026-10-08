@@ -1239,3 +1239,25 @@ describe('Handler: Doppelwunsch bleibt vollständig still', () => {
   });
 });
 
+describe('Handler: Protokollierte Sitzvergabe', () => {
+  test('jeder Sitz im Protokoll stimmt mit der ausgelosten neuen Partie überein', () => {
+    const zufall = import.meta.jest.spyOn(Math, 'random').mockReturnValue(0.9);
+    try {
+      const { anna, ben, manager } = schnellesSpiel();
+      anna.sende(EREIGNIS.AUFGEBEN);
+      protokoll.length = 0;
+      anna.sende(EREIGNIS.REVANCHE);
+      ben.sende(EREIGNIS.REVANCHE);
+      const partie = manager.holeNachSocket('a');
+      const sitzZeilen = protokoll.filter((zeile) => zeile.includes('"unten"'));
+      expect(sitzZeilen.length).toBeGreaterThan(0);
+      for (const zeile of sitzZeilen) {
+        const daten = JSON.parse(zeile.slice(zeile.indexOf('{')));
+        expect(daten.unten).toBe(partie.spieler.unten.name);
+        expect(daten.oben).toBe(partie.spieler.oben.name);
+      }
+    } finally {
+      zufall.mockRestore();
+    }
+  });
+});

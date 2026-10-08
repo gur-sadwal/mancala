@@ -277,7 +277,6 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
-    logger.info('Revanche', { unten: a.name, oben: b.name });
     starteMitPaar(a, b);
   }
 
