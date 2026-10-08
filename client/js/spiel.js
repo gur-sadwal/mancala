@@ -703,7 +703,12 @@ export function erzeugeSpielAnsicht({ aktionen }) {
    * einen abzumelden.
    */
   function beiKlick(ereignis) {
-    const knopf = ereignis.target.closest('button[data-mulde]');
+    // Die ganze rechteckige Zelle zählt, nicht nur die runde Mulde darin:
+    // Ein Klick in die Ecke trifft das <li>, nicht den runden Button.
+    const zelle = ereignis.target.closest('.zelle');
+    if (!zelle) return;
+
+    const knopf = zelle.querySelector('button[data-mulde]');
     if (!knopf || knopf.disabled) return;
 
     if (wartetAufAntwort) return;
