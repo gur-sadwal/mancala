@@ -119,6 +119,37 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
   test('Umlaute und Satzzeichen bleiben erlaubt', () => {
     expect(bereinigeName('Jörg-Ümit & Co.')).toBe('Jörg-Ümit & Co.');
   });
+
+  test('gekürzt wird nach Zeichen: ein Emoji an Stelle 20 bleibt ganz', () => {
+    const name = 'A'.repeat(19) + '🎲';
+
+    expect(bereinigeName(name)).toBe(name);
+    expect(bereinigeName(`${name}xyz`)).toBe(name);
+  });
+
+  test('nach dem Kürzen steht kein Leerzeichen am Ende', () => {
+    expect(bereinigeName(`${'A'.repeat(19)} B`)).toBe('A'.repeat(19));
+  });
+
+  test('unsichtbare Zeichen werden entfernt', () => {
+    expect(bereinigeName('\u200B')).toBe('');           // Nullbreite-Leerzeichen
+    expect(bereinigeName('Ni\u0085co')).toBe('Nico');   // Steuerzeichen NEL
+    expect(bereinigeName('Anna\u202Etxet')).toBe('Annatxet');   // dreht die Leserichtung
+    expect(bereinigeName('Ni\u00ADco\uFEFF')).toBe('Nico');   // weiches Trennzeichen, BOM
+  });
+
+  test('ein Name nur aus unsichtbaren Zeichen wird auf dem Server zu „Spieler“', () => {
+    expect(saubererName('\u200B\u202E')).toBe('Spieler');
+  });
+
+  test('sichtbare Sonderzeichen und Emoji-Varianten bleiben', () => {
+    expect(bereinigeName('Jörg 🎲')).toBe('Jörg 🎲');
+    expect(bereinigeName('Herz ❤\uFE0F')).toBe('Herz ❤\uFE0F');
+  });
+
+  test('zusammengesetzte Emoji zerfallen in ihre Teile (Verbindungszeichen ist unsichtbar)', () => {
+    expect(bereinigeName('👨\u200D👩')).toBe('👨👩');
+  });
 });
 
 describe('Schemapruefung der Ereignisse', () => {

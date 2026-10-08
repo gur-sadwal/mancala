@@ -124,11 +124,12 @@ export const GRENZEN = Object.freeze({
   WARTEN_MINUTEN: 7.5,
 });
 
-/** Hoechster Codepoint des C0-Steuerzeichenbereichs (0 bis 31). */
-const LETZTES_C0_ZEICHEN = 31;
-
-/** Codepoint von DEL. */
-const DEL = 127;
+/**
+ * Unsichtbare Zeichen: alle Steuerzeichen (Unicode-Gruppe Cc, z. B.
+ * Zeilenumbruch) und Formatzeichen (Gruppe Cf, z. B. Nullbreite-Leerzeichen
+ * oder die Umkehr der Leserichtung).
+ */
+const UNSICHTBAR = /[\p{Cc}\p{Cf}]/u;
 
 /**
  * Zeichen, die in einem Namen verboten sind: Mit `<` beginnt und mit `>`
@@ -153,8 +154,9 @@ export const NAME_VERBOTEN = '<>';
  * Weil beide Seiten diese Datei laden, koennen die zwei Pruefungen nicht
  * auseinanderlaufen.
  *
- *   Steuerzeichen  ->  entfernt (Zeilenumbruch, Nullbyte ...): Sie wuerden
- *                      die Anzeige zerlegen, ohne selbst sichtbar zu sein
+ *   Unsichtbares   ->  entfernt (Zeilenumbruch, Nullbreite-Leerzeichen ...):
+ *                      Es wuerde die Anzeige zerlegen, ohne selbst sichtbar
+ *                      zu sein
  *   < und >        ->  entfernt (NAME_VERBOTEN, gegen XSS)
  *   Leerzeichen    ->  am Anfang und Ende entfernt
  *   Laenge         ->  auf GRENZEN.NAME_MAX (20) gekuerzt
@@ -163,9 +165,8 @@ export const NAME_VERBOTEN = '<>';
  * Seite selbst: Der Browser meldet "Bitte gib einen Namen ein.", der Server
  * setzt "Spieler" ein.
  *
- * Bewusst eine Schleife ueber Codepoints statt eines regulaeren Ausdrucks mit
- * Unicode-Escapes: Die Absicht ist so direkt ablesbar, und `for...of`
- * iteriert ueber vollstaendige Codepoints, zerschneidet also keine Emoji.
+ * Nebenwirkung: Das unsichtbare Verbindungszeichen in Familien-Emoji
+ * (U+200D) faellt mit weg – sie zerfallen in einzelne Emoji.
  *
  * @param {string} text
  * @returns {string}
@@ -173,13 +174,18 @@ export const NAME_VERBOTEN = '<>';
 export function bereinigeName(text) {
   let erlaubt = '';
   for (const zeichen of text) {
-    const code = zeichen.codePointAt(0);
-    const istSteuerzeichen = code <= LETZTES_C0_ZEICHEN || code === DEL;
-    if (!istSteuerzeichen && !NAME_VERBOTEN.includes(zeichen)) {
+    if (!UNSICHTBAR.test(zeichen) && !NAME_VERBOTEN.includes(zeichen)) {
       erlaubt += zeichen;
     }
   }
-  return erlaubt.trim().slice(0, GRENZEN.NAME_MAX);
+
+  // Array.from zerlegt in ganze Zeichen; slice auf dem Text zählte dagegen
+  // UTF-16-Hälften und könnte ein Emoji halbieren.
+  const zeichenListe = Array.from(erlaubt.trim());
+  const gekuerzt = zeichenListe.slice(0, GRENZEN.NAME_MAX).join('');
+
+  // Das Kürzen kann ein Leerzeichen ans Ende bringen.
+  return gekuerzt.trim();
 }
 
 /**
