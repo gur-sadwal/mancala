@@ -664,6 +664,20 @@ describe('Handler: Revanche – Sonderfälle', () => {
     expect(anna.letzte(EREIGNIS.REVANCHE_WEG)).toBeDefined();
   });
 
+  test('wer zweimal Revanche drückt, schickt dem Gegner nur ein Angebot', () => {
+    const { anna, ben } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    anna.sende(EREIGNIS.REVANCHE);
+    anna.sende(EREIGNIS.REVANCHE);
+
+    expect(ben.alle(EREIGNIS.REVANCHE_ANGEBOT)).toHaveLength(1);
+    expect(anna.letzte(EREIGNIS.REVANCHE_WEG)).toBeUndefined();
+    // Bens Zusage startet die Revanche trotzdem.
+    ben.sende(EREIGNIS.REVANCHE);
+    expect(anna.alle(EREIGNIS.START)).toHaveLength(2);
+  });
+
   test('wer etwas Neues anfängt, lässt die Revanche verfallen', () => {
     const { anna, ben } = schnellesSpiel();
     anna.sende(EREIGNIS.AUFGEBEN);

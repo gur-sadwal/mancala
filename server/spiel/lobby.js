@@ -226,12 +226,14 @@ export function erzeugeLobby() {
   /**
    * Ein Spieler drueckt "Revanche".
    *
-   *   KEINE    kein Eintrag, oder der Gegner wartet schon auf jemand anderen
-   *   WARTET   erster Wunsch – der Gegner soll davon erfahren
-   *   START    beide wollen – `paar` spielt noch einmal gegeneinander
+   *   KEINE             kein Eintrag, oder der Gegner wartet schon auf
+   *                     jemand anderen
+   *   WARTET            erster Wunsch – der Gegner soll davon erfahren
+   *   SCHON_GEWUENSCHT  noch einmal gedrueckt – der Gegner weiss es schon
+   *   START             beide wollen – `paar` spielt noch einmal gegeneinander
    *
    * @returns {{status: 'KEINE'} | {status: 'WARTET', gegnerId: string}
-   *          | {status: 'START', paar: object[]}}
+   *          | {status: 'SCHON_GEWUENSCHT'} | {status: 'START', paar: object[]}}
    */
   function wuenscheRevanche(socketId) {
     const eintrag = revanchen.get(socketId);
@@ -243,6 +245,8 @@ export function erzeugeLobby() {
       revanchen.delete(socketId);
       return { status: 'KEINE' };
     }
+
+    if (eintrag.gewuenscht) return { status: 'SCHON_GEWUENSCHT' };
 
     eintrag.gewuenscht = true;
     if (!gegenueber.gewuenscht) {

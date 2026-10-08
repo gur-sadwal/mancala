@@ -522,6 +522,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
+    // Noch einmal gedrueckt: Der Gegner hat das Angebot schon.
+    if (ergebnis.status === 'SCHON_GEWUENSCHT') return;
+
     // START: Beide wollen. Zur Sicherheit pruefen, ob noch beide da sind.
     const [a, b] = ergebnis.paar;
     if (!socketVon(a.socketId) || !socketVon(b.socketId)) {

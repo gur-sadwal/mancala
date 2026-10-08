@@ -209,7 +209,7 @@ describe('Revanche nach einer Partie', () => {
     lobby.merkeRevanche(anna, ben);
 
     lobby.wuenscheRevanche('a');
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'WARTET', gegnerId: 'b' });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'SCHON_GEWUENSCHT' });
   });
 
   test('ohne vorherige Partie gibt es keine Revanche', () => {
