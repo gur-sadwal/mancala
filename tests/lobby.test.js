@@ -508,4 +508,24 @@ describe('vorzeitiges Partieende', () => {
     expect(partie.status).toBe(STATUS.ABGEBROCHEN);
     expect(partie.ergebnis.grund).toBe(GRUND.GEGNER_WEG);
   });
+
+  test.each([GRUND.INTERNER_FEHLER, GRUND.SERVER_ENDE, GRUND.ZU_LANGE_KEIN_ZUG])(
+    'ohne Wertung (%s) gibt es keinen Sieger – auch nicht nach Punkten',
+    (grund) => {
+      const manager = erzeugeManager();
+      const partie = manager.starte(
+        { socketId: 'a', name: 'Anna' },
+        { socketId: 'b', name: 'Ben' },
+      );
+      // Oben führt 3:0 (Summe bleibt 48).
+      partie.brett[0][0] = 3;
+      partie.brett[0][1] = 1;
+
+      const ergebnis = beendeVorzeitig(partie, grund);
+
+      expect(ergebnis.sieger).toBeNull();
+      expect(ergebnis.punkte).toEqual({ unten: 0, oben: 3 });
+      expect(partie.status).toBe(STATUS.ABGEBROCHEN);
+    },
+  );
 });

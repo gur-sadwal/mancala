@@ -72,27 +72,25 @@ export function spielstandVon(partie) {
 }
 
 /**
- * Beendet eine Partie vorzeitig: Aufgabe, Verbindungsabbruch, interner Fehler.
+ * Beendet eine Partie vorzeitig, z. B. bei Aufgabe oder Verbindungsabbruch.
  *
  * Im Unterschied zum regulaeren Ende (Engine, Konzept 5.6) findet hier KEINE
- * Restabrechnung statt. Das Brett bleibt stehen, wie es war; gewertet wird der
- * Stand, und der Grund macht kenntlich, dass die Partie nicht ausgespielt
- * wurde.
+ * Restabrechnung statt. Das Brett bleibt stehen, wie es war; die Punkte sind
+ * der Stand beim Abbruch.
  *
  * @param {object} partie
- * @param {string} grund      GRUND.GEGNER_WEG | AUFGEGEBEN | INTERNER_FEHLER | SERVER_ENDE
- * @param {'unten'|'oben'|null} sieger  bei Aufgabe/Verbindungsabbruch: der verbliebene Spieler
+ * @param {string} grund  ein Wert aus GRUND (shared/protokoll.js)
+ * @param {'unten'|'oben'|null} sieger  vom Aufrufer vorgegeben; null = keine Wertung
  */
 export function beendeVorzeitig(partie, grund, sieger = null) {
-  // Eine Aufgabe ist ein regulaeres Partieende. Alles andere gilt als Abbruch:
-  // Beim Verbindungsabbruch gewinnt trotzdem der verbliebene Spieler (der
-  // Aufrufer uebergibt ihn als `sieger`); bei internem Fehler oder
-  // Serverende gibt es keinen Sieger, gewertet wird nur der Stand.
+  // Eine Aufgabe ist ein echtes Ende (BEENDET), alles andere ein Abbruch.
   partie.status = grund === GRUND.AUFGEGEBEN ? STATUS.BEENDET : STATUS.ABGEBROCHEN;
 
-  const ergebnis = ergebnisVon(partie.brett, grund);
-  // Bei Aufgabe gewinnt der verbliebene Spieler unabhaengig vom Punktestand.
-  partie.ergebnis = sieger ? { ...ergebnis, sieger } : ergebnis;
+  // Den Sieger gibt der Aufrufer vor (Aufgabe: der Gegner; Verbindungsabbruch:
+  // der Gebliebene) – unabhängig vom Punktestand. Ohne Angabe gibt es keinen
+  // Sieger: interner Fehler, Serverende und „zu lange kein Zug“ werden nicht
+  // gewertet.
+  partie.ergebnis = { ...ergebnisVon(partie.brett, grund), sieger };
   partie.letzteAktivitaet = Date.now();
 
   return partie.ergebnis;
