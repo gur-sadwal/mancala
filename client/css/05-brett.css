@@ -216,9 +216,8 @@ button.mulde {
   font-size: clamp(1.5rem, 5vw, 2.25rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  /* line-height 1 ist hier in Ordnung: Eine einzelne Zahl bricht nie um, die
-     Regel "Zeilenabstand mind. 1,5" betrifft mehrzeiligen Text. */
-  line-height: 1;
+  /* WCAG: Die Projektvorgabe gilt auch für einzelne Zahlen. */
+  line-height: var(--zeilenhoehe);
 }
 
 /* Volle Deckkraft und 16 px: Abgeschwaechter Kleintext ist fuer
@@ -311,7 +310,7 @@ button.mulde {
   font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1;   /* einzelne Zahl, bricht nie um – siehe .haus__zahl */
+  line-height: var(--zeilenhoehe);
 }
 
 /*
