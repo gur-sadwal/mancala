@@ -151,9 +151,8 @@
  * ist gar nicht erst moeglich, eine gegnerische Mulde anzusteuern
  * (Konzept 8.7).
  */
-.mulde {
-  /* Bezugspunkt fuer die Tasten-Plakette (.mulde__taste). */
-  position: relative;
+.mulde,
+.haus {
   inline-size: 100%;
   block-size: 100%;
   min-block-size: var(--mulde-min);
@@ -162,6 +161,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--schatten-tief);
+}
+
+.mulde {
+  /* Bezugspunkt fuer die Tasten-Plakette (.mulde__taste). */
+  position: relative;
   gap: 0.15rem;
 
   padding: var(--abstand-klein);
@@ -172,7 +177,6 @@
   border-radius: 50%;
 
   background-color: var(--farbe-mulde);
-  box-shadow: var(--schatten-tief);
   color: var(--farbe-text);
 
   /* Verhindert die Zoom-Verzoegerung beim Doppeltipp und damit den Eindruck
@@ -196,28 +200,23 @@ button.mulde {
  * Reihen. Oben die Punktzahl, darunter die Kugeln, unten die Beschriftung.
  */
 .haus {
-  inline-size: 100%;
-  block-size: 100%;
-  min-block-size: var(--mulde-min);
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 0.35rem;
 
   padding: var(--abstand) var(--abstand-klein);
   border-radius: var(--radius-rund);
   background-color: var(--farbe-haus);
-  box-shadow: var(--schatten-tief);
 }
 
-.haus__zahl {
-  font-size: clamp(1.5rem, 5vw, 2.25rem);
+.haus__zahl,
+.mulde__zahl {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   /* WCAG: Die Projektvorgabe gilt auch für einzelne Zahlen. */
   line-height: var(--zeilenhoehe);
+}
+
+.haus__zahl {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
 }
 
 /* Volle Deckkraft und 16 px: Abgeschwaechter Kleintext ist fuer
@@ -308,9 +307,6 @@ button.mulde {
 /* Der Zahlenwert – fuer Sehende die schnellste Information. */
 .mulde__zahl {
   font-size: 1rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: var(--zeilenhoehe);
 }
 
 /*
