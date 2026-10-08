@@ -1,3 +1,19 @@
+/**
+ * handlers.js – Ereignisse empfangen und Nachrichten senden.
+ *
+ * Verbindet Lobby, Manager und Engine mit Socket.io. Jede Client-Nachricht
+ * läuft durch dieselbe Prüfung; Fehler beenden höchstens die betroffene Partie.
+ *
+ * Inhalt (Cmd+F nach „== 2.“):
+ *   == 1. Ereignisse registrieren
+ *   == 2. Ein Handler je Ereignis
+ *   == 3. Partie starten und beenden
+ *   == 4. Nachrichten senden
+ *
+ * Benutzt von: Gateway. Benutzt Spiellogik, Validierung, Logger und das
+ * Protokoll.
+ */
+
 import { SITZE, SITZ_NAMEN } from '../spiel/brett.js';
 import { REVANCHE_STATUS } from '../spiel/lobby.js';
 import { fuehreZugAus } from '../spiel/engine.js';
@@ -18,12 +34,17 @@ import {
   STATUS,
 } from '../../shared/protokoll.js';
 
+// EINSTELLBAR: Minuten stehen in shared/protokoll.js; hier nur umrechnen.
 const PARTIE_RUHE_MS = GRENZEN.PARTIE_RUHE_MINUTEN * 60 * 1000;
 const WARTEN_MS = GRENZEN.WARTEN_MINUTEN * 60 * 1000;
 
+/** Die inneren Funktionen teilen io, Lobby, Manager und Ratenbegrenzer. */
 export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
+  // Funktionsdeklarationen gelten schon vor ihrer Textstelle weiter unten.
   return { registriere, beendeKontrolliert, pruefeRevanchen, raeumeAuf };
 
+  // == 1. Ereignisse registrieren ========================================
+  // disconnect kommt von Socket.io selbst: ohne Schema oder Ratenbegrenzung.
   function registriere(socket) {
     logger.info('Verbindung aufgebaut', { socketId: socket.id });
 
@@ -43,10 +64,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     });
   }
 
+  // SCHUTZ: Erst Rate, dann Schema, dann Fachlogik innerhalb von try/catch.
   function registriereSicher(socket, ereignis, handler) {
     socket.on(ereignis, (nutzdaten) => {
       try {
-
         if (!ratenbegrenzer.erlaubt(socket.id)) {
           if (ratenbegrenzer.istErsteSperre(socket.id)) {
             sendeFehler(socket, FEHLER.ZU_VIELE_ANFRAGEN);
@@ -67,6 +88,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     });
   }
 
+  // In einer Partie genügt der Abbruch; sonst nur dem Verursacher antworten.
   function behandleHandlerfehler(socket, ereignis, fehler) {
     logger.error(`Handler ${ereignis} fehlgeschlagen`, fehler);
     try {
@@ -78,8 +100,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // == 2. Ein Handler je Ereignis ========================================
   function aufBeitreten(socket, nutzdaten) {
-    
     if (manager.holeNachSocket(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_PARTIE);
       return;
@@ -97,6 +119,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       angenommen = stelleAn(socket, name);
     }
 
+    // Einen abgelehnten zweiten Namen nicht für das nächste Spiel übernehmen.
     if (angenommen) socket.data.name = name;
   }
 
@@ -126,8 +149,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     return true;
   }
 
+  // Ein alter oder falscher Link bekommt eine verständliche Fehlermeldung.
   function betreteMitCode(socket, name, code) {
-    
     if (lobby.enthaelt(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_WARTESCHLANGE);
       return false;
@@ -144,8 +167,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     return true;
   }
 
+  // SCHUTZ: Ein verspätetes Abbrechen nach START ist keine Aufgabe.
   function aufAbbrechen(socket) {
-
     if (manager.holeNachSocket(socket.id)) {
       logger.debug('Abbrechen ignoriert, Partie läuft schon', { socketId: socket.id });
       return;
@@ -159,6 +182,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // SCHUTZ: Partie und Sitz immer aus dem Serverzustand lesen.
   function aufZug(socket, nutzdaten) {
     const partie = manager.holeNachSocket(socket.id);
     if (!partie) {
@@ -168,7 +192,6 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     const sitz = sitzVon(partie, socket.id);
     if (!sitz) {
-      
       sendeFehler(socket, FEHLER.KEINE_PARTIE);
       return;
     }
@@ -182,6 +205,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     uebernehmeZug(partie, ergebnis);
   }
 
+  // Ein kaputtes Brett beendet die Partie; ein Regelverstoß nur diesen Versuch.
   function lehneZugAb(socket, partie, ergebnis) {
     if (ergebnis.code === FEHLER.INTERNER_FEHLER) {
       logger.error('Invariante verletzt', {
@@ -196,6 +220,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   }
 
   function uebernehmeZug(partie, ergebnis) {
+    // Die Engine liefert eine Kopie; der Manager hält weiterhin dieses Objekt.
     Object.assign(partie, ergebnis.partie);
     beruehre(partie);
     const spielstand = spielstandVon(partie);
@@ -220,13 +245,13 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     beendeKontrolliert(partie, GRUND.AUFGEGEBEN, sieger);
   }
 
+  // Der Socket merkt den Namen; nach Neuverbindung gilt der mitgeschickte Name.
   function aufErneut(socket, nutzdaten) {
     const name = socket.data.name ?? ermittleSpielername(nutzdaten.name);
     aufBeitreten(socket, { name });
   }
 
   function aufRevanche(socket) {
-    
     if (manager.holeNachSocket(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_PARTIE);
       return;
@@ -235,7 +260,6 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     const ergebnis = lobby.wuenscheRevanche(socket.id);
 
     if (ergebnis.status === REVANCHE_STATUS.KEINE) {
-
       socket.emit(EREIGNIS.REVANCHE_WEG);
       return;
     }
@@ -257,7 +281,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     starteMitPaar(a, b);
   }
 
+  // SCHUTZ: Zuerst den Ratenzähler löschen, auch wenn später etwas scheitert.
   function aufTrennen(socket, grund) {
+    // Der getrennte Socket ist bereits aus io.sockets entfernt.
     logger.info('Verbindung getrennt', { socketId: socket.id, grund });
 
     ratenbegrenzer.vergiss(socket.id);
@@ -276,6 +302,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // == 3. Partie starten und beenden =====================================
   function starteMitPaar(a, b) {
     const partie = manager.starte(a, b);
 
@@ -309,6 +336,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       const socketA = socketVon(a.socketId);
       const socketB = socketVon(b.socketId);
 
+      // SCHUTZ: Nach einem Fehler beim Trennen kann ein alter Platz übrig sein.
       if (!socketA || !socketB) {
         let uebrig = null;
         if (socketA) uebrig = a;
@@ -327,6 +355,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     sendePositionen();
   }
 
+  // REGEL 3.5: Endstand senden, eine Revanche ermöglichen, dann auflösen.
   function beendeRegulaer(partie, spielstand) {
     try {
       const revanche = ermoeglicheRevanche(partie, GRUND.REGULAER);
@@ -343,11 +372,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // SCHUTZ: Auch eine schon beendete, nicht aufgelöste Partie wird entfernt.
   function beendeKontrolliert(partie, grund, sieger = null) {
     if (!partie) return;
 
     try {
-
       if (partie.status !== STATUS.LAEUFT) return;
 
       const ergebnis = beendeVorzeitig(partie, grund, sieger);
@@ -362,7 +391,6 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
       logger.info('Partie beendet', { spielId: partie.id, grund });
     } finally {
-
       loeseAuf(partie);
     }
   }
@@ -389,9 +417,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // SCHUTZ: Ein Fehler bei einer Partie hält die anderen Fristen nicht auf.
   function raeumeAuf(jetzt = Date.now()) {
     for (const partie of manager.findeRuhendePartien(PARTIE_RUHE_MS, jetzt)) {
-
       try {
         beendeKontrolliert(partie, GRUND.ZU_LANGE_KEIN_ZUG);
       } catch (fehler) {
@@ -410,6 +438,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // SCHUTZ: Ein Fehler beim Raumverlassen darf die Maps nicht festhalten.
   function loeseAuf(partie) {
     for (const sitz of SITZ_NAMEN) {
       try {
@@ -421,6 +450,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     manager.entferne(partie.id);
   }
 
+  // == 4. Nachrichten senden =============================================
+  // Fehler gehen an den Verursacher, nie an den Raum.
   function sendeFehler(socket, code) {
     socket.emit(EREIGNIS.FEHLER, {
       code,

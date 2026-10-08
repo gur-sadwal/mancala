@@ -1,28 +1,29 @@
 /**
- * Erzeugung von Partie-Kennungen (Konzept 7.5).
+ * ids.js – Kennungen für Partien und Einladungen.
  *
- * Die Kennung muss zufaellig und nicht erratbar sein, weil sie zugleich der
- * Name des Socket.io-Raums ist. Sie ist allerdings KEIN Sicherheitsmerkmal:
- * Die Zuordnung Socket -> Partie kommt aus einer serverseitigen Map, nie aus
- * einer vom Client mitgeschickten Kennung. Selbst wer eine fremde Kennung
- * erriete, koennte damit nichts anfangen.
+ * Zieht zufällige Kennungen. Manager und Lobby prüfen vor der Vergabe,
+ * ob sie schon benutzt werden; die Partiezuordnung bleibt serverseitig.
+ *
+ * Inhalt (Cmd+F nach „== 2.“):
+ *   == 1. Spiel-ID
+ *   == 2. Einladungscode
+ *
+ * Benutzt von: Manager und Lobby. Benutzt node:crypto und das gemeinsame
+ * Protokoll.
  */
 
 import { randomInt, randomUUID } from 'node:crypto';
 import { CODE_ZEICHEN, GRENZEN } from '../../shared/protokoll.js';
 
-/** Erzeugt eine Partie-Kennung der Form `g-7f3a2b1c`. */
+// == 1. Spiel-ID =========================================================
+// Eine Spiel-ID ist kein Zugangsschlüssel; handlers.js benutzt die Socket-Map.
 export function neueSpielId() {
   return `g-${randomUUID().slice(0, 8)}`;
 }
 
-/**
- * Erzeugt einen Einladungscode fuer ein privates Spiel, z. B. `K7M2QX`.
- *
- * `randomInt` aus node:crypto statt `Math.random()`: Der Code ist der
- * "Schluessel" zum Warteplatz und soll nicht vorhersagbar sein. Bei 31
- * Zeichen und 6 Stellen gibt es rund 887 Millionen Moeglichkeiten.
- */
+// == 2. Einladungscode ===================================================
+// SCHUTZ: Der Einladungscode ist der Schlüssel zum privaten Warteplatz.
+// randomInt liefert dafür kryptografischen Zufall statt Math.random.
 export function neuerEinladungsCode() {
   let code = '';
   for (let i = 0; i < GRENZEN.CODE_LAENGE; i += 1) {

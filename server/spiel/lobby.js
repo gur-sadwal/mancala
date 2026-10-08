@@ -1,23 +1,26 @@
 /**
- * Warteschlange und Zusammenfuehrung zweier Spieler (Konzept 7.4).
+ * lobby.js – Warteschlange, private Plätze und Revanchen.
  *
- * Zwei Wege in eine Partie:
+ * Merkt Wartende und Revanchewünsche. Gibt Ergebnisse zurück; Nachrichten
+ * an die Browser sendet ausschließlich handlers.js.
  *
- *   schnelles Spiel  oeffentliche Warteschlange – wer zuerst kommt, spielt
- *                    zuerst. Kein Bewertungssystem, keine Vorlieben (Konzept 1.2).
- *   privates Spiel   ein Warteplatz mit Einladungscode. Nur wer den Code
- *                    (den Link) kennt, kann dazukommen.
+ * Inhalt (Cmd+F nach „== 2.“):
+ *   == 1. Zustände und Fristen
+ *   == 2. Zustand und Schnittstelle
+ *   == 3. In die Warteschlange
+ *   == 4. Private Plätze
+ *   == 5. Wartende verwalten
+ *   == 6. Revanchen
+ *   == 7. Anzahl für die Gesundheit
  *
- * Dazu die Revanche: Nach jeder Partie koennen dieselben zwei noch einmal
- * gegeneinander spielen – aber nur, wenn BEIDE das wollen, und nur innerhalb
- * einer kurzen Frist.
- *
- * Das Modul kennt Sockets nur als Kennungen und ist damit ohne Server testbar.
+ * Benutzt von: Handler und Gateway. Benutzt das Protokoll und util/ids.js.
  */
 
 import { FEHLER, GRENZEN } from '../../shared/protokoll.js';
 import { neuerEinladungsCode } from '../util/ids.js';
 
+// == 1. Zustände und Fristen =============================================
+// Diese Rückgaben kennt nur der Server; sie gehören nicht ins Protokoll.
 export const REVANCHE_STATUS = Object.freeze({
   KEINE: 'KEINE',
   WARTET: 'WARTET',
@@ -25,40 +28,20 @@ export const REVANCHE_STATUS = Object.freeze({
   START: 'START',
 });
 
-/**
- * So lange gilt ein Revanche-Angebot auf dem Server: die angezeigte Frist
- * plus 2 Sekunden Kulanz.
- *
- * Die Kulanz deckt die Uebertragungszeit ab: Der Zaehler im Browser startet
- * erst, wenn das Ergebnis dort ankommt, und ein Klick bei "noch 1 s" braucht
- * noch einen Moment bis zum Server. Er soll trotzdem zaehlen.
- */
+// EINSTELLBAR: Zuschlag für die Übertragung eines rechtzeitig gedrückten
+// Knopfs.
 const REVANCHE_KULANZ_MS = 2000;
 export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
   + REVANCHE_KULANZ_MS;
 
-/** Abstand, in dem der Server abgelaufene Revanchen sucht (gateway.js). */
+// EINSTELLBAR: So oft sucht gateway.js nach abgelaufenen Revanchen.
 export const REVANCHE_TAKT_MS = 1000;
 
-/**
- * Erzeugt eine Warteschlange.
- *
- * Bewusst eine Fabrikfunktion statt eines Moduls mit globalem Array: So kann
- * jeder Test mit einer frischen, leeren Warteschlange arbeiten, ohne dass
- * Zustand aus einem vorherigen Test durchschlaegt.
- */
+// == 2. Zustand und Schnittstelle ========================================
+// Die inneren Funktionen teilen diese Maps; jeder Test bekommt frische.
 export function erzeugeLobby() {
-  /** @type {{socketId: string, name: string, seit: number}[]} */
   const warteschlange = [];
 
-  /**
-   * Private Warteplaetze: Einladungscode -> Ersteller.
-   *
-   * Eine Map statt eines Arrays, weil hier nicht nach Reihenfolge, sondern
-   * direkt nach dem Code gesucht wird.
-   *
-   * @type {Map<string, {socketId: string, name: string, seit: number}>}
-   */
   const privat = new Map();
   const revanchen = new Map();
 
@@ -78,15 +61,9 @@ export function erzeugeLobby() {
     abgelaufeneRevanchen,
   };
 
-  /**
-   * Nimmt einen Spieler auf.
-   * @param {number} jetzt  Beginn des Wartens; im Test frei wählbar
-   * @returns {{ok: true, position: number} | {ok: false, code: string}}
-   */
+  // == 3. In die Warteschlange ===========================================
+  // SCHUTZ: Ein Socket darf nicht öffentlich und privat zugleich warten.
   function beitreten(socketId, name, jetzt = Date.now()) {
-    // Doppelte Eintraege verhindern – etwa bei einem doppelt gesendeten
-    // Formular oder einem Skript, das mehrfach beitritt. Gilt fuer beide
-    // Wege: Wer privat wartet, steht nicht zusaetzlich in der Schlange.
     if (enthaelt(socketId)) {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
@@ -95,19 +72,13 @@ export function erzeugeLobby() {
     return { ok: true, position: warteschlange.length };
   }
 
-  /**
-   * Legt einen privaten Warteplatz an.
-   *
-   * @returns {{ok: true, einladung: string} | {ok: false, code: string}}
-   *          `einladung` ist der Code fuer den Link, z. B. "K7M2QX"
-   */
+  // == 4. Private Plätze =================================================
   function erstellePrivat(socketId, name, jetzt = Date.now()) {
     if (enthaelt(socketId)) {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
 
-    // Zwei gleiche Codes sind extrem unwahrscheinlich, aber nicht unmoeglich –
-    // dann einfach einen neuen ziehen.
+    // SCHUTZ: Ein schon vergebener Zufallscode darf keinen Platz überschreiben.
     let einladung = neuerEinladungsCode();
     while (privat.has(einladung)) {
       einladung = neuerEinladungsCode();
@@ -117,14 +88,7 @@ export function erzeugeLobby() {
     return { ok: true, einladung };
   }
 
-  /**
-   * Holt den Ersteller zu einem Einladungscode und gibt den Platz frei.
-   *
-   * Holen und Entfernen in einem Schritt: So kann ein Link nur EINMAL
-   * benutzt werden – ein dritter Spieler mit demselben Link bekommt null.
-   *
-   * @returns {{socketId: string, name: string, seit: number} | null}
-   */
+  // Lesen und Entfernen zusammen: Derselbe Link startet keine zweite Partie.
   function nimmPrivat(einladung) {
     const eintrag = privat.get(einladung);
     if (!eintrag) return null;
@@ -133,15 +97,7 @@ export function erzeugeLobby() {
     return eintrag;
   }
 
-  /**
-   * Entfernt einen Spieler.
-   *
-   * Ein Eintrag wird an DREI Stellen entfernt: bei `spiel:abbrechen`, beim
-   * Zusammenfuehren und bei `disconnect`. Alle drei Wege laufen ueber genau
-   * diese Funktion, damit kein Pfad vergessen wird (Konzept 7.4).
-   *
-   * @returns {boolean} true, wenn wirklich jemand entfernt wurde
-   */
+  // == 5. Wartende verwalten =============================================
   function entferne(socketId) {
     const index = warteschlange.findIndex((e) => e.socketId === socketId);
     if (index !== -1) {
@@ -149,18 +105,17 @@ export function erzeugeLobby() {
       return true;
     }
 
-    // Nicht in der Schlange? Dann vielleicht auf einem privaten Platz.
     const einladung = findePrivatenCode(socketId);
     return einladung !== null && privat.delete(einladung);
   }
 
-  /** Wartet dieser Socket – oeffentlich oder privat? */
   function enthaelt(socketId) {
     if (warteschlange.some((e) => e.socketId === socketId)) return true;
 
     return findePrivatenCode(socketId) !== null;
   }
 
+  // Ein gemeinsamer Suchweg für enthaelt und entferne.
   function findePrivatenCode(socketId) {
     for (const [einladung, eintrag] of privat) {
       if (eintrag.socketId === socketId) return einladung;
@@ -168,45 +123,25 @@ export function erzeugeLobby() {
     return null;
   }
 
-  /**
-   * Nimmt die beiden aeltesten Wartenden heraus – oder null.
-   * `splice` entfernt sie zugleich aus der Warteschlange.
-   */
   function naechstesPaar() {
     if (warteschlange.length < 2) return null;
     return warteschlange.splice(0, 2);
   }
 
-  /**
-   * Aktuelle Positionen aller Wartenden (1-basiert).
-   *
-   * Nach jeder Aenderung erhalten alle Wartenden ihre neue Position. Bei 30
-   * Personen ist das eine vernachlaessigbare Zahl kleiner Nachrichten und
-   * verhindert den Eindruck eines eingefrorenen Wartebildschirms.
-   */
   function positionen() {
     return warteschlange.map((e, i) => ({ socketId: e.socketId, position: i + 1 }));
   }
 
   /**
-   * Entfernt Eintraege, die MINDESTENS `maxAlterMs` alt sind – die
-   * Wartefrist. Wer entfernt wurde, benachrichtigt handlers.js (raeumeAuf).
-   *
-   * Die Grenze ist bewusst einschliessend (`<=`): Bei einem Aufruf mit 0
-   * wird alles entfernt, statt dass das Ergebnis davon abhaengt, ob der
-   * Eintrag in derselben Millisekunde entstanden ist. Im Betrieb (Minuten)
-   * macht das keinen Unterschied, im Test aber den zwischen deterministisch
-   * und zufaellig.
-   *
-   * @param {number} jetzt  aktuelle Zeit; im Test frei wählbar
-   * @returns {string[]} Kennungen der entfernten Eintraege
+   * Entfernt Wartende ab der Grenze einschließlich und liefert ihre Kennungen.
+   * @param {number} maxAlterMs erlaubte Wartezeit
+   * @param {number} jetzt Zeitquelle für Grenztests
    */
   function raeumeAuf(maxAlterMs, jetzt = Date.now()) {
     const grenze = jetzt - maxAlterMs;
     const entfernt = [];
 
-    // Rueckwaerts laufen, damit das Entfernen die noch zu pruefenden Indizes
-    // nicht verschiebt.
+    // Rückwärts löschen, damit noch ungeprüfte Einträge nicht verrutschen.
     for (let i = warteschlange.length - 1; i >= 0; i -= 1) {
       if (warteschlange[i].seit <= grenze) {
         entfernt.push(warteschlange[i].socketId);
@@ -214,7 +149,6 @@ export function erzeugeLobby() {
       }
     }
 
-    // Vergessene private Plaetze ebenso – sonst bliebe ein alter Link ewig gueltig.
     for (const [einladung, eintrag] of privat) {
       if (eintrag.seit <= grenze) {
         entfernt.push(eintrag.socketId);
@@ -224,48 +158,18 @@ export function erzeugeLobby() {
     return entfernt;
   }
 
-  /**
-   * Revanche-Buch: Wer darf nach einer Partie gegen wen noch einmal?
-   *
-   * Je Spieler ein Eintrag: er selbst, sein letzter Gegner, ob er schon
-   * "Revanche" gedrueckt hat und bis wann das Angebot gilt (`bis`, in ms).
-   * Ein Eintrag verschwindet, wenn der Spieler etwas Neues anfaengt oder die
-   * Verbindung trennt (vergissRevanche) – spaetestens aber, wenn die Frist
-   * vorbei ist (abgelaufeneRevanchen).
-   *
-   * @type {Map<string, {ich: object, gegner: object, gewuenscht: boolean, bis: number}>}
-   */
-
-  /**
-   * Nach dem Ende einer Partie: beide duerfen eine Revanche wuenschen.
-   *
-   * @param {number} jetzt  Zeitpunkt des Partieendes; im Test frei waehlbar,
-   *                        damit kein Test die ganze Frist abwarten muss
-   */
+  // == 6. Revanchen ======================================================
   function merkeRevanche(a, b, jetzt = Date.now()) {
     const bis = jetzt + REVANCHE_FRIST_MS;
     revanchen.set(a.socketId, { ich: a, gegner: b, gewuenscht: false, bis });
     revanchen.set(b.socketId, { ich: b, gegner: a, gewuenscht: false, bis });
   }
 
-  /**
-   * Ein Spieler drueckt "Revanche".
-   *
-   *   KEINE             kein Eintrag, oder der Gegner wartet schon auf
-   *                     jemand anderen
-   *   WARTET            erster Wunsch – der Gegner soll davon erfahren
-   *   SCHON_GEWUENSCHT  noch einmal gedrueckt – der Gegner weiss es schon
-   *   START             beide wollen – `paar` spielt noch einmal gegeneinander
-   *
-   * @returns {{status: REVANCHE_STATUS.KEINE} | {status: REVANCHE_STATUS.WARTET, gegnerId: string}
-   *          | {status: REVANCHE_STATUS.SCHON_GEWUENSCHT} | {status: REVANCHE_STATUS.START, paar: object[]}}
-   */
+  // SCHUTZ: Ein Wunsch gilt nur für dasselbe Paar und innerhalb der Frist.
   function wuenscheRevanche(socketId, jetzt = Date.now()) {
     const eintrag = revanchen.get(socketId);
     const gegenueber = eintrag ? revanchen.get(eintrag.gegner.socketId) : null;
 
-    // Der Gegner muss noch auf GENAU DIESE Revanche warten – nicht etwa schon
-    // auf eine mit einem anderen Spieler.
     if (!eintrag || !gegenueber || gegenueber.gegner.socketId !== socketId) {
       revanchen.delete(socketId);
       return { status: REVANCHE_STATUS.KEINE };
@@ -288,14 +192,7 @@ export function erzeugeLobby() {
     return { status: REVANCHE_STATUS.START, paar: [gegenueber.ich, eintrag.ich] };
   }
 
-  /**
-   * Revanche verfaellt: neues Spiel, Abbrechen, Abmelden, Verbindungsabbruch.
-   *
-   * Der Eintrag des Gegners faellt mit weg, damit dessen Knopf nicht ins
-   * Leere fuehrt.
-   *
-   * @returns {string|null} Kennung des alten Gegners, der noch wartete
-   */
+  // Beide Seiten vergessen, damit der alte Gegner nicht vergeblich wartet.
   function vergissRevanche(socketId) {
     const eintrag = revanchen.get(socketId);
     if (!eintrag) return null;
@@ -310,21 +207,11 @@ export function erzeugeLobby() {
     return null;
   }
 
-  /**
-   * Entfernt alle Revanchen, deren Frist vorbei ist – auch die, bei denen
-   * einer schon "Revanche" gedrueckt hat.
-   *
-   * Beide Eintraege einer Partie haben denselben Ablaufzeitpunkt und
-   * verschwinden deshalb im selben Aufruf.
-   *
-   * @param {number} jetzt  aktuelle Zeit; im Test frei waehlbar
-   * @returns {string[]} Kennungen der Spieler, deren Revanche verfallen ist
-   */
+  // Beim Durchlaufen einer Map darf der aktuelle Eintrag gelöscht werden.
   function abgelaufeneRevanchen(jetzt = Date.now()) {
     const abgelaufen = [];
 
     for (const [socketId, eintrag] of revanchen) {
-      // Einschliessende Grenze, aus demselben Grund wie in raeumeAuf.
       if (eintrag.bis <= jetzt) {
         abgelaufen.push(socketId);
         revanchen.delete(socketId);
@@ -333,10 +220,8 @@ export function erzeugeLobby() {
     return abgelaufen;
   }
 
-  /** Anzahl Wartender (oeffentlich und privat) – fuer `/gesundheit` und Protokollausgaben. */
+  // == 7. Anzahl für die Gesundheit ======================================
   function anzahl() {
     return warteschlange.length + privat.size;
   }
-
-
 }

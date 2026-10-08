@@ -1,34 +1,33 @@
 /**
- * Einheitliche Protokollausgabe (Konzept 7.10).
+ * logger.js – einheitliche Protokollausgabe.
  *
- * Eine einzige Ausgabestelle mit Zeitstempel und Ebene. Protokolliert werden
- * Verbindungsauf- und -abbau, Partiestart und -ende, jeder abgelehnte Zug mit
- * Grund sowie jeder Fehler. NICHT protokolliert werden vollstaendige Bretter
- * bei jedem Zug – bei 15 gleichzeitigen Partien waere die Ausgabe unlesbar.
+ * Schreibt Uhrzeit, Ebene und Nachricht. Standard ist info; abgelehnte
+ * Züge und ignoriertes Abbrechen erscheinen erst mit LOG_LEVEL=debug.
+ *
+ * Inhalt (Cmd+F nach „== 2.“):
+ *   == 1. Ebenen und Schwelle
+ *   == 2. Zeitstempel
+ *   == 3. Ausgabe und Schnittstelle
+ *
+ * Benutzt von: Servermodule. Benutzt die Node-Konsole als einzige
+ * Ausgabestelle.
  */
 
-/** Ebenen in aufsteigender Dringlichkeit. */
+// == 1. Ebenen und Schwelle ==============================================
+// EINSTELLBAR: LOG_LEVEL=debug, info, warn oder error; Standard ist info.
 const EBENEN = { debug: 10, info: 20, warn: 30, error: 40 };
 
-/**
- * Schwelle aus der Umgebung, Standard `info`.
- * LOG_LEVEL=debug macht die Ausgabe waehrend der Entwicklung gespraechiger.
- */
 const gewuenscht = (process.env.LOG_LEVEL ?? '').toLowerCase();
 const schwelle = EBENEN[gewuenscht] ?? EBENEN.info;
 
-/** Zeitstempel HH:MM:SS in UTC (deutsche Sommerzeit = UTC + 2 Stunden). */
+// == 2. Zeitstempel ======================================================
+// UTC bleibt ganzjährig eindeutig, unabhängig von Sommer- und Winterzeit.
 function zeitstempel() {
   return new Date().toISOString().slice(11, 19);
 }
 
-/**
- * Baut eine Zeile und gibt sie aus.
- *
- * Zusatzangaben werden als kompaktes JSON angehaengt, damit eine Zeile eine
- * Zeile bleibt. Ein Fehlerobjekt wird auf Name und Meldung reduziert; der
- * vollstaendige Stapelabzug erscheint nur auf der Ebene `error`.
- */
+// == 3. Ausgabe und Schnittstelle ========================================
+// Zusatzdaten als JSON, Fehler auf error mit Stacktrace (Aufrufliste).
 function schreibe(ebene, text, zusatz) {
   if (EBENEN[ebene] < schwelle) return;
 
@@ -36,15 +35,15 @@ function schreibe(ebene, text, zusatz) {
 
   if (zusatz !== undefined) {
     if (zusatz instanceof Error) {
-      // Der Stacktrace beginnt selbst mit Name und Meldung – deshalb nur
-      // eins von beiden, sonst stuende die Meldung doppelt da.
+      // Der Stack enthält die Meldung schon; sie nicht doppelt anhängen.
       if (ebene === 'error' && zusatz.stack) teile.push(`\n${zusatz.stack}`);
       else teile.push(`${zusatz.name}: ${zusatz.message}`);
     } else {
       try {
         teile.push(JSON.stringify(zusatz));
       } catch {
-        // Zirkulaere Struktur: lieber ein Hinweis als ein Absturz im Logger.
+        // SCHUTZ: Auch kreisförmige Zusatzdaten dürfen den Logger nicht
+        // stoppen.
         teile.push('[nicht serialisierbar]');
       }
     }

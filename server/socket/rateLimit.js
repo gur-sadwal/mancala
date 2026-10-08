@@ -1,46 +1,40 @@
 /**
- * Ratenbegrenzung je Verbindung (Konzept 7.9).
+ * rateLimit.js – Nachrichten je Verbindung begrenzen.
  *
- * Jeder Socket zaehlt seine Ereignisse in einem Sekundenfenster. Ueber der
- * Grenze werden weitere verworfen und mit ZU_VIELE_ANFRAGEN beantwortet. Ein
- * Mensch kommt nie in die Naehe dieser Grenze; ein Skript, das Zuege flutet,
- * wird gebremst, ohne dass der Server bearbeitet werden muss (Fall F-06).
+ * Zählt in festen Zeitfenstern. Die erste abgewiesene Nachricht bekommt
+ * eine Antwort; weitere verworfene Nachrichten erzeugen keine Antwortflut.
  *
- * Umgesetzt als einfaches Zaehlfenster, nicht als gleitendes Fenster: Der
- * Unterschied ist hier bedeutungslos, und ein Zaehler ist im Review in einem
- * Satz erklaert.
+ * Inhalt (Cmd+F nach „== 2.“):
+ *   == 1. Grenzen
+ *   == 2. Nachrichten zählen
+ *   == 3. Erste Sperre erkennen
+ *   == 4. Getrennte Verbindungen vergessen
+ *
+ * Benutzt von: Gateway und Handler. Die Uhr lässt sich im Test ersetzen.
  */
 
-/** Erlaubte Ereignisse je Fenster (Konzept 11.3). */
+// == 1. Grenzen ==========================================================
+// EINSTELLBAR: Erlaubte Ereignisse je Zeitfenster und dessen Länge in ms.
 const GRENZE_JE_FENSTER = 20;
 
-/** Fensterlaenge in Millisekunden. */
 const FENSTER_MS = 1000;
 
-/**
- * @param {number} grenze     erlaubte Ereignisse je Fenster
- * @param {number} fensterMs  Fensterlaenge
- * @param {() => number} uhr  Zeitquelle; im Test ersetzbar, damit kein Test
- *                            eine Sekunde lang warten muss
- */
+// == 2. Nachrichten zählen ===============================================
+/** @param {Function} uhr Zeitquelle, damit Tests keine Sekunde warten. */
+// An der Fenstergrenze sind zwei schnelle Gruppen möglich; kein gleitendes
+// Limit.
 export function erzeugeRatenbegrenzer(
   grenze = GRENZE_JE_FENSTER,
   fensterMs = FENSTER_MS,
   uhr = Date.now,
 ) {
-  /** @type {Map<string, {fensterStart: number, anzahl: number}>} */
   const zaehler = new Map();
 
-  /**
-   * Meldet ein Ereignis an und sagt, ob es bearbeitet werden darf.
-   * @returns {boolean} true = erlaubt, false = verworfen
-   */
   function erlaubt(socketId) {
     const jetzt = uhr();
     const eintrag = zaehler.get(socketId);
 
     if (!eintrag || jetzt - eintrag.fensterStart >= fensterMs) {
-      // Erstes Ereignis oder das alte Fenster ist abgelaufen: neu beginnen.
       zaehler.set(socketId, { fensterStart: jetzt, anzahl: 1 });
       return true;
     }
@@ -49,26 +43,17 @@ export function erzeugeRatenbegrenzer(
     return eintrag.anzahl <= grenze;
   }
 
-  /**
-   * War das gerade die erste verworfene Nachricht in diesem Fenster? Nur
-   * sie bekommt eine Antwort – sonst schickte der Server auf eine Flut eine
-   * ebenso große Flut zurück.
-   */
+  // == 3. Erste Sperre erkennen ==========================================
   function istErsteSperre(socketId) {
     return zaehler.get(socketId)?.anzahl === grenze + 1;
   }
 
-  /**
-   * Raeumt den Zaehler eines getrennten Sockets ab.
-   *
-   * Ohne diesen Aufruf im `disconnect`-Handler waere die Map ein langsames
-   * Speicherleck ueber viele kurze Verbindungen (NFA-10).
-   */
+  // == 4. Getrennte Verbindungen vergessen ===============================
+  // SCHUTZ: Ohne Löschen wächst die Map mit jeder neuen Verbindung weiter.
   function vergiss(socketId) {
     zaehler.delete(socketId);
   }
 
-  /** Anzahl beobachteter Verbindungen – nur fuer Diagnose und Tests. */
   function anzahl() {
     return zaehler.size;
   }
