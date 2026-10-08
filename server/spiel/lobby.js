@@ -257,7 +257,7 @@ export function erzeugeLobby() {
    * @returns {{status: REVANCHE_STATUS.KEINE} | {status: REVANCHE_STATUS.WARTET, gegnerId: string}
    *          | {status: REVANCHE_STATUS.SCHON_GEWUENSCHT} | {status: REVANCHE_STATUS.START, paar: object[]}}
    */
-  function wuenscheRevanche(socketId) {
+  function wuenscheRevanche(socketId, jetzt = Date.now()) {
     const eintrag = revanchen.get(socketId);
     const gegenueber = eintrag ? revanchen.get(eintrag.gegner.socketId) : null;
 
@@ -265,6 +265,11 @@ export function erzeugeLobby() {
     // auf eine mit einem anderen Spieler.
     if (!eintrag || !gegenueber || gegenueber.gegner.socketId !== socketId) {
       revanchen.delete(socketId);
+      return { status: REVANCHE_STATUS.KEINE };
+    }
+
+    if (eintrag.bis <= jetzt) {
+      vergissRevanche(socketId);
       return { status: REVANCHE_STATUS.KEINE };
     }
 

@@ -248,6 +248,19 @@ describe('Revanche nach einer Partie', () => {
   });
 });
 
+describe('Revanche-Frist direkt beim Wunsch', () => {
+  test('ein Wunsch genau an der Grenze startet keine verspätete Partie', () => {
+    const lobby = erzeugeLobby();
+    lobby.merkeRevanche({ socketId: 'a' }, { socketId: 'b' }, 1000);
+    expect(lobby.wuenscheRevanche('a', 1000 + REVANCHE_FRIST_MS - 1).status)
+      .toBe(REVANCHE_STATUS.WARTET);
+    expect(lobby.wuenscheRevanche('b', 1000 + REVANCHE_FRIST_MS).status)
+      .toBe(REVANCHE_STATUS.KEINE);
+    expect(lobby.wuenscheRevanche('a', 1000 + REVANCHE_FRIST_MS).status)
+      .toBe(REVANCHE_STATUS.KEINE);
+  });
+});
+
 describe('Revanche-Frist', () => {
   const anna = { socketId: 'a', name: 'Anna' };
   const ben = { socketId: 'b', name: 'Ben' };
@@ -271,13 +284,13 @@ describe('Revanche-Frist', () => {
     lobby.merkeRevanche(anna, ben, ENDE);
 
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS - 1)).toEqual([]);
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
+    expect(lobby.wuenscheRevanche('a', ENDE)).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
   });
 
   test('zum Fristende verfallen beide Eintraege – auch ein schon gedrueckter', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
-    lobby.wuenscheRevanche('a');   // Anna wollte, Ben hat nicht reagiert
+    lobby.wuenscheRevanche('a', ENDE);   // Anna wollte, Ben hat nicht reagiert
 
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS).sort()).toEqual(['a', 'b']);
   });
@@ -287,8 +300,8 @@ describe('Revanche-Frist', () => {
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS);
 
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.KEINE });
+    expect(lobby.wuenscheRevanche('a', ENDE)).toEqual({ status: REVANCHE_STATUS.KEINE });
+    expect(lobby.wuenscheRevanche('b', ENDE)).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
   test('jede abgelaufene Revanche wird genau einmal gemeldet', () => {
@@ -302,8 +315,8 @@ describe('Revanche-Frist', () => {
   test('nach dem Start der Revanche laeuft nichts mehr ab', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
-    lobby.wuenscheRevanche('a');
-    lobby.wuenscheRevanche('b');   // START – das Revanche-Buch ist leer
+    lobby.wuenscheRevanche('a', ENDE);
+    lobby.wuenscheRevanche('b', ENDE);   // START – das Revanche-Buch ist leer
 
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS)).toEqual([]);
   });
