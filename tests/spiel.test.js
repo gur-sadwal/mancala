@@ -4,7 +4,9 @@
  * tests/sicht.test.js). Brett und Klicks selbst prüfen die Browsertests.
  */
 
-import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon } from '../client/js/spiel.js';
+import { jest } from '@jest/globals';
+import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
+  erzeugeSpielAnsicht } from '../client/js/spiel.js';
 import { neuesBrett, fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
 import { STATUS } from '../shared/protokoll.js';
 
@@ -38,6 +40,33 @@ describe('Tastenkürzel und Häuser', () => {
     }
     expect(hausVon('unten')).toEqual([1, 6]);
     expect(hausVon('oben')).toEqual([0, 0]);
+  });
+});
+
+describe('Lebensdauer der echten Spielansicht', () => {
+  test('zeigt und versteckt das Element und meldet Listener passend an und ab', () => {
+    const elemente = new Map();
+    global.document = {
+      addEventListener: jest.fn(), removeEventListener: jest.fn(),
+      querySelector: (auswahl) => {
+        if (!elemente.has(auswahl)) elemente.set(auswahl, {
+          hidden: true, open: false, addEventListener: jest.fn(),
+          removeEventListener: jest.fn(), querySelectorAll: () => [],
+        });
+        return elemente.get(auswahl);
+      },
+    };
+    try {
+      const ansicht = erzeugeSpielAnsicht({ aktionen: {} });
+      ansicht.zeige(true);
+      expect(elemente.get('#ansicht-spiel').hidden).toBe(false);
+      expect(document.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+      ansicht.zeige(false);
+      expect(elemente.get('#ansicht-spiel').hidden).toBe(true);
+      expect(document.removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+    } finally {
+      delete global.document;
+    }
   });
 });
 

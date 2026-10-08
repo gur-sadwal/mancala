@@ -10,7 +10,7 @@
 import {
   $,
   erzeuge,
-  zeige,
+  zeige as zeigeElement,
   schalte,
   setzeText,
   warte,
@@ -159,7 +159,6 @@ function setzeKugeln(kugelnContainer, anzahl) {
 function zeichneBrett(zellen, brett, sitz, ichBinDran) {
   for (const zelle of alleZellen()) {
     const element = zellen.get(schluessel(zelle));
-    if (!element) continue;
 
     const anzahl = brett[zelle[0]][zelle[1]];
     const rolle = rolleVon(sitz, zelle);
@@ -173,22 +172,14 @@ function zeichneBrett(zellen, brett, sitz, ichBinDran) {
 }
 
 function zeichneHaus(element, anzahl) {
-  const zahl = element.querySelector('.haus__zahl');
-  const kugeln = element.querySelector('.kugeln');
-
-  if (zahl) setzeText(zahl, anzahl);
-  if (kugeln) setzeKugeln(kugeln, anzahl);
+  setzeText($('.haus__zahl', element), anzahl);
+  setzeKugeln($('.kugeln', element), anzahl);
 }
 
 function zeichneMulde(element, anzahl, rolle, ichBinDran) {
-  const mulde = element.querySelector('.mulde');
-  if (!mulde) return;
-
-  const kugeln = mulde.querySelector('.kugeln');
-  const zahl = mulde.querySelector('.mulde__zahl');
-
-  if (kugeln) setzeKugeln(kugeln, anzahl);
-  if (zahl) setzeText(zahl, anzahl);
+  const mulde = $('.mulde', element);
+  setzeKugeln($('.kugeln', mulde), anzahl);
+  setzeText($('.mulde__zahl', mulde), anzahl);
 
   schalte(mulde, 'mulde--leer', anzahl === 0);
 
@@ -311,6 +302,14 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     for (const element of elemente) element.classList.remove(bild.klasse);
   }
 
+  async function spieleBilder(bericht, meineNr) {
+    if (wenigerBewegung()) return;
+    for (const bild of schritteDesZuges(bericht)) {
+      if (meineNr !== laufNr) return;
+      await zeigeBild(bild, meineNr);
+    }
+  }
+
   // SCHUTZ: Die laufende Nummer verhindert Zeichnen einer bereits abgelösten
   // Animation.
   async function spiele(bericht, spielstand) {
@@ -319,14 +318,7 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     schalte(brettElement, 'brett--gesperrt', true);
     entferneMarkierungen();
     try {
-      if (!wenigerBewegung()) {
-        for (const bild of schritteDesZuges(bericht)) {
-          // Nach einer Pause kann ein neuerer Zug oder Ansichtswechsel
-          // übernommen haben.
-    if (meineNr !== laufNr) return false;
-          await zeigeBild(bild, meineNr);
-        }
-      }
+      await spieleBilder(bericht, meineNr);
     } catch (fehler) {
       console.error('Zug-Animation gescheitert – zeige den Serverstand.', fehler);
     }
@@ -503,7 +495,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   // zeige(true) kommt auch mitten im Zug; dabei keine laufende Animation
   // zurücksetzen.
   function zeige(sichtbar) {
-    zeige(abschnitt, sichtbar);
+    zeigeElement(abschnitt, sichtbar);
 
     if (sichtbar) {
       meldeListenerAn();
