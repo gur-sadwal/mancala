@@ -1,25 +1,22 @@
-/**
- * Einstiegspunkt des Stylesheets (Konzept 8.6).
+/* haupt.css – Einstieg und Reihenfolge der CSS-Ebenen.
  *
- * Diese Datei enthaelt bewusst KEINE eigenen Regeln, sondern nur die
- * Ebenenreihenfolge und die Importe. Wer wissen will, welche Regel gewinnt,
- * liest genau eine Zeile: die Ebenenliste.
+ * Inhalt:
+ *   == 1. Ebenenreihenfolge
+ *   == 2. Importe
  *
- * Die Reihenfolge der Ebenen loest die Kaskade auf, ohne dass jemals
- * `!important` noetig wird (NFA-06): Zustandsregeln stehen weit hinten und
- * gewinnen deshalb gegen Komponentenregeln, selbst wenn ihr Selektor
- * schwaecher ist. Ganz am Ende steht `bewegung` – "Bewegung reduzieren" muss
- * JEDE Animation schlagen, auch die aus `zustaende`.
+ * Eingebunden in index.html und 404.html.
  */
 
-/* Zuerst die Reihenfolge festlegen – spaeter Genanntes gewinnt. */
+/* == 1. Ebenenreihenfolge ================================================= */
+
+/* Spätere Ebenen gewinnen gegen frühere: Zustände über Komponenten,
+ * reduzierte Bewegung zuletzt über den Animationen.
+ */
 @layer reset, tokens, basis, layout, brett, komponenten, zustaende, bewegung;
 
-/*
- * Die Ebene wird beim Import zugewiesen. Damit steht in den Einzeldateien
- * kein @layer-Block, und ihre Regeln ruecken nicht um eine Einrueckungsebene
- * ein – das haelt sie lesbar.
- */
+/* == 2. Importe =========================================================== */
+
+/* Der Import ordnet die Datei einer Ebene zu, ohne weitere Verschachtelung. */
 @import url('01-reset.css') layer(reset);
 @import url('02-tokens.css') layer(tokens);
 @import url('03-basis.css') layer(basis);

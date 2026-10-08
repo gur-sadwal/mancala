@@ -1,77 +1,65 @@
-/**
- * Gestaltungsmarken (Ebene: tokens).
+/* 02-tokens.css – gemeinsam benutzte Gestaltungswerte.
  *
- * Eine einzige Quelle fuer Farben und Masse. Kein anderer Wert im Projekt
- * wird hartkodiert – das ist die Voraussetzung dafuer, dass das Umschalten
- * zwischen Hoch- und Querformat nur wenige Zeilen kostet (Konzept 8.6).
+ * Inhalt:
+ *   == 1. Farben
+ *   == 2. Maße
+ *   == 3. Schrift
+ *   == 4. Bewegung und Schatten
  *
- * Es gibt bewusst nur EIN Farbschema, das helle – auch wenn das
- * Betriebssystem auf Dunkelmodus steht (siehe color-scheme in 03-basis.css).
- *
- * Farben in oklch(): gleichmaessige Helligkeitswahrnehmung, dadurch laesst
- * sich das Kontrastverhaeltnis von 4,5:1 ueber den ersten Wert steuern,
- * statt es je Farbe nachzumessen.
+ * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
+/* EINSTELLBAR: Gemeinsame Werte hier statt je Komponente ändern.
+ * WCAG: Kontraste immer am verwendeten Farbpaar nachrechnen.
+ * Die Helligkeit in OKLCH allein garantiert kein Kontrastverhältnis.
+ */
 :root {
-  /* ----- Landesfarben Hessen -----
-   * HEX statt oklch, damit die Werte unveraendert nachlesbar bleiben.
-   *
-   * Rot und Weiss: Web-Werte der Landesflagge. Weiss auf Rot: 5,5:1.
-   * Blau: auf Kontrast abgestimmt. Weiss darauf 8,3:1, als Link auf dem
-   * Seitenhintergrund 7,6:1, als Kugel auf der Mulde 7,2:1.
-   */
+
+/* == 1. Farben ============================================================ */
+
   --farbe-hessen-rot: #D40011;
   --farbe-hessen-weiss: #FFFFFF;
   --farbe-hessen-blau: #00508C;
 
-  /* ----- Farben: Flaechen ----- */
-  --farbe-grund: oklch(97% 0.012 85);        /* Seitenhintergrund */
-  --farbe-karte: oklch(99% 0.006 85);        /* Karten, Formulare, Dialog */
-  /*
-   * Das Brett in Hessen-Blau statt in Braun: Es passt damit zur Kopfzeile
-   * (Rot-Weiss mit blauem Streifen). Zwei Toene fuer einen leichten Verlauf
-   * von oben nach unten. Weiss darauf: 9,2:1 bzw. 11,8:1.
-   */
+  --farbe-grund: oklch(97% 0.012 85);
+  --farbe-karte: oklch(99% 0.006 85);
+
+  /* Zwei Blautöne bilden den Verlauf auf dem Brett. */
   --farbe-brett: oklch(40% 0.1 250);
   --farbe-brett-tief: oklch(34% 0.09 252);
-  /* Mulden und Haeuser hell wie Porzellan, damit rote und blaue Kugeln darin
-     gut zu sehen sind (Kugeln auf der Mulde: mindestens 4,8:1). */
+
+  /* Helle Mulden und Häuser heben die Kugeln vom dunklen Brett ab. */
   --farbe-mulde: oklch(95% 0.02 85);
-  --farbe-haus: oklch(91% 0.03 85);          /* Haeuser, etwas dunkler */
+  --farbe-haus: oklch(91% 0.03 85);
 
-  /* ----- Farben: Schrift ----- */
-  --farbe-text: oklch(25% 0.02 85);          /* auf --farbe-grund: > 12:1 */
-  --farbe-text-leise: oklch(45% 0.02 85);    /* auf --farbe-grund: > 6:1 */
-  --farbe-text-hell: oklch(98% 0.01 85);     /* auf --farbe-brett */
+  --farbe-text: oklch(25% 0.02 85);
+  --farbe-text-leise: oklch(45% 0.02 85);
+  --farbe-text-hell: oklch(98% 0.01 85);
 
-  /* ----- Farben: Bedeutung ----- */
-  --farbe-kugel: var(--farbe-hessen-blau);   /* Akzent: Links, Fokusring, eigene Kugeln */
-  --farbe-kugel-gegner: var(--farbe-hessen-rot); /* Kugeln auf der Gegenseite */
-  --farbe-aktiv: oklch(52% 0.15 145);        /* "du bist am Zug", Gruen */
-  /* Rand der Mulden, die ich gerade spielen darf: Gold. Auf dem blauen Brett
-     6:1 – Gruen haette dort nur rund 1,8:1. */
+  --farbe-kugel: var(--farbe-hessen-blau);
+  --farbe-kugel-gegner: var(--farbe-hessen-rot);
+  --farbe-aktiv: oklch(52% 0.15 145);
+
+  /* Gold hebt spielbare Ränder vom blauen Brett ab. */
   --farbe-spielbar: oklch(86% 0.15 85);
-  --farbe-warnung: oklch(45% 0.12 40);       /* Fehler, rotbraun – bewusst anders als das Hessen-Rot */
-  --farbe-beute: oklch(62% 0.17 65);         /* Diebstahl-Hervorhebung */
-  --farbe-extrazug: oklch(50% 0.16 300);     /* Extrazug-Hervorhebung, als Text > 4,5:1 */
-  /* Rahmen von Eingabefeld, Spielart-Feldern und zweitem Knopf: mindestens
-     3:1 gegen Karte und Seitengrund (WCAG 1.4.11, Kontrast von Bedienelementen). */
+  --farbe-warnung: oklch(45% 0.12 40);
+
+  /* Klauen heißt im Protokoll und in den CSS-Klassen weiterhin beute. */
+  --farbe-beute: oklch(62% 0.17 65);
+  --farbe-extrazug: oklch(50% 0.16 300);
+
   --farbe-rand: oklch(62% 0.02 85);
 
-  /* ----- Masse ----- */
-  /*
-   * Mindestgroesse JEDER Klickflaeche: 44 x 44 px – die Mindestzielgroesse
-   * aus WCAG 2.5.5 und ausdrueckliche Vorgabe des Dozenten (NFA-05).
-   * 2.75rem = 44px bei 16px Grundschrift. Knoepfe, Eingabefeld, Spielart,
-   * Aufklapp-Zeile, Sprungmarke und Mulden lesen diesen einen Wert.
-   */
+/* == 2. Maße ============================================================== */
+
+  /* WCAG: 2,75rem sind bei 16px Grundschrift die geforderten 44px. */
   --ziel-min: 2.75rem;
-  /* Die Mulde ist nie kleiner als --ziel-min und waechst mit der Breite. */
+
+  /* Mulden wachsen mit der Breite; die Mindestzielgröße bleibt erhalten. */
   --mulde-min: clamp(var(--ziel-min), 11vw, 6.5rem);
   --abstand-brett: clamp(0.35rem, 1.4vw, 0.9rem);
-  /* Durchmesser einer Kugel. Bei vielen Kugeln in einer Mulde wird er
-     kleiner (05-brett.css), damit immer ALLE Kugeln zu sehen sind. */
+
+  /* Bei vielen Kugeln verringert 05-brett.css den Durchmesser. */
   --kugel-groesse: clamp(0.6rem, 1.5vw, 1rem);
   --brett-max: 60rem;
   --zeile-max: 68ch;
@@ -85,27 +73,25 @@
   --radius-gross: 1.25rem;
   --radius-rund: 999px;
 
-  /* ----- Schrift ----- */
-  /* Jost zuerst (siehe @font-face in 03-basis.css). Fehlt die Datei oder laedt
-     sie noch, nimmt der Browser die erste vorhandene Schrift dahinter: auf
-     Apple-Geraeten die vorinstallierte Futura (das Vorbild von Jost), sonst
-     die Systemschrift. */
+/* == 3. Schrift =========================================================== */
+
+  /* Jost kommt vom eigenen Server; danach folgen lokale Ersatzschriften. */
   --schrift: 'Jost', Futura, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  /* Mindestens 16 px (NFA-05); im Eingabefeld verhindert das zugleich den
-     automatischen Zoom von Safari.
-     REGEL fuer das ganze Projekt: keine font-size unter 1rem (= 16 px bei
-     Standardeinstellung). Wer im Browser groessere Schrift einstellt,
-     bekommt mit rem automatisch mehr – deshalb rem statt px. */
+
+  /* WCAG: Mindestens 1rem; größere Browser-Grundschrift wächst mit. */
   --schrift-basis: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
   --zeilenhoehe: 1.5;
 
-  /* ----- Bewegung ----- */
-  --dauer-kugel: 180ms;      /* eine Kugel im Saepfad (Konzept 8.4), = TAKT_SAAT in js/spiel.js */
+/* == 4. Bewegung und Schatten ============================================= */
+
+  /* ACHTUNG: Passend zum Sätakt TAKT_SAAT in js/spiel.js halten. */
+  --dauer-kugel: 180ms;
   --dauer-kurz: 160ms;
   --dauer-mittel: 320ms;
 
   --schatten: 0 1px 2px oklch(0% 0 0 / 0.08), 0 4px 12px oklch(0% 0 0 / 0.06);
-  /* Nach innen: laesst Mulden und Haeuser wie ins Brett gefraest wirken. */
+
+  /* Ein Schatten nach innen lässt die Felder vertieft erscheinen. */
   --schatten-tief: inset 0 3px 8px oklch(0% 0 0 / 0.35);
-  --schatten-kugel: 0 1px 1px oklch(0% 0 0 / 0.35);   /* jede Kugel liegt auf */
+  --schatten-kugel: 0 1px 1px oklch(0% 0 0 / 0.35);
 }

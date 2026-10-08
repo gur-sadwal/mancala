@@ -1,13 +1,22 @@
-/**
- * Wiederverwendbare Bausteine (Ebene: komponenten).
+/* 06-komponenten.css – wiederverwendbare Bedienelemente.
+ *
+ * Inhalt:
+ *   == 1. Schaltflächen
+ *   == 2. Formular
+ *   == 3. Umschalter
+ *   == 4. Einladungslink
+ *   == 5. Ladeanzeige
+ *   == 6. Anleitung
+ *   == 7. Dialog
+ *   == 8. Verbindungshinweis
+ *
+ * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
-/* ---------------------------------------------------------------------------
-   Schaltflaechen
-   --------------------------------------------------------------------------- */
+/* == 1. Schaltflächen ===================================================== */
 
+/* WCAG: Höhe und Breite der Schaltflächen bleiben mindestens 44px. */
 .knopf {
-  /* Auch Schaltflaechen halten die Mindestzielgroesse von 44 px (NFA-05). */
   min-block-size: var(--ziel-min);
   min-inline-size: var(--ziel-min);
 
@@ -37,11 +46,7 @@
     cursor: not-allowed;
   }
 
-  /*
-   * Hover-Regeln stehen ausnahmslos in @media (hover: hover). Auf dem Telefon
-   * wuerde ein Hover-Zustand sonst nach dem Tippen "kleben" bleiben
-   * (Konzept 8.9).
-   */
+  /* Auf Touchgeräten soll kein Hover-Zustand nach dem Tippen kleben. */
   @media (hover: hover) {
     &:hover:not(:disabled) {
       transform: translateY(-1px);
@@ -49,10 +54,6 @@
   }
 }
 
-/*
- * Hauptknopf in den hessischen Landesfarben: Weiss auf Rot (#D40011) ergibt
- * 5,5:1.
- */
 .knopf--haupt {
   background-color: var(--farbe-hessen-rot);
   color: var(--farbe-hessen-weiss);
@@ -89,8 +90,7 @@
   }
 }
 
-/* Knopf auf der roten Kopfzeile: weiss umrandet statt gefuellt.
-   Weiss auf Hessen-Rot ergibt 5,5:1. */
+/* Die Kopfzeile braucht einen hellen Knopf- und Fokuskontrast. */
 .knopf--kopf {
   margin-block-start: var(--abstand-klein);
   background-color: transparent;
@@ -98,9 +98,7 @@
   color: var(--farbe-hessen-weiss);
 }
 
-/* ---------------------------------------------------------------------------
-   Formular
-   --------------------------------------------------------------------------- */
+/* == 2. Formular ========================================================== */
 
 .formular {
   inline-size: 100%;
@@ -130,8 +128,7 @@
   border-radius: var(--radius);
   background-color: var(--farbe-grund);
 
-  /* Mindestens 16 px, sonst zoomt Safari beim Hineintippen automatisch
-     hinein (Konzept 8.9). */
+  /* WCAG: Eingabetext unterschreitet die Grundgröße nicht. */
   font-size: max(1rem, var(--schrift-basis));
 
   &:focus-visible {
@@ -151,29 +148,22 @@
   text-align: start;
 }
 
+/* WCAG: Der zusätzliche Rand unterscheidet die Meldung auch ohne Farbe. */
 .meldung--fehler {
-  /* Nicht nur Farbe: Der Rahmen links traegt die Information mit (WCAG 1.4.1). */
   border-inline-start: 4px solid var(--farbe-warnung);
   background-color: color-mix(in oklch, var(--farbe-warnung) 12%, transparent);
   color: var(--farbe-text);
 }
 
-/* Hinweis ohne Fehler, z. B. "Du wurdest eingeladen". Rand wie bei Fehlern,
-   aber in der Akzentfarbe. */
 .meldung--info {
   border-inline-start: 4px solid var(--farbe-kugel);
   background-color: color-mix(in oklch, var(--farbe-kugel) 10%, transparent);
   color: var(--farbe-text);
 }
 
-/* ---------------------------------------------------------------------------
-   Umschalter "Schnelles Spiel / Privates Spiel"
-   ---------------------------------------------------------------------------
-   Zwei ganz normale Radiobuttons, nur als nebeneinanderliegende Felder
-   gestaltet. Die Radiokreise bleiben bewusst sichtbar: Man sieht sofort,
-   was gewaehlt ist – auch ohne Farbe (WCAG 1.4.1).
-   --------------------------------------------------------------------------- */
+/* == 3. Umschalter ======================================================== */
 
+/* Native Radio- und Checkbox-Zeichen bleiben sichtbar und bedienbar. */
 .umschalter {
   display: flex;
   flex-wrap: wrap;
@@ -191,7 +181,6 @@
 }
 
 .umschalter__option {
-  /* Beide Felder gleich breit, auf dem Telefon untereinander. */
   flex: 1 1 12rem;
   min-block-size: var(--ziel-min);
 
@@ -210,19 +199,14 @@
     accent-color: var(--farbe-kugel);
   }
 
-  /* Gewaehltes Feld: Rand in der Akzentfarbe und fette Schrift. Dazu der
-     gefuellte Radiopunkt – so ist die Wahl auch ohne Farbe erkennbar. */
+  /* WCAG: Der Auswahlpunkt ergänzt Randfarbe und fette Schrift. */
   &:has(:checked) {
     border-color: var(--farbe-kugel);
     font-weight: 700;
   }
 }
 
-/*
- * Untereinander statt nebeneinander – z. B. im Einstellungsdialog.
- * `flex: none`, weil in einer Spalte `flex-basis: 12rem` sonst die HOEHE jedes
- * Feldes festlegen wuerde.
- */
+/* In einer Spalte darf die bisherige Flex-Basis keine Feldhöhe vorgeben. */
 .umschalter--spalte {
   flex-direction: column;
 
@@ -231,9 +215,7 @@
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Einladungslink auf dem Wartebildschirm
-   --------------------------------------------------------------------------- */
+/* == 4. Einladungslink ==================================================== */
 
 .einladungslink {
   inline-size: 100%;
@@ -243,9 +225,7 @@
   text-align: start;
 }
 
-/* ---------------------------------------------------------------------------
-   Ladeanzeige des Wartebildschirms
-   --------------------------------------------------------------------------- */
+/* == 5. Ladeanzeige ======================================================= */
 
 .lader {
   display: flex;
@@ -260,7 +240,7 @@
   border-radius: var(--radius-rund);
   background-color: var(--farbe-kugel);
 
-  /* Vier Kugeln, die nacheinander huepfen – wie beim Saeen. */
+  /* Versetzte Starts erzeugen eine umlaufende Wartebewegung. */
   animation: huepfen 1.2s ease-in-out infinite;
 
   &:nth-child(2) { animation-delay: 0.15s; }
@@ -273,9 +253,7 @@
   30%           { transform: translateY(-0.6rem); opacity: 1; }
 }
 
-/* ---------------------------------------------------------------------------
-   Anleitung
-   --------------------------------------------------------------------------- */
+/* == 6. Anleitung ========================================================= */
 
 .anleitung {
   inline-size: 100%;
@@ -283,11 +261,8 @@
   font-size: 1rem;
   color: var(--farbe-text-leise);
 
-  /*
-   * Der Aufklapp-Text ist eine Klickflaeche und braucht deshalb 44 px Hoehe:
-   * 16 px Schrift x 1,5 Zeilenhoehe = 24 px, plus 2 x 10 px Innenabstand.
-   * min-block-size sichert das zusaetzlich ab. Bewusst kein display: flex –
-   * das wuerde in Chrome das Aufklapp-Dreieck entfernen.
+  /* WCAG: Die Aufklappzeile ist selbst eine mindestens 44px hohe Zielzone.
+   * Kein flex: Der native Aufklapppfeil soll erhalten bleiben.
    */
   & summary {
     cursor: pointer;
@@ -305,9 +280,7 @@
   gap: 0.35rem;
 }
 
-/* ---------------------------------------------------------------------------
-   Ergebnisdialog
-   --------------------------------------------------------------------------- */
+/* == 7. Dialog ============================================================ */
 
 .dialog {
   inline-size: min(92vw, 26rem);
@@ -321,13 +294,7 @@
 
   text-align: center;
 
-  /*
-   * Der Hintergrund hinter dem modalen Dialog.
-   *
-   * Hier bewusst der Farbwert selbst statt einer Variable: ::backdrop hat in
-   * aelteren Browserversionen Custom Properties NICHT von :root geerbt – eine
-   * Variable liefe dort ins Leere, und der Hintergrund bliebe durchsichtig.
-   */
+  /* Der Farbwert funktioniert hier auch ohne geerbte Custom Properties. */
   &::backdrop {
     background-color: oklch(20% 0.02 85 / 0.55);
     backdrop-filter: blur(2px);
@@ -369,8 +336,7 @@
   color: var(--farbe-text-leise);
 }
 
-/* Stand der Revanche ("Dein Gegner möchte eine Revanche!"): kraeftiger als die
-   Bilanz, weil man darauf reagieren soll. */
+/* Auf eine Revanche-Anfrage muss der Spieler reagieren können. */
 .dialog__hinweis {
   margin-inline: auto;
   margin-block-end: var(--abstand);
@@ -384,9 +350,7 @@
   justify-content: center;
 }
 
-/* ---------------------------------------------------------------------------
-   Verbindungshinweis
-   --------------------------------------------------------------------------- */
+/* == 8. Verbindungshinweis ================================================ */
 
 .verbindungshinweis {
   position: fixed;
@@ -400,7 +364,7 @@
 
   border-radius: var(--radius);
   background-color: var(--farbe-warnung);
-  /* Die helle Seitenfarbe als Schrift auf der dunklen Warnfarbe: 7,2:1. */
+
   color: var(--farbe-grund);
   text-align: center;
   box-shadow: var(--schatten);

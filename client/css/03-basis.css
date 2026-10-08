@@ -1,22 +1,19 @@
-/**
- * Typografie und Grundelemente (Ebene: basis).
+/* 03-basis.css – Schrift, Text und Tastaturfokus.
+ *
+ * Inhalt:
+ *   == 1. Schriftdatei
+ *   == 2. Dokument und größere Schrift
+ *   == 3. Text
+ *   == 4. Fokus
+ *   == 5. Sprungmarke
+ *
+ * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
-/*
- * Hausschrift Jost – kostenlos (SIL Open Font License, Lizenztext liegt
- * neben der Datei in client/fonts/).
- *
- * Warum nicht Gellix, die Schrift des Landes Hessen? Gellix ist
- * kostenpflichtig, und die Testversion gilt nur fuer einen Rechner – ein
- * Webserver gibt die Datei aber an jeden Besucher weiter. Jost sieht aehnlich
- * aus: Beide sind geometrische Schriften nach dem Vorbild der Futura.
- *
- * Die Datei liegt auf dem EIGENEN Server statt bei Google Fonts: Sonst
- * bekaeme Google bei jedem Seitenaufruf die IP-Adresse des Besuchers.
- *
- * Eine variable Schriftdatei enthaelt alle Staerken von 100 bis 900 – daher
- * nur eine Datei. `font-display: swap` zeigt sofort die Systemschrift und
- * tauscht, sobald Jost geladen ist.
+/* == 1. Schriftdatei ====================================================== */
+
+/* Jost wird lokal ausgeliefert; die SIL-Lizenz liegt in client/fonts/.
+ * swap zeigt während des Ladens eine Ersatzschrift.
  */
 @font-face {
   font-family: 'Jost';
@@ -26,24 +23,16 @@
   font-display: swap;
 }
 
+/* == 2. Dokument und größere Schrift ====================================== */
+
+/* Ein helles Farbschema gilt auch für native Formularelemente. */
 html {
-  /* Nur das helle Farbschema (siehe 02-tokens.css): Auch Eingabefelder,
-     Scrollleisten und Dialoge des Browsers bleiben hell, wenn das
-     Betriebssystem auf Dunkelmodus steht. */
   color-scheme: light;
-  /* 100dvh statt 100vh: Die ein- und ausfahrende Browserleiste auf iOS und
-     Android soll das Layout nicht abschneiden (Konzept 8.9). */
+
   min-block-size: 100dvh;
 }
 
-/*
- * Einstellung "Groessere Schrift" (js/einstellungen.js).
- *
- * Eine einzige Regel genuegt, weil das ganze Projekt in rem rechnet: Wird die
- * Grundschrift 12,5 % groesser, wachsen Texte, Abstaende UND Klickflaechen
- * mit. Prozent statt px, damit eine im Browser eingestellte Grundgroesse
- * erhalten bleibt.
- */
+/* Prozent erhält die Browser-Grundschrift und vergrößert rem-Maße mit. */
 html[data-schrift="gross"] {
   font-size: 112.5%;
 }
@@ -59,13 +48,13 @@ body {
   color: var(--farbe-text);
   background-color: var(--farbe-grund);
 
-  /* Sichere Bereiche: Das eigene Haus soll nicht unter der Gestenleiste des
-     Telefons liegen (Konzept 8.9). */
+  /* Die Gestenleiste des Telefons soll keinen Inhalt überdecken. */
   padding-block-end: max(0px, env(safe-area-inset-bottom));
 }
 
-/* Auch Ueberschriften koennen umbrechen – deshalb ebenfalls mindestens 1,5
-   Zeilenabstand (Regelwerk 6.1). */
+/* == 3. Text ============================================================== */
+
+/* WCAG: Auch umbrechende Überschriften behalten Zeilenhöhe 1,5. */
 h1, h2, h3 {
   line-height: var(--zeilenhoehe);
   text-wrap: balance;
@@ -75,7 +64,6 @@ h1 { font-size: 1.75rem; }
 h2 { font-size: 1.35rem; }
 
 p {
-  /* Hoechstens 68 Zeichen je Zeile (NFA-05). */
   max-inline-size: var(--zeile-max);
 }
 
@@ -87,11 +75,7 @@ strong {
   font-weight: 600;
 }
 
-/*
- * Tasten sehen aus wie Tasten (Tastaturhilfe).
- * font-family und font-size ausdruecklich setzen: Browser zeigen <kbd> sonst in
- * einer kleineren Festbreitenschrift – unter 16 px.
- */
+/* WCAG: Eine Tastennummer erbt die lesbare Schrift des Textes. */
 kbd {
   display: inline-block;
   min-inline-size: 1.6em;
@@ -109,27 +93,23 @@ kbd {
   text-align: center;
 }
 
-/*
- * Sichtbarer Fokusring – 3 px, eigener Abstand, mindestens 3:1 Kontrast
- * (WCAG 2.4.11). `:focus-visible` statt `:focus`, damit ein Mausklick keinen
- * Ring hinterlaesst, die Tastatur aber immer einen zeigt.
- */
+/* == 4. Fokus ============================================================= */
+
+/* WCAG: Die Tastatur erhält einen sichtbaren Ring mit Abstand. */
 :focus-visible {
   outline: 3px solid var(--farbe-kugel);
   outline-offset: 2px;
   border-radius: var(--radius-klein);
 }
 
-/*
- * Auf dem blauen Brett waere der blaue Ring unsichtbar (nachgerechnet:
- * 1,1:1). Hier deshalb ein heller Ring – 8,7:1.
- */
+/* Auf dem blauen Brett wäre der blaue Standardring kaum zu erkennen. */
 .brett :focus-visible {
   outline-color: var(--farbe-text-hell);
 }
 
-/* Sprungmarke: unsichtbar, bis sie den Fokus bekommt. Auch sie ist eine
-   Klickflaeche und bekommt deshalb mindestens 44 px Hoehe. */
+/* == 5. Sprungmarke ======================================================= */
+
+/* WCAG: Der Rückweg zum Hauptinhalt erscheint beim Tastaturfokus. */
 .sprungmarke {
   position: absolute;
   inset-block-start: -100%;

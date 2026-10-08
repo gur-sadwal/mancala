@@ -1,17 +1,19 @@
-/**
- * Seitengeruest und Ansichten (Ebene: layout).
+/* 04-layout.css – Seitenrahmen und Anordnung der Ansichten.
+ *
+ * Inhalt:
+ *   == 1. Kopfzeile
+ *   == 2. Laden und Ansichten
+ *   == 3. Warten
+ *   == 4. Punktestand
+ *   == 5. Hilfe und Aktionen
+ *   == 6. Niedrige Fenster
+ *
+ * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
-/*
- * Kopfzeile in den hessischen Landesfarben: rotes Band mit weisser Schrift,
- * darunter ein weisser und ein blauer Streifen (Rot-Weiss wie die Flagge,
- * Blau wie das Wappen). Weiss auf Rot ergibt 5,5:1.
- *
- * Beide Streifen liegen INNERHALB der Kopfzeile, ohne zusaetzliches
- * HTML-Element: Blau ist der untere Rand, Weiss ein nach innen gelegter
- * Schatten direkt darueber. Ein Schatten nach aussen wuerde unter der
- * Kopfzeile liegen und koennte von der naechsten Karte verdeckt werden.
- */
+/* == 1. Kopfzeile ========================================================= */
+
+/* Rand und innerer Schatten bilden die Streifen ohne weitere Elemente. */
 .kopf {
   padding-block: var(--abstand);
   padding-inline: var(--abstand);
@@ -27,7 +29,7 @@
     font-size: 1rem;
   }
 
-  /* Der blaue Fokusring haette auf Rot nur 1,5:1 – hier deshalb weiss. */
+  /* WCAG: Auf Rot bleibt der weiße Fokusring besser erkennbar. */
   & :focus-visible {
     outline-color: var(--farbe-hessen-weiss);
   }
@@ -39,7 +41,8 @@
   font-weight: 600;
 }
 
-/* Der Hinweis, solange das Spiel noch laedt – siehe index.html. */
+/* == 2. Laden und Ansichten =============================================== */
+
 .ladehinweis {
   display: grid;
   gap: var(--abstand-klein);
@@ -59,11 +62,7 @@
   padding-block-end: var(--abstand);
 }
 
-/*
- * Eine Ansicht ist ein zentrierter Block. Gewechselt wird ueber das
- * `hidden`-Attribut, nicht durch Neuladen (Konzept 8.1) – deshalb duerfen
- * hier keine Regeln stehen, die `hidden` ueberschreiben.
- */
+/* Ansichten wechseln über hidden; die späte Zustandsebene setzt es durch. */
 .ansicht {
   inline-size: 100%;
   max-inline-size: 34rem;
@@ -80,7 +79,7 @@
   box-shadow: var(--schatten);
 }
 
-/* Die Spielansicht ist breiter als die anderen und nicht als Karte gerahmt. */
+/* Das Brett braucht mehr Breite als die übrigen, kartenartigen Ansichten. */
 .ansicht--spiel {
   max-inline-size: min(100%, calc(var(--brett-max) + 2 * var(--abstand)));
   background-color: transparent;
@@ -89,24 +88,16 @@
   padding-block: var(--abstand);
 }
 
-/* ---------------------------------------------------------------------------
-   Warten
-   --------------------------------------------------------------------------- */
+/* == 3. Warten ============================================================ */
 
 .warten__hinweis {
   color: var(--farbe-text-leise);
   font-size: 1rem;
 }
 
-/* ---------------------------------------------------------------------------
-   Punktestand
-   --------------------------------------------------------------------------- */
+/* == 4. Punktestand ======================================================= */
 
-/*
- * Im Querformat neben dem Brett, im Hochformat als kompakte Zeile darueber –
- * umgesetzt mit flex-wrap, also ohne einen weiteren Umbruchpunkt
- * (Konzept 8.9).
- */
+/* Die Karten stehen über dem Brett und umbrechen bei Platzmangel. */
 .stand {
   inline-size: 100%;
   display: flex;
@@ -129,7 +120,8 @@
 
 .stand__name {
   font-weight: 600;
-  /* Lange Namen duerfen das Layout nicht sprengen. */
+
+  /* Lange Namen verdrängen weder Punktzahl noch die andere Karte. */
   max-inline-size: 12ch;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,10 +140,12 @@
   max-inline-size: none;
   text-align: center;
   font-weight: 600;
-  min-block-size: 1.5lh;   /* haelt die Hoehe, auch wenn der Text wechselt */
+  /* Reservierter Platz dämpft Sprünge beim Wechsel des Hinweistextes. */
+  min-block-size: 1.5lh;
 }
 
-/* Hinweiszeile der Tastaturhilfe unter dem Brett. */
+/* == 5. Hilfe und Aktionen ================================================ */
+
 .tastaturhinweis {
   margin-inline: auto;
   text-align: center;
@@ -164,11 +158,9 @@
   justify-content: center;
 }
 
-/*
- * Telefon im Querformat: wenig Hoehe. Kopf- und Fussbereich werden flacher,
- * damit das Brett vollstaendig sichtbar bleibt, ohne dass gescrollt werden
- * muss (Konzept 8.9).
- */
+/* == 6. Niedrige Fenster ================================================== */
+
+/* Ein kompakter Kopf spart Höhe; bei Bedarf bleibt Scrollen möglich. */
 @media (max-height: 480px) {
   .kopf {
     padding-block: var(--abstand-klein);

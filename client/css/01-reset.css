@@ -1,18 +1,26 @@
-/**
- * Sparsamer Reset (Ebene: reset).
+/* 01-reset.css – sparsame Browser-Grundregeln.
  *
- * Bewusst kein vollstaendiger Reset wie Normalize: Was der Browser
- * vernuenftig macht, bleibt stehen. Entfernt werden nur Vorgaben, die dem
- * Layout im Weg sind.
+ * Inhalt:
+ *   == 1. Box-Modell
+ *   == 2. Abstände und Listen
+ *   == 3. Medien
+ *   == 4. Formulare
+ *
+ * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
+/* == 1. Box-Modell ======================================================== */
+
+/* Innenabstand und Rand zählen zur angegebenen Größe. */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-/* Abstaende werden ausschliesslich bewusst gesetzt. */
+/* == 2. Abstände und Listen =============================================== */
+
+/* Die Themen-Dateien setzen die benötigten Abstände selbst. */
 body,
 h1, h2, h3,
 p,
@@ -26,7 +34,9 @@ ol, ul {
   list-style: none;
 }
 
-/* Medien verlassen nie ihren Container. */
+/* == 3. Medien ============================================================ */
+
+/* Bilder dürfen ihren umgebenden Block nicht verbreitern. */
 img,
 picture,
 svg {
@@ -34,7 +44,9 @@ svg {
   max-inline-size: 100%;
 }
 
-/* Formularelemente erben die Schrift des Dokuments statt der des Systems. */
+/* == 4. Formulare ========================================================= */
+
+/* Native Eingaben erhalten dieselbe lesbare Schrift wie ihr Umfeld. */
 input,
 button,
 textarea,
@@ -42,9 +54,3 @@ select {
   font: inherit;
   color: inherit;
 }
-
-/*
- * Die Regel "Bewegung reduzieren" steht NICHT hier, sondern in
- * 08-bewegung.css (letzte Ebene): In dieser ersten Ebene haette sie gegen jede
- * spaeter definierte Animation verloren.
- */
