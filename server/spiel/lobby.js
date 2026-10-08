@@ -18,6 +18,13 @@
 import { FEHLER, GRENZEN } from '../../shared/protokoll.js';
 import { neuerEinladungsCode } from '../util/ids.js';
 
+export const REVANCHE_STATUS = Object.freeze({
+  KEINE: 'KEINE',
+  WARTET: 'WARTET',
+  SCHON_GEWUENSCHT: 'SCHON_GEWUENSCHT',
+  START: 'START',
+});
+
 /**
  * So lange gilt ein Revanche-Angebot auf dem Server: die angezeigte Frist
  * plus 2 Sekunden Kulanz.
@@ -51,6 +58,23 @@ export function erzeugeLobby() {
    * @type {Map<string, {socketId: string, name: string, seit: number}>}
    */
   const privat = new Map();
+  const revanchen = new Map();
+
+  return {
+    beitreten,
+    erstellePrivat,
+    nimmPrivat,
+    entferne,
+    enthaelt,
+    naechstesPaar,
+    positionen,
+    raeumeAuf,
+    anzahl,
+    merkeRevanche,
+    wuenscheRevanche,
+    vergissRevanche,
+    abgelaufeneRevanchen,
+  };
 
   /**
    * Nimmt einen Spieler auf.
@@ -124,23 +148,22 @@ export function erzeugeLobby() {
     }
 
     // Nicht in der Schlange? Dann vielleicht auf einem privaten Platz.
-    for (const [einladung, eintrag] of privat) {
-      if (eintrag.socketId === socketId) {
-        privat.delete(einladung);
-        return true;
-      }
-    }
-    return false;
+    const einladung = findePrivatenCode(socketId);
+    return einladung !== null && privat.delete(einladung);
   }
 
   /** Wartet dieser Socket – oeffentlich oder privat? */
   function enthaelt(socketId) {
     if (warteschlange.some((e) => e.socketId === socketId)) return true;
 
-    for (const eintrag of privat.values()) {
-      if (eintrag.socketId === socketId) return true;
+    return findePrivatenCode(socketId) !== null;
+  }
+
+  function findePrivatenCode(socketId) {
+    for (const [einladung, eintrag] of privat) {
+      if (eintrag.socketId === socketId) return einladung;
     }
-    return false;
+    return null;
   }
 
   /**
@@ -209,7 +232,6 @@ export function erzeugeLobby() {
    *
    * @type {Map<string, {ich: object, gegner: object, gewuenscht: boolean, bis: number}>}
    */
-  const revanchen = new Map();
 
   /**
    * Nach dem Ende einer Partie: beide duerfen eine Revanche wuenschen.
@@ -232,8 +254,8 @@ export function erzeugeLobby() {
    *   SCHON_GEWUENSCHT  noch einmal gedrueckt – der Gegner weiss es schon
    *   START             beide wollen – `paar` spielt noch einmal gegeneinander
    *
-   * @returns {{status: 'KEINE'} | {status: 'WARTET', gegnerId: string}
-   *          | {status: 'SCHON_GEWUENSCHT'} | {status: 'START', paar: object[]}}
+   * @returns {{status: REVANCHE_STATUS.KEINE} | {status: REVANCHE_STATUS.WARTET, gegnerId: string}
+   *          | {status: REVANCHE_STATUS.SCHON_GEWUENSCHT} | {status: REVANCHE_STATUS.START, paar: object[]}}
    */
   function wuenscheRevanche(socketId) {
     const eintrag = revanchen.get(socketId);
@@ -243,19 +265,19 @@ export function erzeugeLobby() {
     // auf eine mit einem anderen Spieler.
     if (!eintrag || !gegenueber || gegenueber.gegner.socketId !== socketId) {
       revanchen.delete(socketId);
-      return { status: 'KEINE' };
+      return { status: REVANCHE_STATUS.KEINE };
     }
 
-    if (eintrag.gewuenscht) return { status: 'SCHON_GEWUENSCHT' };
+    if (eintrag.gewuenscht) return { status: REVANCHE_STATUS.SCHON_GEWUENSCHT };
 
     eintrag.gewuenscht = true;
     if (!gegenueber.gewuenscht) {
-      return { status: 'WARTET', gegnerId: eintrag.gegner.socketId };
+      return { status: REVANCHE_STATUS.WARTET, gegnerId: eintrag.gegner.socketId };
     }
 
     revanchen.delete(socketId);
     revanchen.delete(eintrag.gegner.socketId);
-    return { status: 'START', paar: [gegenueber.ich, eintrag.ich] };
+    return { status: REVANCHE_STATUS.START, paar: [gegenueber.ich, eintrag.ich] };
   }
 
   /**
@@ -308,19 +330,5 @@ export function erzeugeLobby() {
     return warteschlange.length + privat.size;
   }
 
-  return {
-    beitreten,
-    erstellePrivat,
-    nimmPrivat,
-    entferne,
-    enthaelt,
-    naechstesPaar,
-    positionen,
-    raeumeAuf,
-    anzahl,
-    merkeRevanche,
-    wuenscheRevanche,
-    vergissRevanche,
-    abgelaufeneRevanchen,
-  };
+
 }

@@ -5,7 +5,7 @@
  * hier ein vollstaendiges Matchmaking ohne laufenden Server durchspielen.
  */
 
-import { erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
+import { REVANCHE_STATUS, erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
 import { erzeugeManager } from '../server/spiel/manager.js';
 import { sitzVon, spielstandVon, beendeVorzeitig } from '../server/spiel/partie.js';
 import { STATUS, FEHLER, GRUND, GRENZEN, CODE_ZEICHEN } from '../shared/protokoll.js';
@@ -197,11 +197,11 @@ describe('Revanche nach einer Partie', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben);
 
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'WARTET', gegnerId: 'b' });
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'START', paar: [anna, ben] });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.START, paar: [anna, ben] });
 
     // Danach ist das Revanche-Buch fuer beide leer.
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'KEINE' });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
   test('zweimal druecken startet nichts – es braucht den Gegner', () => {
@@ -209,12 +209,12 @@ describe('Revanche nach einer Partie', () => {
     lobby.merkeRevanche(anna, ben);
 
     lobby.wuenscheRevanche('a');
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'SCHON_GEWUENSCHT' });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.SCHON_GEWUENSCHT });
   });
 
   test('ohne vorherige Partie gibt es keine Revanche', () => {
     const lobby = erzeugeLobby();
-    expect(lobby.wuenscheRevanche('x')).toEqual({ status: 'KEINE' });
+    expect(lobby.wuenscheRevanche('x')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
   test('wer geht, laesst die Revanche verfallen – der Gegner wird genannt', () => {
@@ -223,7 +223,7 @@ describe('Revanche nach einer Partie', () => {
 
     expect(lobby.vergissRevanche('a')).toBe('b');
     // Bens Knopf fuehrt jetzt ins Leere und meldet das auch.
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'KEINE' });
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.KEINE });
     expect(lobby.vergissRevanche('niemand')).toBeNull();
   });
 
@@ -233,7 +233,7 @@ describe('Revanche nach einer Partie', () => {
     // Anna hat inzwischen gegen Carl gespielt.
     lobby.merkeRevanche(anna, carl);
 
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'KEINE' });
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.KEINE });
     expect(lobby.vergissRevanche('a')).toBe('c');
   });
 
@@ -244,7 +244,7 @@ describe('Revanche nach einer Partie', () => {
     lobby.merkeRevanche(ben, carl);
 
     expect(lobby.vergissRevanche('a')).toBeNull();
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'WARTET', gegnerId: 'c' });
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'c' });
   });
 });
 
@@ -271,7 +271,7 @@ describe('Revanche-Frist', () => {
     lobby.merkeRevanche(anna, ben, ENDE);
 
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS - 1)).toEqual([]);
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'WARTET', gegnerId: 'b' });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
   });
 
   test('zum Fristende verfallen beide Eintraege – auch ein schon gedrueckter', () => {
@@ -287,8 +287,8 @@ describe('Revanche-Frist', () => {
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS);
 
-    expect(lobby.wuenscheRevanche('a')).toEqual({ status: 'KEINE' });
-    expect(lobby.wuenscheRevanche('b')).toEqual({ status: 'KEINE' });
+    expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
+    expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
   test('jede abgelaufene Revanche wird genau einmal gemeldet', () => {

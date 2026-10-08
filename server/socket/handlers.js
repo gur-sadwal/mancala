@@ -11,6 +11,7 @@
  * diese eine Partie, nie den Prozess.
  */
 
+import { REVANCHE_STATUS } from '../spiel/lobby.js';
 import { fuehreZugAus } from '../spiel/engine.js';
 import {
   sitzVon,
@@ -517,20 +518,20 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     const ergebnis = lobby.wuenscheRevanche(socket.id);
 
-    if (ergebnis.status === 'KEINE') {
+    if (ergebnis.status === REVANCHE_STATUS.KEINE) {
       // Der Gegner ist schon weg, spielt inzwischen etwas anderes, oder die
       // Frist ist vorbei.
       socket.emit(EREIGNIS.REVANCHE_WEG);
       return;
     }
 
-    if (ergebnis.status === 'WARTET') {
+    if (ergebnis.status === REVANCHE_STATUS.WARTET) {
       socketVon(ergebnis.gegnerId)?.emit(EREIGNIS.REVANCHE_ANGEBOT);
       return;
     }
 
     // Noch einmal gedrueckt: Der Gegner hat das Angebot schon.
-    if (ergebnis.status === 'SCHON_GEWUENSCHT') return;
+    if (ergebnis.status === REVANCHE_STATUS.SCHON_GEWUENSCHT) return;
 
     // START: Beide wollen. Zur Sicherheit pruefen, ob noch beide da sind.
     const [a, b] = ergebnis.paar;
