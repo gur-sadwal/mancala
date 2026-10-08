@@ -83,6 +83,14 @@ describe('Startpunkt: falsche Aufrufe', () => {
     expect(lauf.ausgabe()).toContain('Port');
   }, ZEITGRENZE_MS);
 
+  test('ein Port mit Anhängsel wird abgelehnt, nicht abgeschnitten', async () => {
+    const port = await freierPort();
+    const lauf = starte(`${port}abc`);
+
+    expect(await lauf.ende).toBe(1);
+    expect(lauf.ausgabe()).toContain('[ERROR]');
+  }, ZEITGRENZE_MS);
+
   test('ein belegter Port wird verständlich gemeldet (Code 1)', async () => {
     const port = await freierPort();
     const belegt = net.createServer();
@@ -92,6 +100,7 @@ describe('Startpunkt: falsche Aufrufe', () => {
       const lauf = starte(String(port));
       expect(await lauf.ende).toBe(1);
       expect(lauf.ausgabe()).toContain('belegt');
+      expect(lauf.ausgabe()).toContain('[ERROR]');   // über den Logger
     } finally {
       await new Promise((fertig) => belegt.close(fertig));
     }

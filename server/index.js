@@ -24,10 +24,11 @@ const STANDARD_PORT = 3000;
 // ---------------------------------------------------------------------------
 
 const portText = process.argv[2] ?? process.env.PORT ?? String(STANDARD_PORT);
-const port = Number.parseInt(portText, 10);
+// Number statt parseInt: parseInt läse "3000abc" still als 3000.
+const port = Number(portText);
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  console.error(`Ungueltiger Port: "${portText}". Aufruf: npm run start 3000`);
+  logger.error(`Ungueltiger Port: "${portText}". Aufruf: npm run start 3000`);
   process.exit(1);
 }
 
@@ -97,11 +98,11 @@ process.on('unhandledRejection', (grund) => {
  */
 httpServer.on('error', (fehler) => {
   if (fehler.code === 'EADDRINUSE') {
-    console.error(`Port ${port} ist bereits belegt. Anderen Port waehlen: npm run start 3001`);
+    logger.error(`Port ${port} ist bereits belegt. Anderen Port waehlen: npm run start 3001`);
     process.exit(1);
   }
   if (fehler.code === 'EACCES') {
-    console.error(`Keine Berechtigung fuer Port ${port}. Ports unter 1024 brauchen Adminrechte.`);
+    logger.error(`Keine Berechtigung fuer Port ${port}. Ports unter 1024 brauchen Adminrechte.`);
     process.exit(1);
   }
   logger.error('Serverfehler', fehler);
