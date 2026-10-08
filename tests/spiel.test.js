@@ -7,7 +7,8 @@
 import { jest } from '@jest/globals';
 import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
   erzeugeSpielAnsicht } from '../client/js/spiel.js';
-import { neuesBrett, fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
+import { fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
+import { neuesBrett } from '../server/spiel/brett.js';
 import { STATUS } from '../shared/protokoll.js';
 
 describe('Hinweis zu den Sonderregeln', () => {
