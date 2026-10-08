@@ -47,7 +47,7 @@ function speichereBilanz(bilanz) {
  * Z. B. "Gursharan, dein Ergebnis: 3-1 | 0 Remis" – vorne Siege und
  * Niederlagen, hinter dem Strich die Remis.
  */
-function bilanzText(name, { siege, niederlagen, remis }) {
+export function bilanzText(name, { siege, niederlagen, remis }) {
   const anrede = name === '' ? 'Dein' : `${name}, dein`;
   return `${anrede} Ergebnis: ${siege}-${niederlagen} | ${remis} Remis`;
 }
@@ -62,7 +62,7 @@ const OFFENE_STAENDE = ['moeglich', 'gewuenscht', 'angeboten'];
  * @param {null|string} stand  Revanche-Stand, siehe kern.js
  * @param {number} rest        verbleibende Sekunden
  */
-function revancheText(stand, rest) {
+export function revancheText(stand, rest) {
   switch (stand) {
     case 'moeglich':
       return `Noch ${rest} s für eine Revanche.`;
@@ -76,6 +76,39 @@ function revancheText(stand, rest) {
       return 'Die Zeit für eine Revanche ist abgelaufen.';
     default:
       return '';
+  }
+}
+
+/**
+ * Endete die Partie ohne echte Entscheidung?
+ *
+ * Bei einem internen Fehler oder einem Serverneustart hat niemand
+ * gewonnen oder verloren. Solche Partien zaehlen nicht in der Bilanz und
+ * bekommen die Ueberschrift "Partie abgebrochen".
+ */
+export function ohneWertung(grund) {
+  return grund === GRUND.INTERNER_FEHLER || grund === GRUND.SERVER_ENDE;
+}
+
+/**
+ * Erklaert in einem Satz, warum die Partie vorbei ist.
+ *
+ * @param {string} grund
+ * @param {boolean} gewonnen  bei einer Aufgabe: Wer gewinnt, hat NICHT
+ *                            aufgegeben – so laesst sich sagen, wer es war
+ */
+export function grundText(grund, gewonnen) {
+  switch (grund) {
+    case GRUND.GEGNER_WEG:
+      return 'Der Gegner hat das Spiel verlassen.';
+    case GRUND.AUFGEGEBEN:
+      return gewonnen ? 'Dein Gegner hat aufgegeben.' : 'Du hast aufgegeben.';
+    case GRUND.INTERNER_FEHLER:
+      return 'Die Partie musste wegen eines Fehlers abgebrochen werden.';
+    case GRUND.SERVER_ENDE:
+      return 'Der Server wurde beendet.';
+    default:
+      return 'Eine Reihe ist leer – die restlichen Kugeln wurden verteilt.';
   }
 }
 
@@ -211,39 +244,6 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
   knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
   knopfRevanche.addEventListener('click', beiRevanche);
   dialog.addEventListener('close', beiClose);
-
-  /**
-   * Endete die Partie ohne echte Entscheidung?
-   *
-   * Bei einem internen Fehler oder einem Serverneustart hat niemand
-   * gewonnen oder verloren. Solche Partien zaehlen nicht in der Bilanz und
-   * bekommen die Ueberschrift "Partie abgebrochen".
-   */
-  function ohneWertung(grund) {
-    return grund === GRUND.INTERNER_FEHLER || grund === GRUND.SERVER_ENDE;
-  }
-
-  /**
-   * Erklaert in einem Satz, warum die Partie vorbei ist.
-   *
-   * @param {string} grund
-   * @param {boolean} gewonnen  bei einer Aufgabe: Wer gewinnt, hat NICHT
-   *                            aufgegeben – so laesst sich sagen, wer es war
-   */
-  function grundText(grund, gewonnen) {
-    switch (grund) {
-      case GRUND.GEGNER_WEG:
-        return 'Der Gegner hat das Spiel verlassen.';
-      case GRUND.AUFGEGEBEN:
-        return gewonnen ? 'Dein Gegner hat aufgegeben.' : 'Du hast aufgegeben.';
-      case GRUND.INTERNER_FEHLER:
-        return 'Die Partie musste wegen eines Fehlers abgebrochen werden.';
-      case GRUND.SERVER_ENDE:
-        return 'Der Server wurde beendet.';
-      default:
-        return 'Eine Reihe ist leer – die restlichen Kugeln wurden verteilt.';
-    }
-  }
 
   return {
     /**
