@@ -76,7 +76,21 @@ let ablaufNr = 0;
  * lange nachdem dieses Modul fertig ausgewertet ist.
  */
 const aktionen = verbinde({
-  /**
+  beiVerbindung,
+  beiTrennung,
+  beiWarteschlange,
+  beiPrivat,
+  beiStart,
+  beiStand,
+  beiEnde,
+  beiAbbruch,
+  beiRevancheAngebot,
+  beiRevancheWeg,
+  beiRevancheAbgelaufen,
+  beiFehler,
+});
+
+/**
    * Verbindung steht – zum ersten Mal oder nach einem Abbruch.
    *
    * Nach einem Abbruch hat der Browser eine NEUE Socket-Kennung. Fuer den
@@ -84,157 +98,158 @@ const aktionen = verbinde({
    * sind weg. Wer gerade wartete oder spielte, muss deshalb neu beitreten,
    * sonst sitzt er vor einem Bildschirm, der nie mehr weitergeht.
    */
-  beiVerbindung() {
-    const { ansicht } = store.lies();
-    const hingAmServer = ansicht !== ANSICHT.ANMELDEN;
+function beiVerbindung() {
+  const { ansicht } = store.lies();
+  const hingAmServer = ansicht !== ANSICHT.ANMELDEN;
 
-    store.setze({ verbunden: true });
-    zeige(verbindungshinweis, false);
+  zeige(verbindungshinweis, false);
 
-    if (warSchonVerbunden && hingAmServer) {
-      zurueckZurAnmeldung();
-      // Erst NACH dem Ansichtswechsel melden: Beim Einblenden leert die
-      // Anmeldeansicht ihre Fehlermeldung.
-      anmeldeAnsicht.melde('Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
-    }
+  if (warSchonVerbunden && hingAmServer) {
+    zurueckZurAnmeldung();
+    // Erst NACH dem Ansichtswechsel melden: Beim Einblenden leert die
+    // Anmeldeansicht ihre Fehlermeldung.
+    anmeldeAnsicht.melde('Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
+  }
 
-    warSchonVerbunden = true;
-  },
+  warSchonVerbunden = true;
+}
 
-  beiTrennung() {
-    store.setze({ verbunden: false });
-    zeige(verbindungshinweis, true);
-  },
 
-  beiWarteschlange({ position }) {
-    store.setze({ ansicht: ANSICHT.WARTEN, position, einladung: null });
-  },
+function beiTrennung() {
+  zeige(verbindungshinweis, true);
+}
 
-  /** Privates Spiel ist angelegt: Wartebildschirm mit Einladungslink. */
-  beiPrivat({ code }) {
-    store.setze({ ansicht: ANSICHT.WARTEN, einladung: code, position: null });
-  },
 
-  beiStart({ sitz, gegner, spielstand }) {
-    // Ein Einladungslink ist jetzt verbraucht. Aus der Adresszeile nehmen,
-    // damit Neuladen nicht versucht, demselben Spiel noch einmal beizutreten.
-    entferneEinladungAusAdresse();
-    ablaufNr += 1;
-    letzteAnimation = Promise.resolve();
-    partieVorbei = false;
+function beiWarteschlange({ position }) {
+  store.setze({ ansicht: ANSICHT.WARTEN, position, einladung: null });
+}
 
-    store.setze({
-      ansicht: ANSICHT.SPIEL,
-      sitz,
-      gegnerName: gegner.name,
-      spielstand,
-      ergebnis: null,
-      position: null,
-      einladung: null,
-      revanche: null,
-    });
+/** Privates Spiel ist angelegt: Wartebildschirm mit Einladungslink. */
+function beiPrivat({ code }) {
+  store.setze({ ansicht: ANSICHT.WARTEN, einladung: code, position: null });
+}
 
-    spielAnsicht.starte(spielstand, sitz);
-  },
 
-  beiStand({ spielstand, bericht }) {
-    if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
-    store.setze({ spielstand });
-    letzteAnimation = warteAufAnimation(spielAnsicht.spieleZug(bericht, spielstand));
-  },
+function beiStart({ sitz, spielstand }) {
+  // Ein Einladungslink ist jetzt verbraucht. Aus der Adresszeile nehmen,
+  // damit Neuladen nicht versucht, demselben Spiel noch einmal beizutreten.
+  entferneEinladungAusAdresse();
+  ablaufNr += 1;
+  letzteAnimation = Promise.resolve();
+  partieVorbei = false;
 
-  async beiEnde({ spielstand, ergebnis, revanche }) {
-    const meineNr = ablaufNr;
-    // Die Revanche-Frist zaehlt ab JETZT, nicht erst nach der Animation – so
-    // passt der Zaehler im Dialog zur Frist auf dem Server.
-    const revancheSeit = Date.now();
-    markierePartieVorbei();
+  store.setze({
+    ansicht: ANSICHT.SPIEL,
+    sitz,
+    spielstand,
+    ergebnis: null,
+    position: null,
+    einladung: null,
+    revanche: null,
+  });
 
-    // Erst die Animation des letzten Zuges zu Ende laufen lassen.
-    await warteAufAnimation();
-    if (meineNr !== ablaufNr) return;
-    store.setze({
-      ansicht: ANSICHT.ENDE,
-      spielstand,
-      ergebnis,
-      revanche: revancheStand(revanche),
-      revancheSeit,
-    });
-  },
+  spielAnsicht.starte(spielstand, sitz);
+}
 
-  /**
+
+function beiStand({ spielstand, bericht }) {
+  if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
+  store.setze({ spielstand });
+  letzteAnimation = warteAufAnimation(spielAnsicht.spieleZug(bericht, spielstand));
+}
+
+
+async function beiEnde({ spielstand, ergebnis, revanche }) {
+  const meineNr = ablaufNr;
+  // Die Revanche-Frist zaehlt ab JETZT, nicht erst nach der Animation – so
+  // passt der Zaehler im Dialog zur Frist auf dem Server.
+  const revancheSeit = Date.now();
+  markierePartieVorbei();
+
+  // Erst die Animation des letzten Zuges zu Ende laufen lassen.
+  await warteAufAnimation();
+  if (meineNr !== ablaufNr) return;
+  store.setze({
+    ansicht: ANSICHT.ENDE,
+    spielstand,
+    ergebnis,
+    revanche: revancheStand(revanche),
+    revancheSeit,
+  });
+}
+
+/**
    * Abbruch: Gegner weg, Aufgabe oder interner Fehler (Konzept 6.6).
    *
    * Die Partie ist vorbei, der Prozess auf dem Server laeuft weiter – der
    * Spieler bekommt einen Dialog und kann sofort neu suchen.
    */
-  async beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
-    const meineNr = ablaufNr;
-    markierePartieVorbei();
-    const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
-    await warteAufAnimation();
-    if (meineNr !== ablaufNr) return;
+async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
+  const meineNr = ablaufNr;
+  markierePartieVorbei();
+  const revancheSeit = Date.now();   // Start der Revanche-Frist, siehe beiEnde
+  await warteAufAnimation();
+  if (meineNr !== ablaufNr) return;
 
-    store.setze({
-      ansicht: ANSICHT.ENDE,
-      spielstand: spielstand ?? store.lies().spielstand,
-      ergebnis: ergebnis ?? { punkte: { unten: 0, oben: 0 }, sieger: 'remis', grund },
-      revanche: revancheStand(revanche),
-      revancheSeit,
-    });
-  },
+  store.setze({
+    ansicht: ANSICHT.ENDE,
+    spielstand: spielstand ?? store.lies().spielstand,
+    ergebnis: ergebnis ?? { punkte: { unten: 0, oben: 0 }, sieger: 'remis', grund },
+    revanche: revancheStand(revanche),
+    revancheSeit,
+  });
+}
 
-  /**
+/**
    * Der Gegner moechte eine Revanche.
    *
    * Wer selbst schon "Revanche" gedrueckt hat, bleibt bei "gewuenscht": Die
    * Partie startet dann ohnehin gleich.
    */
-  beiRevancheAngebot() {
-    if (!partieVorbei) return;
-    if (store.lies().revanche !== 'gewuenscht') {
-      store.setze({ revanche: 'angeboten' });
-    }
-  },
+function beiRevancheAngebot() {
+  if (!partieVorbei) return;
+  if (store.lies().revanche !== 'gewuenscht') {
+    store.setze({ revanche: 'angeboten' });
+  }
+}
 
-  /** Revanche geht nicht mehr – der Gegner ist weg oder spielt etwas anderes. */
-  beiRevancheWeg() {
-    if (partieVorbei) {
-      store.setze({ revanche: 'weg' });
-    }
-  },
+/** Revanche geht nicht mehr – der Gegner ist weg oder spielt etwas anderes. */
+function beiRevancheWeg() {
+  if (partieVorbei) {
+    store.setze({ revanche: 'weg' });
+  }
+}
 
-  /**
+/**
    * Die Frist fuer die Revanche ist vorbei – das sagt der Server. Der Zaehler
    * im Dialog ist nur die Anzeige dazu.
    */
-  beiRevancheAbgelaufen() {
-    if (partieVorbei) {
-      store.setze({ revanche: 'abgelaufen' });
-    }
-  },
+function beiRevancheAbgelaufen() {
+  if (partieVorbei) {
+    store.setze({ revanche: 'abgelaufen' });
+  }
+}
 
-  /**
+/**
    * Fehlermeldungen des Servers (Konzept 6.7).
    *
    * Sie gehen ausschliesslich an den Verursacher. Je nach Code wird still
    * ignoriert, kurz an der Mulde abgelehnt oder im Formular gemeldet.
    */
-  beiFehler({ code, text }) {
-    const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
-    // Ein später Klick darf das bereits eintreffende Ergebnis nicht verdrängen.
-    if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
+function beiFehler({ code, text }) {
+  const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
+  // Ein später Klick darf das bereits eintreffende Ergebnis nicht verdrängen.
+  if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
 
-    if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
-      FEHLER.CODE_UNBEKANNT].includes(code)) {
-      if (code === FEHLER.CODE_UNBEKANNT) entferneEinladungAusAdresse();
-      zurueckZurAnmeldung();
-    } else if (code === FEHLER.BEREITS_IN_WARTESCHLANGE) {
-      store.setze({ ansicht: ANSICHT.WARTEN });
-    }
-    meldeFehler(meldung, code);
-  },
-});
+  if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
+    FEHLER.CODE_UNBEKANNT].includes(code)) {
+    if (code === FEHLER.CODE_UNBEKANNT) entferneEinladungAusAdresse();
+    zurueckZurAnmeldung();
+  } else if (code === FEHLER.BEREITS_IN_WARTESCHLANGE) {
+    store.setze({ ansicht: ANSICHT.WARTEN });
+  }
+  meldeFehler(meldung, code);
+}
 
 // ---------------------------------------------------------------------------
 // Ansichten

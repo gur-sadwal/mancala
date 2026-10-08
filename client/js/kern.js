@@ -55,14 +55,12 @@ export function erzeugeStore() {
     ansicht: ANSICHT.ANMELDEN,
     name: '',            // eigener Spielername
     sitz: null,          // 'unten' | 'oben', erst ab Partiestart bekannt
-    gegnerName: '',
     spielstand: null,    // letzter vom Server gelieferter Stand
     position: null,      // Platz in der Warteschlange
     einladung: null,     // Code des eigenen privaten Spiels, z. B. "K7M2QX"
     ergebnis: null,      // Endergebnis, sobald die Partie vorbei ist
     revanche: null,      // nach Partieende: 'moeglich' | 'gewuenscht' | 'angeboten' | 'weg' | 'abgelaufen'
     revancheSeit: 0,     // Zeitpunkt (ms), ab dem die Revanche-Frist laeuft
-    verbunden: false,
   };
 
   /** @type {Set<Function>} */
