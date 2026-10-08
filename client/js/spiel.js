@@ -17,6 +17,8 @@ import {
   wenigerBewegung,
 } from './dom.js';
 
+// ACHTUNG: Der DOM-Helfer heißt zeigeElement, weil die Ansicht selbst zeige hat.
+
 // == 1. Anzeigeordnung und Zeiten =========================================
 const ANZEIGE_REIHENFOLGE = [
   [0, 0],
