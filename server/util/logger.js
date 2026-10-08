@@ -14,7 +14,8 @@ const EBENEN = { debug: 10, info: 20, warn: 30, error: 40 };
  * Schwelle aus der Umgebung, Standard `info`.
  * LOG_LEVEL=debug macht die Ausgabe waehrend der Entwicklung gespraechiger.
  */
-const schwelle = EBENEN[process.env.LOG_LEVEL] ?? EBENEN.info;
+const gewuenscht = (process.env.LOG_LEVEL ?? '').toLowerCase();
+const schwelle = EBENEN[gewuenscht] ?? EBENEN.info;
 
 /** Zeitstempel HH:MM:SS in UTC (deutsche Sommerzeit = UTC + 2 Stunden). */
 function zeitstempel() {
@@ -35,8 +36,10 @@ function schreibe(ebene, text, zusatz) {
 
   if (zusatz !== undefined) {
     if (zusatz instanceof Error) {
-      teile.push(`${zusatz.name}: ${zusatz.message}`);
+      // Der Stacktrace beginnt selbst mit Name und Meldung – deshalb nur
+      // eins von beiden, sonst stuende die Meldung doppelt da.
       if (ebene === 'error' && zusatz.stack) teile.push(`\n${zusatz.stack}`);
+      else teile.push(`${zusatz.name}: ${zusatz.message}`);
     } else {
       try {
         teile.push(JSON.stringify(zusatz));

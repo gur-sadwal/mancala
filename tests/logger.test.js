@@ -6,7 +6,13 @@
  * nicht gesetzt, es gilt also der Standard `info`.
  */
 
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
 import { logger } from '../server/util/logger.js';
+
+/** Projektwurzel – eine Ebene über tests/. */
+const WURZEL = fileURLToPath(new URL('..', import.meta.url));
 
 const ausgabe = { log: [], warn: [], error: [] };
 const echteKonsole = { log: console.log, warn: console.warn, error: console.error };
@@ -51,6 +57,12 @@ describe('Logger', () => {
     expect(ausgabe.error[0]).toContain('logger.test.js');
   });
 
+  test('die Meldung des Fehlers steht nur einmal in der Zeile', () => {
+    logger.error('Handler fehlgeschlagen', new Error('absichtlich'));
+
+    expect(ausgabe.error[0].split('absichtlich')).toHaveLength(2);
+  });
+
   test('bei warn genügen Name und Meldung des Fehlers', () => {
     logger.warn('Seltsam', new TypeError('falscher Typ'));
 
@@ -64,5 +76,34 @@ describe('Logger', () => {
 
     expect(() => logger.info('Ring', ring)).not.toThrow();
     expect(ausgabe.log[0]).toContain('[nicht serialisierbar]');
+  });
+});
+
+describe('Logger: Schwelle aus LOG_LEVEL', () => {
+  // Die Schwelle wird beim Laden gelesen – deshalb ein eigener Prozess.
+  function protokolliereMit(logLevel) {
+    const programm = "import { logger } from './server/util/logger.js';"
+      + "logger.debug('fein'); logger.info('normal');";
+    const lauf = spawnSync(process.execPath, ['--input-type=module', '-e', programm], {
+      cwd: WURZEL,
+      env: { ...process.env, LOG_LEVEL: logLevel },
+      encoding: 'utf8',
+    });
+    return lauf.stdout;
+  }
+
+  test('debug macht die Ausgabe gesprächiger', () => {
+    expect(protokolliereMit('debug')).toContain('[DEBUG] fein');
+  });
+
+  test('Groß- und Kleinschreibung spielt keine Rolle', () => {
+    expect(protokolliereMit('DEBUG')).toContain('[DEBUG] fein');
+    expect(protokolliereMit('WARN')).not.toContain('[INFO] normal');
+  });
+
+  test('ein unbekannter Wert fällt auf info zurück', () => {
+    const ausgabe = protokolliereMit('quatsch');
+    expect(ausgabe).toContain('[INFO] normal');
+    expect(ausgabe).not.toContain('[DEBUG]');
   });
 });
