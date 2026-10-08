@@ -1223,3 +1223,19 @@ describe('Handler: Auflösen trotz zusätzlichem Fehler', () => {
     expect(manager.anzahl()).toBe(0);
   });
 });
+
+describe('Handler: Doppelwunsch bleibt vollständig still', () => {
+  test('weder Sender noch Gegner erhalten eine zusätzliche Nachricht', () => {
+    const { anna, ben } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    const vorherAnna = anna.empfangen.length;
+    const vorherBen = ben.empfangen.length;
+
+    anna.sende(EREIGNIS.REVANCHE);
+
+    expect(anna.empfangen).toHaveLength(vorherAnna);
+    expect(ben.empfangen).toHaveLength(vorherBen);
+  });
+});
+

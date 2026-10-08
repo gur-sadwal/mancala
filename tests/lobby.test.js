@@ -547,3 +547,27 @@ describe('vorzeitiges Partieende', () => {
     },
   );
 });
+
+describe('Manager: Speicher beim Auflösen freigeben', () => {
+  test('alle angelegten Maps sind danach leer, auch die Socket-Zuordnung', () => {
+    const echteMap = globalThis.Map;
+    const maps = [];
+    const konstruktor = import.meta.jest.spyOn(globalThis, 'Map').mockImplementation(() => {
+      const map = new echteMap();
+      maps.push(map);
+      return map;
+    });
+    let manager;
+    try {
+      manager = erzeugeManager();
+    } finally {
+      konstruktor.mockRestore();
+    }
+    const partie = manager.starte({ socketId: 'a', name: 'A' }, { socketId: 'b', name: 'B' });
+    expect(maps.some((map) => map.size > 0)).toBe(true);
+
+    manager.entferne(partie.id);
+
+    expect(maps.every((map) => map.size === 0)).toBe(true);
+  });
+});
