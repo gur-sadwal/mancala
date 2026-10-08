@@ -187,12 +187,5 @@ export function verbinde(rueckrufe) {
     erneut: () => socket.emit(EREIGNIS.ERNEUT, { name: letzterName }),
     revanche: () => socket.emit(EREIGNIS.REVANCHE),
 
-    /** Nur fuer den Abmelde-Knopf: Verbindung bewusst schliessen. */
-    trennen: () => socket.disconnect(),
-
-    /** Nach einem bewussten Trennen wieder aufbauen. */
-    neuVerbinden: () => socket.connect(),
-
-    istVerbunden: () => socket.connected,
   };
 }

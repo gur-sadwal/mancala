@@ -90,3 +90,17 @@ describe('Neue Suche nach dem Ergebnis', () => {
     expect(socket.emit).toHaveBeenLastCalledWith(protokoll.EREIGNIS.ERNEUT, { name: '' });
   });
 });
+
+describe('Zurück zur Anmeldung', () => {
+  test('Abmelden beendet das Revanche-Angebot und behält die Verbindung', async () => {
+    starte();
+    await beende();
+    rueckrufe.ende.beiAbmelden();
+
+    expect(socket.disconnect).not.toHaveBeenCalled();
+    expect(socket.connect).not.toHaveBeenCalled();
+    expect(socket.emit).toHaveBeenLastCalledWith(protokoll.EREIGNIS.ABBRECHEN);
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(elemente['#verbindungshinweis'].hidden).toBe(true);
+  });
+});

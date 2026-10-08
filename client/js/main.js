@@ -83,19 +83,13 @@ const aktionen = verbinde({
    */
   beiVerbindung() {
     const { ansicht } = store.lies();
-    const hingAmServer = ansicht === ANSICHT.WARTEN || ansicht === ANSICHT.SPIEL;
+    const hingAmServer = ansicht !== ANSICHT.ANMELDEN;
 
     store.setze({ verbunden: true });
     zeige(verbindungshinweis, false);
 
     if (warSchonVerbunden && hingAmServer) {
-      store.setze({
-        ansicht: ANSICHT.ANMELDEN,
-        spielstand: null,
-        sitz: null,
-        position: null,
-        einladung: null,
-      });
+      zurueckZurAnmeldung();
       // Erst NACH dem Ansichtswechsel melden: Beim Einblenden leert die
       // Anmeldeansicht ihre Fehlermeldung.
       anmeldeAnsicht.melde('Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
@@ -277,7 +271,7 @@ const warteAnsicht = erzeugeWarteAnsicht({
   aktionen,
   beiAbbrechen() {
     // Der Server antwortet auf das Abbrechen nicht – also selbst zurueck.
-    store.setze({ ansicht: ANSICHT.ANMELDEN, position: null, einladung: null });
+    zurueckZurAnmeldung();
   },
 });
 const spielAnsicht = erzeugeSpielAnsicht({ aktionen });
@@ -290,6 +284,22 @@ const spielAnsicht = erzeugeSpielAnsicht({ aktionen });
 function markierePartieVorbei() {
   partieVorbei = true;
   spielAnsicht.beende();
+}
+
+/** Die Anzeige zurücksetzen; der eingegebene Name bleibt erhalten. */
+function zurueckZurAnmeldung() {
+  partieVorbei = false;
+  letzteAnimation = Promise.resolve();
+  store.setze({
+    ansicht: ANSICHT.ANMELDEN,
+    spielstand: null,
+    sitz: null,
+    position: null,
+    einladung: null,
+    ergebnis: null,
+    revanche: null,
+    revancheSeit: 0,
+  });
 }
 
 /**
@@ -336,16 +346,8 @@ const endeAnsicht = erzeugeEndeAnsicht({
   },
 
   beiAbmelden() {
-    // Zurueck zum Start: Verbindung trennen und gleich neu aufbauen, damit
-    // der Server den alten Socket sauber aufraeumt.
-    aktionen.trennen();
-    store.setze({
-      ansicht: ANSICHT.ANMELDEN,
-      spielstand: null,
-      sitz: null,
-      ergebnis: null,
-    });
-    aktionen.neuVerbinden();
+    aktionen.abbrechen();
+    zurueckZurAnmeldung();
   },
 
   /**
@@ -360,13 +362,7 @@ const endeAnsicht = erzeugeEndeAnsicht({
     // Sonst wartete der Gegner umsonst.
     aktionen.abbrechen();
 
-    store.setze({
-      ansicht: ANSICHT.ANMELDEN,
-      spielstand: null,
-      sitz: null,
-      ergebnis: null,
-      revanche: null,
-    });
+    zurueckZurAnmeldung();
   },
 });
 
