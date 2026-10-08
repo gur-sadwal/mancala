@@ -18,12 +18,15 @@ import { bereinigeName, NAME_VERBOTEN } from '/shared/protokoll.js';
 const SPEICHER_NAME = 'mancala.name';
 
 /**
- * Baut die Anmeldeansicht auf und meldet ihre Listener an.
+ * Baut die Anmeldeansicht auf.
  *
- * @param {{aktionen: object}} deps  die Sendefunktionen aus kern.js
+ * @param {object} deps
+ * @param {object} deps.aktionen        die Sendefunktionen aus kern.js
+ * @param {Function} deps.beiAnmeldung  bekommt den bereinigten Namen, kurz
+ *                                      bevor er an den Server geht
  * @returns {{zeige: Function, melde: Function}}
  */
-export function erzeugeAnmeldeAnsicht({ aktionen }) {
+export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const abschnitt = $('#ansicht-anmelden');
   const formular = $('#form-anmelden');
   const feldName = $('#feld-name');
@@ -129,6 +132,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen }) {
       // Siehe oben: Speichern ist optional.
     }
 
+    beiAnmeldung(name);
     aktionen.beitreten(name, { privat: istPrivatGewaehlt(), code: einladung });
   }
 

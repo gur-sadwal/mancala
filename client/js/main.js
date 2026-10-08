@@ -261,7 +261,17 @@ const aktionen = verbinde({
 // Ansichten
 // ---------------------------------------------------------------------------
 
-const anmeldeAnsicht = erzeugeAnmeldeAnsicht({ aktionen });
+const anmeldeAnsicht = erzeugeAnmeldeAnsicht({
+  aktionen,
+
+  /**
+   * Den Namen fuer den Wartebildschirm merken – genau so, wie er an den
+   * Server geht (bereinigt). Die verbindliche Fassung fuehrt der Server.
+   */
+  beiAnmeldung(name) {
+    store.setze({ name });
+  },
+});
 
 const warteAnsicht = erzeugeWarteAnsicht({
   aktionen,
@@ -402,16 +412,6 @@ function eigenerName(zustand) {
   const spieler = zustand.spielstand?.spieler[zustand.sitz];
   return spieler ? spieler.name : zustand.name;
 }
-
-/**
- * Den eingegebenen Namen im Zustand festhalten.
- *
- * Er wird nur fuer die Anzeige auf dem Wartebildschirm gebraucht; die
- * verbindliche Fassung (bereinigt und gekuerzt) fuehrt der Server.
- */
-$('#form-anmelden').addEventListener('submit', () => {
-  store.setze({ name: $('#feld-name').value.trim() });
-});
 
 /**
  * Entfernt `?spiel=...` aus der Adresszeile, ohne die Seite neu zu laden.
