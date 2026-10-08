@@ -49,7 +49,8 @@ export function ausSpeichertext(text, standard) {
 
   // JSON.parse liefert auch Zahlen, Texte oder null – das sind keine
   // Einstellungen.
-  if (typeof gespeichert !== 'object' || gespeichert === null) return null;
+  if (typeof gespeichert !== 'object' || gespeichert === null
+    || Array.isArray(gespeichert)) return null;
 
   // Nur die bekannten Namen und nur echte true/false-Werte uebernehmen.
   const einstellungen = {};

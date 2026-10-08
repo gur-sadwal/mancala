@@ -20,6 +20,7 @@ jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: tru
 
 const {
   bilanzText, bilanzAusSpeichertext, revancheText, ohneWertung, grundText,
+  erzeugeEndeAnsicht,
 } = await import('../client/js/ende.js');
 const { GRUND } = protokoll;
 
@@ -117,5 +118,72 @@ describe('Satz zum Grund des Endes', () => {
   test('reguläres Ende: eine Reihe ist leer', () => {
     expect(grundText(GRUND.REGULAER, true))
       .toBe('Eine Reihe ist leer – die restlichen Kugeln wurden verteilt.');
+  });
+});
+
+describe('Ergebnisdialog und Bilanz', () => {
+  let elemente;
+  let speicher;
+  let ansicht;
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000);
+    elemente = new Map();
+    global.document = { querySelector: (auswahl) => {
+      if (!elemente.has(auswahl)) {
+        const element = {
+          textContent: '', hidden: false, open: false, disabled: false,
+          addEventListener: jest.fn(), removeEventListener: jest.fn(), focus: jest.fn(),
+        };
+        element.showModal = () => { element.open = true; };
+        element.close = () => { element.open = false; };
+        elemente.set(auswahl, element);
+      }
+      return elemente.get(auswahl);
+    } };
+    speicher = new Map();
+    global.window = { sessionStorage: {
+      getItem: (name) => speicher.get(name) ?? null,
+      setItem: (name, text) => speicher.set(name, text),
+    } };
+    ansicht = erzeugeEndeAnsicht({});
+  });
+
+  afterEach(() => {
+    ansicht.verstecke();
+    jest.useRealTimers();
+    delete global.document;
+    delete global.window;
+  });
+
+  function zeigeErgebnis(ergebnis, sitz = 'unten', revanche = 'moeglich') {
+    ansicht.zeige({ ergebnis, sitz, revanche, revancheSeit: Date.now(), name: 'Anna' });
+  }
+
+  test.each(['unten', 'oben'])('Timeout zählt für %s auch bei ungleichem Stand nicht als Niederlage', (sitz) => {
+    zeigeErgebnis({ grund: GRUND.ZU_LANGE_KEIN_ZUG, sieger: null,
+      punkte: { unten: 0, oben: 3 } }, sitz, null);
+
+    expect(elemente.get('#t-ende').textContent).toBe('Partie abgebrochen');
+    expect(elemente.get('#ende-bilanz').textContent).toContain('0-0 | 0 Remis');
+    expect(speicher.size).toBe(0);
+  });
+
+  test('wiederholtes Zeichnen zählt dasselbe Ergebnis genau einmal', () => {
+    const ergebnis = { grund: GRUND.REGULAER, sieger: 'unten', punkte: { unten: 25, oben: 23 } };
+    zeigeErgebnis(ergebnis);
+    zeigeErgebnis(ergebnis);
+    expect(JSON.parse(speicher.get('mancala.bilanz')).siege).toBe(1);
+  });
+
+  test('Serverfehler bleibt trotz Sekundentakt sichtbar, ein neuer Revanche-Stand ersetzt ihn', () => {
+    const ergebnis = { grund: GRUND.REGULAER, sieger: 'unten', punkte: { unten: 25, oben: 23 } };
+    zeigeErgebnis(ergebnis);
+    ansicht.melde('Bitte kurz warten.');
+    jest.advanceTimersByTime(1000);
+    expect(elemente.get('#revanche-hinweis').textContent).toBe('Bitte kurz warten.');
+    zeigeErgebnis(ergebnis, 'unten', 'angeboten');
+    expect(elemente.get('#revanche-hinweis').textContent).toContain('Dein Gegner möchte');
   });
 });

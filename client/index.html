@@ -81,13 +81,13 @@
         <fieldset id="spielart" class="umschalter">
           <legend class="feld__beschriftung">Spielart</legend>
 
-          <label class="umschalter__option">
-            <input type="radio" name="spielart" value="schnell" checked />
+          <label class="umschalter__option" for="spielart-schnell">
+            <input id="spielart-schnell" type="radio" name="spielart" value="schnell" checked />
             Schnelles Spiel
           </label>
 
-          <label class="umschalter__option">
-            <input type="radio" name="spielart" value="privat" />
+          <label class="umschalter__option" for="spielart-privat">
+            <input id="spielart-privat" type="radio" name="spielart" value="privat" />
             Privates Spiel mit Link
           </label>
         </fieldset>
@@ -111,9 +111,11 @@
             eigenes Haus rechts, aber niemals in das Haus des Gegners.</li>
           <li>Landet die letzte Kugel in deinem Haus, bist du sofort noch einmal am Zug.</li>
           <li>Landet die letzte Kugel in einer leeren eigenen Mulde, bekommst du sie und
-            alle Kugeln der gegenüberliegenden Mulde.</li>
-          <li>Sobald eine Reihe leer ist, endet das Spiel. Wer mehr Kugeln im Haus hat,
-            gewinnt.</li>
+            alle Kugeln der gegenüberliegenden Mulde, wenn dort Kugeln liegen.
+            Ist die gegenüberliegende Mulde leer, bleibt deine Kugel liegen.</li>
+          <li>Sobald eine Reihe leer ist, endet das Spiel. Die restlichen Kugeln wandern
+            in das Haus ihres Spielers. Wer mehr Kugeln im Haus hat, gewinnt;
+            bei 24 zu 24 ist es unentschieden.</li>
           <li>Blaue Kugeln liegen auf deiner Seite, rote auf der Seite des Gegners.
             Ein gestrichelter Ring zeigt, wo der letzte Zug begann.</li>
           <li>Mit der Tastatur: Tab wählt eine Mulde, Enter oder Leertaste spielt sie.
@@ -295,13 +297,13 @@
       <fieldset class="umschalter umschalter--spalte">
         <legend class="feld__beschriftung">Anzeige</legend>
 
-        <label class="umschalter__option">
-          <input type="checkbox" name="grosseSchrift" />
+        <label class="umschalter__option" for="einstellung-schrift">
+          <input id="einstellung-schrift" type="checkbox" name="grosseSchrift" />
           Größere Schrift
         </label>
 
-        <label class="umschalter__option">
-          <input type="checkbox" name="wenigerAnimation" />
+        <label class="umschalter__option" for="einstellung-bewegung">
+          <input id="einstellung-bewegung" type="checkbox" name="wenigerAnimation" />
           Weniger Animation
         </label>
       </fieldset>

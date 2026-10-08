@@ -44,5 +44,6 @@ describe('Einstellungen aus dem Speicher lesen', () => {
     expect(ausSpeichertext('{kaputt', STANDARD)).toBeNull();
     expect(ausSpeichertext('null', STANDARD)).toBeNull();
     expect(ausSpeichertext('42', STANDARD)).toBeNull();
+    expect(ausSpeichertext('[]', STANDARD)).toBeNull();
   });
 });
