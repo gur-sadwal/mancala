@@ -117,5 +117,9 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
         setzeText(positionAnzeige, '');
       }
     },
+
+    melde(text) {
+      setzeText(positionAnzeige, text);
+    },
   };
 }

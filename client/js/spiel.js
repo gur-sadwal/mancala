@@ -914,11 +914,13 @@ export function erzeugeSpielAnsicht({ aktionen }) {
      * Fehlermeldung: Der haeufigste Grund ist ein Klick, der eine
      * Sekundenbruchteil zu spaet kam.
      */
-    melde(code) {
+    melde(text, { ruetteln = false } = {}) {
       wartetAufAntwort = false;
       schalte(brettElement, 'brett--gesperrt', false);
+      setzeText(elemente.zuganzeige, text);
+      schalte(elemente.zuganzeige, 'zuganzeige--hinweis', true);
 
-      if (code === 'MULDE_LEER' || code === 'NICHT_AM_ZUG') {
+      if (ruetteln) {
         const mulden = brettElement.querySelectorAll('.mulde--eigen');
         for (const mulde of mulden) {
           mulde.classList.add('mulde--abgelehnt');

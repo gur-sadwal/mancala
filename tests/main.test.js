@@ -145,3 +145,41 @@ describe('Nachrichten während der Schlussanimation', () => {
     expect(ansichten.ende.zeige.mock.lastCall[0].revanche).toBe(stand);
   });
 });
+
+describe('Sichtbare Serverfehler', () => {
+  test('abgelaufene Wartezeit führt mit Meldung zur Anmeldung', () => {
+    sende(protokoll.EREIGNIS.PRIVAT, { code: 'K7M2QX' });
+    sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.WARTEZEIT_ABGELAUFEN });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.WARTEZEIT_ABGELAUFEN]);
+  });
+
+  test('fehlende Partie führt mit Erklärung zur Anmeldung', () => {
+    starte();
+    sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.KEINE_PARTIE });
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.KEINE_PARTIE]);
+  });
+
+  test.each(Object.values(protokoll.FEHLER).filter((code) => ![
+    protokoll.FEHLER.KEINE_PARTIE, protokoll.FEHLER.CODE_UNBEKANNT,
+    protokoll.FEHLER.WARTEZEIT_ABGELAUFEN, protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
+  ].includes(code)))('zeigt %s im Spiel als Text', (code) => {
+    starte();
+    sende(protokoll.EREIGNIS.FEHLER, { code });
+    expect(ansichten.spiel.melde).toHaveBeenLastCalledWith(protokoll.FEHLER_TEXT[code], {
+      ruetteln: [protokoll.FEHLER.MULDE_LEER, protokoll.FEHLER.NICHT_AM_ZUG].includes(code),
+    });
+  });
+
+  test.each(['anmelden', 'warten', 'ende'])('zeigt Fehler in %s an der sichtbaren Ansicht', async (name) => {
+    if (name === 'warten') sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
+    if (name === 'ende') { starte(); await beende(); }
+    sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.ZU_VIELE_ANFRAGEN });
+    expect(ansichten[name].melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.ZU_VIELE_ANFRAGEN]);
+  });
+});

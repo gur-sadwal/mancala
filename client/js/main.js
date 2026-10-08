@@ -222,42 +222,17 @@ const aktionen = verbinde({
    */
   beiFehler({ code, text }) {
     const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
-    const zustand = store.lies();
+    // Ein später Klick darf das bereits eintreffende Ergebnis nicht verdrängen.
+    if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
 
-    switch (code) {
-      case FEHLER.NUTZDATEN_UNGUELTIG:
-      case FEHLER.MULDE_UNGUELTIG:
-        // Kann nur durch einen Programmierfehler im Client entstehen: still
-        // ignorieren, aber protokollieren.
-        console.error('Der Server hat eine Nachricht abgelehnt:', code);
-        break;
-
-      case FEHLER.KEINE_PARTIE:
-        // Partie gerade regulaer beendet oder abgebrochen: Das Ergebnis ist
-        // unterwegs, diese Antwort auf einen spaeten Klick wird ignoriert.
-        if (partieVorbei) break;
-        store.setze({ ansicht: ANSICHT.ANMELDEN, spielstand: null, sitz: null });
-        break;
-
-      case FEHLER.BEREITS_IN_WARTESCHLANGE:
-        store.setze({ ansicht: ANSICHT.WARTEN });
-        break;
-
-      case FEHLER.CODE_UNBEKANNT:
-        // Der Link ist alt oder falsch: Code aus der Adresse nehmen, damit das
-        // Formular wieder die normale Auswahl zeigt – und dazu die Meldung.
-        entferneEinladungAusAdresse();
-        anmeldeAnsicht.zeige(true);
-        anmeldeAnsicht.melde(meldung);
-        break;
-
-      default:
-        if (zustand.ansicht === ANSICHT.SPIEL) {
-          spielAnsicht.melde(code);
-        } else {
-          anmeldeAnsicht.melde(meldung);
-        }
+    if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
+      FEHLER.CODE_UNBEKANNT].includes(code)) {
+      if (code === FEHLER.CODE_UNBEKANNT) entferneEinladungAusAdresse();
+      zurueckZurAnmeldung();
+    } else if (code === FEHLER.BEREITS_IN_WARTESCHLANGE) {
+      store.setze({ ansicht: ANSICHT.WARTEN });
     }
+    meldeFehler(meldung, code);
   },
 });
 
@@ -311,6 +286,25 @@ function zurueckZurAnmeldung() {
     revanche: null,
     revancheSeit: 0,
   });
+}
+
+/** Jede Ansicht hat einen sichtbaren Platz für eine Fehlermeldung. */
+function meldeFehler(text, code) {
+  switch (store.lies().ansicht) {
+    case ANSICHT.SPIEL:
+      spielAnsicht.melde(text, {
+        ruetteln: code === FEHLER.MULDE_LEER || code === FEHLER.NICHT_AM_ZUG,
+      });
+      break;
+    case ANSICHT.WARTEN:
+      warteAnsicht.melde(text);
+      break;
+    case ANSICHT.ENDE:
+      endeAnsicht.melde(text);
+      break;
+    default:
+      anmeldeAnsicht.melde(text);
+  }
 }
 
 /**

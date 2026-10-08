@@ -165,6 +165,8 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
   /** Letzter Revanche-Stand aus main.js und Beginn seiner Frist (ms). */
   let aktuelleRevanche = null;
   let fristBeginn = 0;
+  let fehlermeldung = '';
+  let angezeigtesErgebnis = null;
 
   /** Kennung des Sekundentakts, solange der Zaehler laeuft – sonst null. */
   let zaehler = null;
@@ -210,7 +212,7 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     knopfRevanche.disabled = stand !== 'moeglich' && stand !== 'angeboten';
     setzeText(knopfRevanche, stand === 'angeboten' ? 'Revanche annehmen' : 'Revanche');
 
-    const hinweis = revancheText(stand, rest);
+    const hinweis = fehlermeldung || revancheText(stand, rest);
     setzeText(revancheHinweis, hinweis);
     zeigeElement(revancheHinweis, hinweis !== '');
 
@@ -276,6 +278,10 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
      * @param {string} daten.name  eigener Spielername fuer die Bilanz
      */
     zeige({ ergebnis, sitz, revanche = null, revancheSeit = 0, name = '' }) {
+      if (ergebnis !== angezeigtesErgebnis || revanche !== aktuelleRevanche) {
+        fehlermeldung = '';
+      }
+      angezeigtesErgebnis = ergebnis;
       meldeListenerAn();
       const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
 
@@ -337,6 +343,11 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     verstecke() {
       schliesse();
       meldeListenerAb();
+    },
+
+    melde(text) {
+      fehlermeldung = text;
+      zeichneRevanche();
     },
   };
 }
