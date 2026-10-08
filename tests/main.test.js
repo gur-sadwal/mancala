@@ -46,7 +46,9 @@ beforeEach(async () => {
   rueckrufe = {};
   elemente = { '#verbindungshinweis': { hidden: true }, '#ladehinweis': { hidden: false } };
   global.document = { querySelector: (auswahl) => elemente[auswahl] };
-  global.window = { history: { replaceState: jest.fn() }, location: { pathname: '/' } };
+  global.window = Object.assign(new EventTarget(), {
+    history: { replaceState: jest.fn() }, location: { pathname: '/' },
+  });
   await import('../client/js/main.js');
 });
 

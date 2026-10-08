@@ -83,6 +83,13 @@ export function verbinde(rueckrufe) {
   socket.on(EREIGNIS.REVANCHE_WEG, () => rueckrufe.beiRevancheWeg?.());
   socket.on(EREIGNIS.REVANCHE_ABGELAUFEN, () => rueckrufe.beiRevancheAbgelaufen?.());
 
+  // SCHUTZ: Vor dem Einfrieren schließen; ein alter WebSocket überlebt den
+  // Zurück-Cache nicht zuverlässig. Die Ansichts-Listener bleiben bestehen.
+  window.addEventListener('pagehide', () => socket.disconnect());
+  window.addEventListener('pageshow', (ereignis) => {
+    if (ereignis.persisted) socket.connect();
+  });
+
   // Nach einer neuen Verbindung muss die erneute Suche den Namen mitsenden.
   let letzterName = '';
 

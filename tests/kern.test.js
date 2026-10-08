@@ -21,6 +21,8 @@ function neuerSocket() {
     gesendet,
     on: (name, rueckruf) => ereignisse.set(name, rueckruf),
     emit: (name, daten) => gesendet.push(daten === undefined ? [name] : [name, daten]),
+    disconnect: jest.fn(),
+    connect: jest.fn(),
   };
   return socket;
 }
@@ -39,6 +41,15 @@ jest.unstable_mockModule('/socket.io/socket.io.esm.min.js', () => ({ io: () => n
 
 const { erzeugeStore, verbinde, ANSICHT } = await import('../client/js/kern.js');
 const { EREIGNIS } = protokoll;
+
+beforeEach(() => { global.window = new EventTarget(); });
+afterEach(() => { delete global.window; });
+
+function seitenwechsel(name, persisted) {
+  const ereignis = new Event(name);
+  Object.defineProperty(ereignis, 'persisted', { value: persisted });
+  window.dispatchEvent(ereignis);
+}
 
 describe('Store (Anzeigezustand)', () => {
   test('beginnt in der Anmeldeansicht ohne Sitz und Spielstand', () => {
@@ -194,5 +205,22 @@ describe('Netzverbindung: was beim Client ankommt', () => {
 
     expect(() => socket.ereignisse.get(EREIGNIS.ENDE)({})).not.toThrow();
     expect(() => socket.ereignisse.get(EREIGNIS.REVANCHE_WEG)()).not.toThrow();
+  });
+});
+
+describe('Netzverbindung beim Zurück-Cache', () => {
+  test.each([false, true])('pagehide trennt vor dem Verlassen (Cache: %s)', (persisted) => {
+    verbinde({});
+    seitenwechsel('pagehide', persisted);
+    expect(socket.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  test('nur die Wiederherstellung aus dem Cache verbindet denselben Socket neu', () => {
+    verbinde({});
+    seitenwechsel('pageshow', false);
+    expect(socket.connect).not.toHaveBeenCalled();
+    seitenwechsel('pagehide', true);
+    seitenwechsel('pageshow', true);
+    expect(socket.connect).toHaveBeenCalledTimes(1);
   });
 });
