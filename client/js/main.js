@@ -319,7 +319,15 @@ function revancheStand(moeglich) {
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
-  aktionen,
+  /**
+   * "Neues Spiel suchen": sofort in die Warteansicht, nicht erst, wenn der
+   * Server antwortet. Bliebe die Ansicht so lange ENDE, oeffnete jede
+   * Zustandsaenderung (etwa ein Revanche-Angebot) den Dialog wieder.
+   */
+  beiNeuemSpiel() {
+    aktionen.erneut();
+    store.setze({ ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null });
+  },
 
   /** "Revanche": Wunsch an den Server – der Dialog bleibt offen, bis beide wollen. */
   beiRevanche() {

@@ -143,13 +143,13 @@ export function grundText(grund, gewonnen) {
  * Baut den Ergebnisdialog auf.
  *
  * @param {object} deps
- * @param {object} deps.aktionen      Sendefunktionen
+ * @param {Function} deps.beiNeuemSpiel wird bei "Neues Spiel suchen" gerufen
  * @param {Function} deps.beiAbmelden wird beim Klick auf "Abmelden" gerufen
  * @param {Function} deps.beiRevanche wird beim Klick auf "Revanche" gerufen
  * @param {Function} deps.beiSchliessen wird gerufen, wenn der Dialog ohne
  *                                      Knopf zugeht (Esc-Taste)
  */
-export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchliessen }) {
+export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, beiSchliessen }) {
   const dialog = $('#dialog-ende');
   const titel = $('#t-ende');
   const grundAnzeige = $('#ende-grund');
@@ -231,7 +231,7 @@ export function erzeugeEndeAnsicht({ aktionen, beiAbmelden, beiRevanche, beiSchl
   /** "Neues Spiel suchen": Dialog schliessen und zurueck in die Warteschlange. */
   function beiErneut() {
     schliesse();
-    aktionen.erneut();
+    beiNeuemSpiel();
   }
 
   /** "Abmelden": Dialog schliessen und zurueck zum Startbildschirm. */
