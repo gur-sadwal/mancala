@@ -1,165 +1,208 @@
 # Mancala (Kalaha)
 
-Verteiltes 2-Personen-Webspiel nach dem **BrainKing**-Regelwerk.
-DHBW, Modul W3WI_110.2 Web-Entwicklung, Prof. Dr. Michael Eichberg.
-Student: Gursharan Sadwal.
+Verteiltes Spiel für zwei Personen nach den BrainKing-Regeln. Studienprojekt
+von Gursharan Sadwal, DHBW, Modul W 3 WI_110.2 Web-Entwicklung bei
+Prof. Dr. Michael Eichberg.
 
-Zwei Personen spielen an verschiedenen Rechnern dieselbe Partie. Der Server
-hält den einzig gültigen Spielstand, der Browser zeigt ihn nur an.
+Der Server hält den gültigen Spielstand und prüft jeden Zug. Zwei getrennte
+Browserfenster genügen zum Ausprobieren; mehrere Partien laufen gleichzeitig.
 
----
+Inhalt: [Starten](#1-starten) · [Testen](#2-testen) · [Regeln](#3-regeln) ·
+[Aufbau](#4-aufbau) · [Fehlerbehandlung](#5-fehlerbehandlung) ·
+[Weg eines Zuges](#6-weg-eines-zuges) · [Im Code suchen](#7-im-code-suchen) ·
+[Browser und Bedienung](#8-browser-und-bedienung).
 
-## Starten
+## 1. Starten
 
-Voraussetzung: **Node.js ab Version 20** (siehe `.nvmrc`).
+Voraussetzung: **Node.js 22 LTS oder neuer**; `.nvmrc` nennt die verwendete
+Hauptversion. Auf Ubuntu und macOS im Repository-Ordner:
 
 ```bash
 npm install
-npm run build        # prüft die Syntax aller JS-Dateien und führt alle Tests aus
-npm run start 3000   # Port als Argument
+npm run build
+npm run start 3000
 ```
 
-Danach erreichbar unter `http://localhost:3000` – und von jedem anderen Rechner
-im selben Netz unter `http://<ip-des-servers>:3000`, weil der Server auf
-`0.0.0.0` (IPv4) bindet.
+Das Spiel ist unter `http://localhost:3000` erreichbar. Der Server bindet an
+`0.0.0.0`; im selben Netz funktioniert auch `http://<server-ip>:3000`.
+Der Port muss eine ganze Zahl zwischen 1 und 65535 sein. Ohne Argument ist 3000
+voreingestellt. Mit `Control+C` endet der Server geordnet.
 
-Zum Ausprobieren genügen zwei Browserfenster: Beide öffnen die Seite, geben
-einen Namen ein und werden automatisch zusammengeführt.
+Es gibt keinen Bundler: Der Browser lädt die JavaScript-Module direkt.
+`npm run build` prüft jede Quelldatei einzeln mit `node --check` und führt
+anschließend Jest aus. Eine Syntaxprüfung mehrerer Dateinamen in einem
+Aufruf würde nur die erste Datei prüfen; deshalb verwendet der Build eine
+Schleife. Scheitert eine Prüfung, endet der Build mit Fehlercode.
 
-### Was macht `npm run build`?
-
-Es gibt bewusst **keinen Bundler**: Der Browser lädt die ES-Module direkt, es
-muss also nichts übersetzt oder zusammengefasst werden. Der Build ist deshalb
-ein Prüfschritt:
-
-1. `node --check` prüft die Syntax jeder JavaScript-Datei in `server/`,
-   `shared/` und `client/js/` – **einzeln in einer Schleife**. Grund:
-   `node --check a.js b.js` prüft nur die erste Datei und meldet trotzdem
-   Erfolg. So fällt auch ein Tippfehler in einer Client-Datei auf, die kein
-   Test lädt.
-2. Danach laufen alle Jest-Tests.
-
-Scheitert einer der beiden Schritte, bricht der Build mit Fehlercode ab.
-
-### Weitere Befehle
+## 2. Testen
 
 | Befehl | Wirkung |
-| :--- | :--- |
-| `npm test` | nur die Tests |
-| `npm run dev` | Server auf Port 3000, startet bei Dateiänderungen neu |
-| `LOG_LEVEL=debug npm run start 3000` | ausführlichere Protokollausgabe |
+| --- | --- |
+| `npm test` | alle Jest-Tests |
+| `npm run abdeckung` | Tests mit gemessener Code-Abdeckung |
+| `npm run dev` | Server auf 3000, Neustart bei Dateiänderung |
+| `LOG_LEVEL=debug npm run start 3000` | ausführliche Servermeldungen |
+| `npm audit --omit=dev` | Sicherheitsprüfung der Laufzeitabhängigkeiten |
 
-Der Endpunkt `/gesundheit` zeigt, wie viele Partien gerade laufen.
+Die Tests prüfen unter anderem Säen, Extrazüge, Klauen, Restabrechnung,
+Zufallspartien, beide Brettsichten, Lobby, private Spiele, Revanche,
+Nutzdatenprüfung, Ratenbegrenzung, Handlerfehler und Clientzustände.
+Ein grüner Jest-Lauf allein belegt keine fehlerfreie Browserbedienung.
 
----
+Zum vollständigen Prüfverfahren gehören zusätzlich ein frischer Klon ohne
+`node_modules`, die Ubuntu-Befehle oben, echte Browserpartien, private Links,
+Revanche, Tastatur, Verbindungsabbruch, Müll-Nachrichten, XSS-Versuche,
+15 gleichzeitige Partien und ein Server-Neustart. Die Playwright-Werkzeuge
+liegen im vollständigen Studienarbeitsordner außerhalb dieses Repositories;
+Playwright ist keine Abhängigkeit des abgegebenen Spiels.
 
-## Aufbau
+`GET /gesundheit` liefert Status, Anzahl laufender Partien, Wartende und
+Laufzeit. Nach Tests müssen Partien und Wartende wieder 0 sein.
 
-```
-server/
-  index.js            Start, Port, Prozesswächter
-  http/app.js         Express, statische Auslieferung
-  socket/
-    gateway.js        Socket.io aufsetzen, Aufräumintervall
-    handlers.js       ein Handler je Ereignis – der einzige Ort, der sendet
-    validation.js     Schemaprüfung eingehender Nutzdaten
-    rateLimit.js      Ereigniszähler je Verbindung
-  spiel/
-    brett.js          Aufbau, Nachbarschaft, Gegenüber, Invarianten
-    engine.js         Zugprüfung, Säen, Sonderregeln, Abrechnung
-    partie.js         Zustandsobjekt einer Partie
-    lobby.js          Warteschlange
-    manager.js        alle Partien, Aufräumen
-  util/               Protokollausgabe, IDs
+## 3. Regeln
 
-client/
-  index.html          semantisches Grundgerüst aller vier Ansichten
-  css/                01-reset bis 08-bewegung, per @layer geordnet
-  fonts/              Schrift Jost (SIL Open Font License, Lizenztext daneben)
-  js/                 ES-Module, vom Browser direkt geladen
-    main.js           Einstiegspunkt, verdrahtet Kern und Ansichten
-    kern.js           Anzeigezustand, Socket.io
-    dom.js            kleine DOM-Helfer, bewusst ohne eigene Imports
-    anmelden.js       Ansicht 1: Namensformular
-    warten.js         Ansicht 2: Wartebildschirm
-    spiel.js          Ansicht 3: Brett, Zeichnen, Animation
-    ende.js           Ansicht 4: Ergebnisdialog
-    einstellungen.js  Einstellungsdialog: größere Schrift, weniger Animation
+### 3.1 Aufbau und Ziel
 
-shared/
-  protokoll.js        Ereignisnamen und Fehlercodes – von BEIDEN Seiten genutzt
+Zwei Reihen mit je sechs Mulden starten mit je vier Kugeln. Dazu kommen zwei
+leere Häuser: insgesamt 48 Kugeln. Jede Person sieht die eigene Reihe unten
+und das eigene Haus rechts. Jede Kugel im eigenen Haus zählt einen Punkt.
 
-tests/                Jest-Tests: Spiellogik, Lobby, Handler, Schemaprüfung,
-                      Einstellungen, Revanche-Zähler
-```
+### 3.2 Säen
 
-### Die wichtigste Entwurfsentscheidung
+Wer am Zug ist, wählt eine besetzte eigene Mulde. Alle Kugeln werden daraus
+aufgenommen und einzeln gegen den Uhrzeigersinn verteilt. Das eigene Haus
+wird mitbesät, das gegnerische Haus immer übersprungen. Reichen die Kugeln
+für mehrere Runden, wird weitergesät.
 
-Die **Spiel-Engine kennt weder Socket.io noch Express noch das DOM.** Sie
-bekommt einen Zustand und liefert einen neuen zurück. Deshalb lässt sich das
-gesamte Regelwerk mit `npm test` prüfen, ohne einen Server zu starten.
+### 3.3 Extrazug
 
-Die Abhängigkeiten laufen nur in eine Richtung:
+Landet die letzte Kugel im eigenen Haus, bleibt dieselbe Person am Zug.
+Das kann mehrfach hintereinander geschehen.
 
-```
-index.js -> gateway/handlers -> manager/lobby -> partie -> engine -> brett
-```
+### 3.4 Klauen
 
-Nur `handlers.js` sendet etwas. Alles darunter gibt Ergebnisse zurück.
+Landet die letzte Kugel in einer vorher leeren eigenen Mulde und liegen in
+der gegenüberliegenden Mulde Kugeln, kommen die gegenüberliegenden Kugeln
+**und die eigene letzte Kugel** ins eigene Haus. Ist die gegenüberliegende
+Mulde leer, bleibt die letzte Kugel liegen.
 
----
+### 3.5 Spielende
 
-## Anti-Cheating
+Sobald eine Reihe leer ist, endet die Partie. Die übrigen Kugeln der anderen
+Reihe kommen in das Haus ihrer Person. Wer mehr Punkte hat, gewinnt;24:24
+ist ein Remis. Eine Führung ab 25 Punkten beendet das Spiel nicht vorzeitig.
 
-Der Client ist nicht vertrauenswürdig. Er sendet bei einem Zug
-**ausschließlich eine Zahl zwischen 0 und 5** – kein Brett, keine Punktzahl,
-keine Spiel-ID. Der Server prüft der Reihe nach:
+Aufgeben und Verbindungsabbruch geben der verbleibenden Person den Sieg.
+Interne Fehler, Serverende und 15 Minuten ohne Zug beenden die Partie ohne
+Wertung. Warteschlange und private Einladungen laufen nach 7,5 Minuten ab;
+der Server prüft die Fristen einmal pro Minute. Das sind Projektentscheidungen
+für den Onlinebetrieb, keine zusätzlichen Kalaha-Spielregeln.
 
-1. Läuft die Partie?
-2. Ist dieser Socket an der Reihe?
-3. Ist die Muldennummer eine ganze Zahl von 0 bis 5?
-4. Liegt die Mulde in der eigenen Reihe?
-5. Enthält sie mindestens eine Kugel?
+## 4. Aufbau
 
-Erst danach rechnet die Engine. Welche Partie zu einem Socket gehört, weiß
-allein der Server – aus einer serverseitigen `Map`, nie aus den Nutzdaten.
+| Datei/Ordner | Aufgabe |
+| --- | --- |
+| `server/index.js` | Port, Start, Prozessfehler, geordnetes Beenden |
+| `server/http/app.js` | Express, statische Dateien, Sicherheitskopfzeilen, Gesundheit,404 |
+| `server/socket/gateway.js` | Socket.io, Aufräumtakt, Verbindungen |
+| `server/socket/handlers.js` | ein Handler je Ereignis; Nachrichten senden |
+| `server/socket/validation.js` | erlaubte Form der Nutzdaten prüfen |
+| `server/socket/rateLimit.js` | Nachrichten je Verbindung begrenzen |
+| `server/spiel/brett.js` | Brett, Sitze, Nachbarschaft, Prüfregeln |
+| `server/spiel/engine.js` | Zugprüfung und vollständige Spielregeln |
+| `server/spiel/partie.js` | Zustand und Ergebnis einer Partie |
+| `server/spiel/lobby.js` | Warteschlange, private Einladungen, Revanche |
+| `server/spiel/manager.js` | Partien und Socket-Zuordnung verwalten |
+| `server/util/` | IDs und Protokollausgabe |
+| `shared/protokoll.js` | gemeinsame Ereignisse, Status, Gründe und Fehlertexte |
+| `client/index.html` | vier Ansichten in einem Dokument |
+| `client/404.html` | eigene Fehlerseite |
+| `client/js/main.js` | Ansichten und Verbindung zusammenführen |
+| `client/js/kern.js` | Anzeigezustand und Socket-Verbindung |
+| `client/js/dom.js` | kleine DOM-Helfer |
+| `client/js/anmelden.js`, `warten.js`, `spiel.js`, `ende.js` | eine Datei je Ansicht |
+| `client/js/einstellungen.js` | Schriftgröße, Animation, gespeicherte Einstellungen |
+| `client/css/` | nach Themen geteiltes CSS, geordnet durch `@layer` |
+| `client/fonts/` | selbst gehostete Jost-Schrift mit OFL-Lizenz |
+| `tests/` | Jest-Tests |
 
-## Absturzsicherheit
+Die Engine kennt weder Express noch Socket.io noch das DOM. Sie erhält den
+Spielzustand und berechnet einen Zug. Abhängigkeiten laufen vom Einstieg
+über Handler und Verwaltung zur Engine und zum Brett; kein Clientmodul
+entscheidet über die Spielregeln.
 
-Der Prozess darf unter keinen Umständen sterben. Fünf gestaffelte Schichten:
+## 5. Fehlerbehandlung
 
-| Schicht | Wirkung |
-| :--- | :--- |
-| 1 Schemaprüfung | falsche Nutzdaten erreichen die Spiellogik gar nicht |
-| 2 Handler-Kapselung | jeder Handler in `try/catch`, ein Fehler bleibt lokal |
-| 3 Engine ohne `throw` | ein Regelverstoß ist ein Rückgabewert, keine Ausnahme |
-| 4 Invariantenprüfung | ein kaputter Zustand beendet nur diese eine Partie |
-| 5 Prozesswächter | letzte Rettung: protokollieren und weiterlaufen |
+| Schicht | Vorgehen |
+| --- | --- |
+| Spiellogik | erwartbare Fehler als `{ ok:false, code }`; Nachschlagen liefert Objekt oder `null` |
+| Handler | Ratenbegrenzung, Schema, dann `try/catch`; Fehler nur an den Verursacher |
+| Partie | kaputter Zustand beendet nur die betroffene Partie; Zuordnungen werden aufgeräumt |
+| Prozess | unerwartete Fehler protokollieren; geordnetes Beenden wartet auf offene Ressourcen |
+| Client | Fehler in der aktiven Ansicht anzeigen; Animationsfehler abfangen |
 
-Die wirksamste Bremse ist Invariante I-1: **Die Summe aller 14 Felder ist immer
-48.** Fast jeder denkbare Fehler beim Säen, Überspringen oder Klauen verletzt
-sie sofort.
+Der Browser sendet für einen Zug nur `{ mulde:0 }` mit dem Ereignis
+`spiel:zug`: keine Punkte, kein Brett und keine Spiel-ID. Die Zahl 0–5
+bezieht sich auf die eigene Reihe. Die serverseitige Socket-Zuordnung
+bestimmt Partie und Sitz. Der Server prüft Zugrecht, ganze Zahl im Bereich,
+eigene Reihe und mindestens eine Kugel, bevor er rechnet.
 
----
+Nach einem Zug werden die Brettregeln geprüft, etwa die Summe 48 und gültige
+nicht negative Kugelzahlen. Einzelne Fehler dürfen andere Partien nicht
+unterbrechen. Eine Ratenbegrenzung und ein Größenlimit verhindern, dass
+unbegrenzt Nachrichten verarbeitet werden. Namen landen über `textContent`
+im DOM; die Content-Security-Policy sperrt eingeschleuste Inline-Skripte.
 
-## Regeln in Kürze
+## 6. Weg eines Zuges
 
-- 2 Reihen à 6 Mulden, je 4 Kugeln, dazu 2 Häuser – zusammen 48 Kugeln.
-- Gesät wird gegen den Uhrzeigersinn, eine Kugel je Feld.
-- Das **eigene** Haus wird mitbesät, das **gegnerische immer übersprungen**.
-- Letzte Kugel im eigenen Haus → **Extrazug**.
-- Letzte Kugel in einer leeren **eigenen** Mulde → alle Kugeln gegenüber
-  **plus die eigene** wandern ins eigene Haus.
-- Sobald eine Reihe leer ist, endet die Partie; jeder bekommt die Restkugeln
-  seiner Seite. Ab 25 Punkten Sieg, 24:24 ist ein Remis.
+1. `spiel.js` meldet die gewählte Mulde an `main.js`.
+2. `kern.js` sendet `spiel:zug` mit der Muldennummer.
+3. Der Handler prüft Rate, Schema, Partie und Sitz.
+4. Die Engine sät, prüft Klauen und Spielende, dann den neuen Zustand.
+5. Der Handler sendet den Spielstand an die beiden zugehörigen Sockets.
+6. Der Client zeigt die Animation. Punktestand und Zuganzeige wechseln
+   anschließend; der Sonderregel-Hinweis erscheint sofort.
 
-Grundlage ist das Regelwerk von BrainKing (Mancala/Kalaha). Die Regeln sind
-in `server/spiel/engine.js` umgesetzt und in `tests/engine.test.js` geprüft.
+## 7. Im Code suchen
 
----
+Der Dateikopf erklärt Aufgabe, Inhalt und Abhängigkeiten. Nummerierte
+Abschnitte sind mit `Cmd+F` auffindbar, zum Beispiel `== 3.`.
 
-## Technik
+| Suchmarker | Bedeutung |
+| --- | --- |
+| `REGEL 3.4:` | eine Spielregel mit Nummer aus Abschnitt 3 |
+| `SCHUTZ:` | Eingabeprüfung, Absturzschutz, Anti-Cheating |
+| `ACHTUNG:` | Fallstrick oder Abstimmung mit anderer Stelle |
+| `WCAG:` | Tastatur, Trefferfläche, Schrift, Kontrast |
+| `EINSTELLBAR:` | Wert, den man gezielt anpassen kann |
 
-Frontend: HTML5, modernes CSS3 (`@layer`, Nesting, `:has()`, `color-mix()`,
-`oklch()`, Logical Properties), Vanilla JavaScript als ES-Module.
-**Kein Framework.** Backend: Node.js mit Express und Socket.io. Tests: Jest.
+| Begriff | Bedeutung |
+| --- | --- |
+| Mulde | eines der zwölf kleinen Spielfelder |
+| Haus | Sammelfeld; jede Kugel darin ist ein Punkt |
+| Kugel | ein Spielstein |
+| Sitz | `unten` oder `oben` im Serverzustand |
+| Partie | ein einzelnes Spiel zwischen zwei Sockets |
+| Ansicht | Anmelden, Warten, Spiel oder Ergebnis |
+| Sicht | Brett aus der Perspektive eines Sitzes |
+| Klauen | Regel 3.4; Protokollfeld `beute` und CSS-Klasse `zelle--beute` behalten ihren Namen |
+| Raum | Socket.io-Gruppe, die eine Partie isoliert |
+| Invariante | Prüfregel, die vor und nach einem Zug gelten muss |
+
+## 8. Browser und Bedienung
+
+Vanilla-JavaScript als ES-Module und moderne CSS-Funktionen (`@layer`,
+Nesting, `:has()`, Logical Properties, `color-mix()`, `oklch()`) verlangen
+aktuelle Browser. Die vollständige Browserprüfung umfasst Chromium,
+Firefox, WebKit und Vivaldi; WebKit ist eine Safari-Engine und kein Beleg
+für einen Lauf im vollständigen Safari-Programm.
+
+Mulden sind echte Buttons: Tab erreicht sie, Enter und Leertaste lösen sie
+aus. Zusätzlich funktionieren die Tasten 1–6. Die rechteckige Zelle gehört
+zur Klickfläche der runden Mulde. Einstellungen erlauben größere Schrift
+und weniger Animation; die Systemeinstellung zur Bewegungsreduktion wird
+berücksichtigt. Dialoge verwenden die nativen Browserfunktionen.
+
+Der Client bleibt eine Seite mit einer Socket-Verbindung. Listener einer
+Ansicht werden beim Anzeigen angemeldet und beim Verstecken entfernt;
+seitenweite Listener bleiben mit begründetem Zweck aktiv.
