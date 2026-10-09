@@ -62,7 +62,8 @@
   /* Bei vielen Kugeln verringert 05-brett.css den Durchmesser. */
   --kugel-groesse: clamp(0.6rem, 1.5vw, 1rem);
   --brett-max: 60rem;
-  --zeile-max: 68ch;
+  /* WCAG: Kürzere Textblöcke begrenzen lange Hinweiszeilen mit Ersatzschrift. */
+  --zeile-max: 60ch;
 
   --abstand-klein: 0.5rem;
   --abstand: 1rem;
