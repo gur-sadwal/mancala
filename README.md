@@ -89,7 +89,7 @@ Mulde leer, bleibt die letzte Kugel liegen.
 ### 3.5 Spielende
 
 Sobald eine Reihe leer ist, endet die Partie. Die übrigen Kugeln der anderen
-Reihe kommen in das Haus ihrer Person. Wer mehr Punkte hat, gewinnt;24:24
+Reihe kommen in das Haus ihrer Person. Wer mehr Punkte hat, gewinnt; 24:24
 ist ein Remis. Eine Führung ab 25 Punkten beendet das Spiel nicht vorzeitig.
 
 Aufgeben und Verbindungsabbruch geben der verbleibenden Person den Sieg.
@@ -103,7 +103,7 @@ für den Onlinebetrieb, keine zusätzlichen Kalaha-Spielregeln.
 | Datei/Ordner | Aufgabe |
 | --- | --- |
 | `server/index.js` | Port, Start, Prozessfehler, geordnetes Beenden |
-| `server/http/app.js` | Express, statische Dateien, Sicherheitskopfzeilen, Gesundheit,404 |
+| `server/http/app.js` | Express, statische Dateien, Sicherheitskopfzeilen, Gesundheit, 404 |
 | `server/socket/gateway.js` | Socket.io, Aufräumtakt, Verbindungen |
 | `server/socket/handlers.js` | ein Handler je Ereignis; Nachrichten senden |
 | `server/socket/validation.js` | erlaubte Form der Nutzdaten prüfen |
