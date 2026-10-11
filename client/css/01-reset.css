@@ -22,14 +22,18 @@
 
 /* Die Themen-Dateien setzen die benötigten Abstände selbst. */
 body,
-h1, h2, h3,
+h1,
+h2,
+h3,
 p,
-ol, ul,
+ol,
+ul,
 figure {
   margin: 0;
 }
 
-ol, ul {
+ol,
+ul {
   padding: 0;
   list-style: none;
 }

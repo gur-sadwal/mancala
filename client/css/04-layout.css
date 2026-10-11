@@ -121,7 +121,7 @@
 .stand__name {
   font-weight: 600;
 
-  /* Lange Namen verdrängen weder Punktzahl noch die andere Karte. */
+  /* Lange Namen werden gekürzt, damit die Karte kompakt bleibt. */
   max-inline-size: 12ch;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -165,10 +165,17 @@
   .kopf {
     padding-block: var(--abstand-klein);
 
-    & .kopf__titel { font-size: 1.1rem; }
+    & .kopf__titel {
+      font-size: 1.1rem;
+    }
+
     & .kopf__untertitel,
-    & .kopf__autor { display: none; }
+    & .kopf__autor {
+      display: none;
+    }
   }
 
-  .ansicht--spiel { gap: var(--abstand-klein); }
+  .ansicht--spiel {
+    gap: var(--abstand-klein);
+  }
 }

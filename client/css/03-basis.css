@@ -55,13 +55,20 @@ body {
 /* == 3. Text ============================================================== */
 
 /* WCAG: Auch umbrechende Überschriften behalten Zeilenhöhe 1,5. */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   line-height: var(--zeilenhoehe);
   text-wrap: balance;
 }
 
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.35rem; }
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
 
 p {
   max-inline-size: var(--zeile-max);

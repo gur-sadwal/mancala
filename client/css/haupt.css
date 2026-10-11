@@ -9,8 +9,8 @@
 
 /* == 1. Ebenenreihenfolge ================================================= */
 
-/* Spätere Ebenen gewinnen gegen frühere: Zustände über Komponenten,
- * reduzierte Bewegung zuletzt über den Animationen.
+/* Bei normalen Deklarationen gewinnen spätere Ebenen gegen frühere:
+ * Zustände überschreiben Komponenten, reduzierte Bewegung folgt zuletzt.
  */
 @layer reset, tokens, basis, layout, brett, komponenten, zustaende, bewegung;
 

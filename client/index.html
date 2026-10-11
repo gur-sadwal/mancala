@@ -4,8 +4,11 @@
   <meta charset="utf-8" />
 
   <!-- WCAG: Zoom bleibt erlaubt; keine Skalierungssperre setzen. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Mancala (Kalaha) – verteiltes 2-Personen-Webspiel nach den BrainKing-Regeln. Studienprojekt von Gursharan S. Sadwal." />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Mancala (Kalaha) – verteiltes 2-Personen-Webspiel nach den BrainKing-Regeln. Studienprojekt von Gursharan S. Sadwal."
+  />
   <meta name="author" content="Gursharan S. Sadwal" />
 
   <meta name="color-scheme" content="light" />
@@ -16,13 +19,22 @@
 <body>
   <!--
     index.html – native Formulare, Brettcontainer und Dialoge.
-    Inhalt: == 1. Anmeldung · == 2. Warten · == 3. Spiel
-            == 4. Ergebnis · == 5. Aufgabe · == 6. Einstellungen
-    Benutzt js/main.js; Zustände werden über hidden und dialog angezeigt.
+
+    Inhalt:
+      == 1. Anmeldung
+      == 2. Warten
+      == 3. Spiel
+      == 4. Ergebnis
+      == 5. Aufgabe
+      == 6. Einstellungen
+      == 7. Verbindung und Start
+
+    Benutzt js/main.js und css/haupt.css. hidden steuert die Ansichten;
+    die Dialoge öffnet und schließt JavaScript über die native Dialog-API.
   -->
 
   <!-- WCAG: Die erste Tabstation führt direkt zum Spielbereich. -->
-    <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
+  <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
 
   <header class="kopf">
     <h1 class="kopf__titel">Mancala</h1>
@@ -46,16 +58,17 @@
 
     <!-- == 1. Anmeldung == -->
     <section id="ansicht-anmelden" class="ansicht" hidden>
-      <h2 id="t-anmelden"  tabindex="-1">Spiel beitreten</h2>
+      <h2 id="t-anmelden" tabindex="-1">Spiel beitreten</h2>
 
       <form id="form-anmelden" class="formular" novalidate>
         <div class="feld">
-          <label class="feld__beschriftung" for="feld-name">Dein Spielername</label>
+          <label class="feld__beschriftung"
+            for="feld-name">Dein Spielername</label>
           <!--
             ACHTUNG: maxlength zählt UTF-16-Einheiten, Emoji brauchen oft zwei.
           -->
           <input
-           id="feld-name"
+            id="feld-name"
             class="feld__eingabe"
             name="name"
             type="text"
@@ -64,8 +77,8 @@
             required
           />
           <p id="hinweis-name" class="feld__hinweis">
-            Höchstens 20 Zeichen, ohne &lt; und &gt;. Der Name ist nur eine Anzeige – es gibt
-            kein Konto.
+            Höchstens 20 Zeichen, ohne &lt; und &gt;. Der Name ist nur eine
+            Anzeige – es gibt kein Konto.
           </p>
         </div>
 
@@ -73,21 +86,34 @@
           <legend class="feld__beschriftung">Spielart</legend>
 
           <label class="umschalter__option" for="spielart-schnell">
-            <input id="spielart-schnell" type="radio" name="spielart" value="schnell" checked />
+            <input
+              id="spielart-schnell"
+              type="radio"
+              name="spielart"
+              value="schnell"
+              checked
+            />
             Schnelles Spiel
           </label>
 
           <label class="umschalter__option" for="spielart-privat">
-            <input id="spielart-privat" type="radio" name="spielart" value="privat" />
+            <input
+              id="spielart-privat"
+              type="radio"
+              name="spielart"
+              value="privat"
+            />
             Privates Spiel mit Link
           </label>
         </fieldset>
 
         <p id="einladung" class="meldung meldung--info" hidden>
-          Du wurdest zu einem privaten Spiel eingeladen. Gib deinen Namen ein und tritt bei.
+          Du wurdest zu einem privaten Spiel eingeladen. Gib deinen Namen ein
+          und tritt bei.
         </p>
 
-        <button type="submit" id="knopf-anmelden" class="knopf knopf--haupt">Gegner suchen</button>
+        <button type="submit" id="knopf-anmelden"
+          class="knopf knopf--haupt">Gegner suchen</button>
 
         <p id="anmelden-fehler" class="meldung meldung--fehler" hidden></p>
       </form>
@@ -95,27 +121,32 @@
       <details class="anleitung">
         <summary>Kurz erklärt: So wird gespielt</summary>
         <ol class="anleitung__liste">
-          <li>Wähle eine deiner sechs Mulden. Sie muss mindestens eine Kugel enthalten.</li>
-          <li>Die Kugeln werden einzeln gegen den Uhrzeigersinn verteilt – auch in dein
-            eigenes Haus rechts, aber niemals in das Haus des Gegners.</li>
-          <li>Landet die letzte Kugel in deinem Haus, bist du sofort noch einmal am Zug.</li>
-          <li>Landet die letzte Kugel in einer leeren eigenen Mulde, bekommst du sie und
-            alle Kugeln der gegenüberliegenden Mulde, wenn dort Kugeln liegen.
-            Ist die gegenüberliegende Mulde leer, bleibt deine Kugel liegen.</li>
-          <li>Sobald eine Reihe leer ist, endet das Spiel. Die restlichen Kugeln wandern
-            in das Haus ihres Spielers. Wer mehr Kugeln im Haus hat, gewinnt;
-            bei 24 zu 24 ist es unentschieden.</li>
-          <li>Blaue Kugeln liegen auf deiner Seite, rote auf der Seite des Gegners.
-            Ein gestrichelter Ring zeigt, wo der letzte Zug begann.</li>
-          <li>Mit der Tastatur: Tab wählt eine Mulde, Enter oder Leertaste spielt sie.
-            Schneller geht es mit den Tasten 1 bis 6.</li>
+          <li>Wähle eine deiner sechs Mulden. Sie muss mindestens eine Kugel
+            enthalten.</li>
+          <li>Die Kugeln werden einzeln gegen den Uhrzeigersinn verteilt – auch
+            in dein eigenes Haus rechts, aber niemals in das Haus des
+            Gegners.</li>
+          <li>Landet die letzte Kugel in deinem Haus, bist du sofort noch einmal
+            am Zug.</li>
+          <li>Landet die letzte Kugel in einer leeren eigenen Mulde, bekommst du
+            sie und alle Kugeln der gegenüberliegenden Mulde, wenn dort Kugeln
+            liegen. Ist die gegenüberliegende Mulde leer, bleibt deine Kugel
+            liegen.</li>
+          <li>Sobald eine Reihe leer ist, endet das Spiel. Die restlichen Kugeln
+            wandern in das Haus ihres Spielers. Wer mehr Kugeln im Haus hat,
+            gewinnt; bei 24 zu 24 ist es unentschieden.</li>
+          <li>Blaue Kugeln liegen auf deiner Seite, rote auf der Seite des
+            Gegners. Ein gestrichelter Ring zeigt, wo der letzte Zug
+            begann.</li>
+          <li>Mit der Tastatur: Tab wählt eine Mulde, Enter oder Leertaste
+            spielt sie. Schneller geht es mit den Tasten 1 bis 6.</li>
         </ol>
       </details>
     </section>
 
     <!-- == 2. Warten == -->
     <section id="ansicht-warten" class="ansicht" hidden>
-      <h2 id="t-warten"  tabindex="-1">Warte auf Gegenspieler…</h2>
+      <h2 id="t-warten" tabindex="-1">Warte auf Gegenspieler…</h2>
 
       <div class="lader">
         <span class="lader__kugel"></span>
@@ -171,10 +202,11 @@
         spiel.js baut und aktualisiert die Zellen; der Server liefert den
         Spielstand.
       -->
-    <ol id="brett" class="brett"></ol>
+      <ol id="brett" class="brett"></ol>
 
       <p class="tastaturhinweis">
-        Tastatur: <kbd>1</kbd> bis <kbd>6</kbd> spielt die Mulde mit dieser Nummer ·
+        Tastatur: <kbd>1</kbd> bis <kbd>6</kbd> spielt die Mulde mit dieser
+        Nummer ·
         <kbd>Tab</kbd> springt zur nächsten Mulde ·
         <kbd>Enter</kbd> oder <kbd>Leertaste</kbd> spielt sie
       </p>
@@ -190,7 +222,7 @@
   </main>
 
   <!-- == 4. Ergebnis == -->
-    <dialog id="dialog-ende" class="dialog">
+  <dialog id="dialog-ende" class="dialog">
     <h2 id="t-ende" class="dialog__titel">Partie beendet</h2>
 
     <p id="ende-grund" class="dialog__grund"></p>
@@ -208,7 +240,8 @@
     <p id="revanche-hinweis" class="dialog__hinweis" hidden></p>
 
     <div class="dialog__aktionen">
-      <button type="button" id="knopf-revanche" class="knopf knopf--haupt" hidden>
+      <button type="button" id="knopf-revanche"
+        class="knopf knopf--haupt" hidden>
         Revanche
       </button>
       <button type="button" id="knopf-erneut" class="knopf knopf--haupt">
@@ -221,7 +254,7 @@
   </dialog>
 
   <!-- == 5. Aufgabe == -->
-    <dialog id="dialog-aufgeben" class="dialog">
+  <dialog id="dialog-aufgeben" class="dialog">
     <form class="formular" method="dialog">
       <h2 class="dialog__titel">Partie aufgeben?</h2>
 
@@ -230,7 +263,8 @@
       </p>
 
       <div class="dialog__aktionen">
-        <button type="submit" value="weiter" class="knopf knopf--zweit" autofocus>
+        <button type="submit" value="weiter"
+          class="knopf knopf--zweit" autofocus>
           Weiterspielen
         </button>
         <button type="submit" value="aufgeben" class="knopf knopf--haupt">
@@ -241,7 +275,7 @@
   </dialog>
 
   <!-- == 6. Einstellungen == -->
-    <dialog id="dialog-einstellungen" class="dialog">
+  <dialog id="dialog-einstellungen" class="dialog">
     <form id="form-einstellungen" class="formular" method="dialog">
       <h2 class="dialog__titel">Einstellungen</h2>
 
@@ -254,12 +288,20 @@
         <legend class="feld__beschriftung">Anzeige</legend>
 
         <label class="umschalter__option" for="einstellung-schrift">
-          <input id="einstellung-schrift" type="checkbox" name="grosseSchrift" />
+          <input
+            id="einstellung-schrift"
+            type="checkbox"
+            name="grosseSchrift"
+          />
           Größere Schrift
         </label>
 
         <label class="umschalter__option" for="einstellung-bewegung">
-          <input id="einstellung-bewegung" type="checkbox" name="wenigerAnimation" />
+          <input
+            id="einstellung-bewegung"
+            type="checkbox"
+            name="wenigerAnimation"
+          />
           Weniger Animation
         </label>
       </fieldset>
@@ -270,6 +312,7 @@
     </form>
   </dialog>
 
+  <!-- == 7. Verbindung und Start == -->
   <p id="verbindungshinweis" class="verbindungshinweis" hidden>
     Keine Verbindung zum Server. Es wird automatisch erneut versucht…
   </p>
@@ -277,6 +320,6 @@
   <!--
     main.js blendet den Ladehinweis erst nach erfolgreicher Einrichtung aus.
   -->
-    <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

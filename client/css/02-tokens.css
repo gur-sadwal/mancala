@@ -15,7 +15,7 @@
  */
 :root {
 
-/* == 1. Farben ============================================================ */
+  /* == 1. Farben ========================================================= */
 
   --farbe-hessen-rot: #D40011;
   --farbe-hessen-weiss: #FFFFFF;
@@ -50,7 +50,7 @@
 
   --farbe-rand: oklch(62% 0.02 85);
 
-/* == 2. Maße ============================================================== */
+  /* == 2. Maße =========================================================== */
 
   /* WCAG: 2,75rem sind bei 16px Grundschrift die geforderten 44px. */
   --ziel-min: 2.75rem;
@@ -62,7 +62,7 @@
   /* Bei vielen Kugeln verringert 05-brett.css den Durchmesser. */
   --kugel-groesse: clamp(0.6rem, 1.5vw, 1rem);
   --brett-max: 60rem;
-  /* WCAG: Kürzere Textblöcke begrenzen lange Hinweiszeilen mit Ersatzschrift. */
+  /* WCAG: Kurze Textblöcke begrenzen lange Hinweise mit Ersatzschrift. */
   --zeile-max: 60ch;
 
   --abstand-klein: 0.5rem;
@@ -74,16 +74,17 @@
   --radius-gross: 1.25rem;
   --radius-rund: 999px;
 
-/* == 3. Schrift =========================================================== */
+  /* == 3. Schrift ======================================================== */
 
   /* Jost kommt vom eigenen Server; danach folgen lokale Ersatzschriften. */
-  --schrift: 'Jost', Futura, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --schrift: 'Jost', Futura, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* WCAG: Mindestens 1rem; größere Browser-Grundschrift wächst mit. */
   --schrift-basis: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
   --zeilenhoehe: 1.5;
 
-/* == 4. Bewegung und Schatten ============================================= */
+  /* == 4. Bewegung und Schatten =========================================== */
 
   /* ACHTUNG: Passend zum Sätakt TAKT_SAAT in js/spiel.js halten. */
   --dauer-kugel: 180ms;

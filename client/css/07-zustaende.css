@@ -45,7 +45,8 @@
 
   @media (hover: hover) {
     &:hover {
-      background-color: color-mix(in oklch, var(--farbe-mulde) 75%, var(--farbe-spielbar));
+      background-color: color-mix(in oklch, var(--farbe-mulde) 75%,
+        var(--farbe-spielbar));
       transform: translateY(-3px) scale(1.03);
     }
   }
@@ -77,7 +78,7 @@
   outline-offset: 4px;
 }
 
-/* WCAG: Fette Schrift ergänzt den farbigen Rand der aktiven Karte. */
+/* Die aktive Karte greift dieselbe Farbe wie der Brettrahmen auf. */
 .stand__spieler--dran {
   border-color: var(--farbe-aktiv);
 
@@ -100,9 +101,17 @@
 }
 
 @keyframes aufleuchten {
-  0%   { transform: scale(1); }
-  45%  { transform: scale(1.09); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.09);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Klauen: Beide beteiligten Mulden werden kurz hervorgehoben. */
@@ -113,8 +122,13 @@
 
 /* Aufgehellte Zwischenfarben halten die Zahlen beim Blinken lesbar. */
 @keyframes beute {
-  0%, 100% { background-color: var(--farbe-mulde); }
-  50%      { background-color: color-mix(in oklch, var(--farbe-beute) 70%, white); }
+  0%, 100% {
+    background-color: var(--farbe-mulde);
+  }
+
+  50% {
+    background-color: color-mix(in oklch, var(--farbe-beute) 70%, white);
+  }
 }
 
 /* REGEL 3.3: Das eigene Haus markiert den Extrazug. */
@@ -123,8 +137,13 @@
 }
 
 @keyframes extrazug {
-  0%, 100% { background-color: var(--farbe-haus); }
-  50%      { background-color: color-mix(in oklch, var(--farbe-extrazug) 40%, white); }
+  0%, 100% {
+    background-color: var(--farbe-haus);
+  }
+
+  50% {
+    background-color: color-mix(in oklch, var(--farbe-extrazug) 40%, white);
+  }
 }
 
 /* == 6. Letzter Zug und Rückmeldung ======================================= */
@@ -141,9 +160,17 @@
 }
 
 @keyframes ruetteln {
-  0%, 100%  { transform: translateX(0); }
-  25%       { transform: translateX(-4px); }
-  75%       { transform: translateX(4px); }
+  0%, 100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 /* Extrazug und Klauen verwenden denselben hervorgehobenen Hinweistext. */
@@ -154,7 +181,7 @@
 
 /* == 7. Eingabesperre ===================================================== */
 
-/* SCHUTZ: Die Bildschirmsperre vereinfacht die Bedienung während der Animation.
+/* SCHUTZ: Die Zeigersperre verhindert Klicks während der Animation.
  * Ob ein Zug erlaubt ist, entscheidet weiterhin ausschließlich der Server.
  */
 .brett--gesperrt {

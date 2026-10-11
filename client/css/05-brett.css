@@ -30,7 +30,8 @@
   padding: calc(var(--abstand-brett) * 1.5);
 
   background-color: var(--farbe-brett);
-  background-image: linear-gradient(var(--farbe-brett), var(--farbe-brett-tief));
+  background-image: linear-gradient(var(--farbe-brett),
+    var(--farbe-brett-tief));
 
   border-radius: calc(var(--radius-gross) * 2);
   box-shadow: var(--schatten);
@@ -68,7 +69,8 @@
      * Die Häuser ändern ihre Breite nicht mit der Kugelzahl.
      */
     grid-template-columns:
-      minmax(3.5rem, 1.2fr) repeat(6, minmax(var(--ziel-min), 1fr)) minmax(3.5rem, 1.2fr);
+      minmax(3.5rem, 1.2fr) repeat(6, minmax(var(--ziel-min), 1fr))
+      minmax(3.5rem, 1.2fr);
     grid-template-rows: repeat(2, minmax(var(--mulde-min), 1fr));
   }
 
@@ -207,8 +209,15 @@ button.mulde {
 }
 
 @keyframes einfallen {
-  from { transform: translateY(-0.6rem) scale(1.4); opacity: 0; }
-  to   { transform: none; opacity: 1; }
+  from {
+    transform: translateY(-0.6rem) scale(1.4);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 /* Kleine Höhenunterschiede lockern das gleichmäßige Raster auf. */

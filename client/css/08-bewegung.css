@@ -9,8 +9,8 @@
 
 /* == 1. Systemeinstellung ================================================= */
 
-/* WCAG: Die letzte Ebene gewinnt auch gegen spezifische Animationsregeln.
- * Die Kugelschritte aus JavaScript prüft js/spiel.js gesondert.
+/* WCAG: Die späte Ebene verkürzt auch Animationen stärkerer Selektoren.
+ * Die Pausen der Kugelschritte überspringt js/spiel.js gesondert.
  */
 @media (prefers-reduced-motion: reduce) {
   *,
