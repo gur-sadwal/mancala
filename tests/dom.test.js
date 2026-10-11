@@ -1,15 +1,22 @@
 /**
- * Tests der reinen Hilfsfunktion `restSekunden` (client/js/dom.js).
+ * dom.test.js – DOM-Helfer, Wartezeit und Bewegungsreduktion.
  *
- * Sie rechnet den Zaehler der Revanche aus: Wie viele Sekunden zeigt der
- * Ergebnisdialog noch an? Alles andere in dom.js braucht einen Browser und
- * wird dort von Hand geprueft.
+ * Einfache Element- und Uhrattrappen machen die Helfer ohne Browser
+ * prüfbar. Die vollständige Bedienung ergänzen die Browsertests.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { jest } from '@jest/globals';
 import {
   restSekunden, $, erzeuge, setzeText, schalte, zeige, warte, wenigerBewegung,
 } from '../client/js/dom.js';
+
+// == 2. Testfälle ===========================================================
 
 describe('Restzeit der Revanche', () => {
   test('am Anfang steht die volle Dauer', () => {
@@ -17,9 +24,9 @@ describe('Restzeit der Revanche', () => {
   });
 
   test('angebrochene Sekunden werden aufgerundet', () => {
-    // 2,3 s vergangen, 12,7 s uebrig: Anzeige "13".
+    // 2,3 s vergangen, 12,7 s übrig: Anzeige "13".
     expect(restSekunden(0, 2300, 15)).toBe(13);
-    // 14,6 s vergangen, 0,4 s uebrig: Anzeige "1", noch nicht "0".
+    // 14,6 s vergangen, 0,4 s übrig: Anzeige "1", noch nicht "0".
     expect(restSekunden(0, 14600, 15)).toBe(1);
   });
 
@@ -28,8 +35,8 @@ describe('Restzeit der Revanche', () => {
     expect(restSekunden(0, 99000, 15)).toBe(0);
   });
 
-  test('eine zurueckgestellte Uhr ergibt nie mehr als die volle Dauer', () => {
-    // "jetzt" liegt vor dem Start – etwa weil die Uhr des Rechners gestellt wurde.
+  test('eine zurückgestellte Uhr ergibt nie mehr als die volle Dauer', () => {
+    // Eine zurückgestellte Uhr darf die Revanchefrist nicht verlängern.
     expect(restSekunden(5000, 1000, 15)).toBe(15);
   });
 });
@@ -40,7 +47,7 @@ describe('Restzeit der Revanche', () => {
  * haben und sich merken, was mit ihnen passiert.
  */
 
-/** Attrappe für document.createElement – merkt sich Klassen, Attribute, Kinder. */
+/** Speichert Elementänderungen, ohne echte DOM-Elemente zu erzeugen. */
 function falschesElement(tag) {
   const klassen = [];
   const attribute = {};

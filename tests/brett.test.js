@@ -1,9 +1,15 @@
 /**
- * Tests des Datenmodells (Konzept 10.3, Faelle T-01 bis T-03 und T-21).
+ * brett.test.js – Brettmodell: Zellen, Sitze, Kopien und Prüfregeln.
  *
- * Diese Tests laufen ohne Server und ohne Browser – genau dafuer ist
- * `brett.js` frei von Socket.io-, Express- und DOM-Bezuegen (Konzept 3.4).
+ * Die Prüfungen brauchen weder Server noch Browser. So werden falsche
+ * Nachbarschaften und beschädigte Bretter direkt am Datenmodell erkannt.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import {
   OBEN,
@@ -24,6 +30,8 @@ import {
   istSitz,
 } from '../server/spiel/brett.js';
 
+// == 2. Testfälle ===========================================================
+
 describe('T-03: Startbrett', () => {
   test('hat 2 Reihen zu je 7 Feldern', () => {
     const brett = neuesBrett();
@@ -32,19 +40,19 @@ describe('T-03: Startbrett', () => {
     expect(brett[UNTEN]).toHaveLength(7);
   });
 
-  test('enthaelt genau 48 Kugeln', () => {
+  test('enthält genau 48 Kugeln', () => {
     expect(gesamtSumme(neuesBrett())).toBe(KUGELN_GESAMT);
     expect(KUGELN_GESAMT).toBe(48);
   });
 
-  test('entspricht dem Literal aus Konzept 4.1', () => {
+  test('entspricht der Startaufstellung aus Regel 3.1', () => {
     expect(neuesBrett()).toEqual([
       [0, 4, 4, 4, 4, 4, 4],
       [4, 4, 4, 4, 4, 4, 0],
     ]);
   });
 
-  test('beide Haeuser starten bei 0, jede Mulde bei 4', () => {
+  test('beide Häuser starten bei 0, jede Mulde bei 4', () => {
     const brett = neuesBrett();
     expect(brett[OBEN][0]).toBe(0);   // Haus oben
     expect(brett[UNTEN][6]).toBe(0);  // Haus unten
@@ -53,10 +61,10 @@ describe('T-03: Startbrett', () => {
   });
 });
 
-describe('T-01: naechsteZelle laeuft im Ring', () => {
-  test('14 Schritte fuehren von jeder Zelle wieder zum Ausgangspunkt', () => {
+describe('T-01: naechsteZelle läuft im Ring', () => {
+  test('14 Schritte führen von jeder Zelle wieder zum Ausgangspunkt', () => {
     // Das Brett hat 14 Felder. Wer 14-mal weitergeht, ist wieder da – sonst
-    // stimmt die Schlangenlinie nicht (Konzept 4.2).
+    // stimmt der Ring der Zellen nicht.
     for (const reihe of [OBEN, UNTEN]) {
       for (let spalte = 0; spalte < 7; spalte += 1) {
         const start = [reihe, spalte];
@@ -81,21 +89,21 @@ describe('T-01: naechsteZelle laeuft im Ring', () => {
   });
 
   test('geht vom Haus unten in die obere Reihe und umgekehrt', () => {
-    // Die beiden Uebergangsstellen einzeln, weil dort die
+    // Die beiden Übergangsstellen einzeln, weil dort die
     // Fallunterscheidung greift.
     expect(naechsteZelle([UNTEN, 6])).toEqual([OBEN, 6]);
     expect(naechsteZelle([OBEN, 0])).toEqual([UNTEN, 0]);
   });
 
-  test('laeuft unten aufwaerts und oben abwaerts', () => {
+  test('läuft unten aufwärts und oben abwärts', () => {
     expect(naechsteZelle([UNTEN, 0])).toEqual([UNTEN, 1]);
     expect(naechsteZelle([OBEN, 6])).toEqual([OBEN, 5]);
   });
 });
 
 describe('T-02: gegenueber', () => {
-  // Die Paare aus der Tabelle in Konzept 4.3. Ein "off by one" hier wuerde zu
-  // einem Spiel fuehren, das FAST richtig aussieht – deshalb alle zwoelf.
+  // Jede Mulde wird in beide Richtungen geprüft: Ein Spaltenversatz
+  // würde erst beim Klauen als scheinbarer Regelfehler auffallen.
   const paare = [
     [[UNTEN, 0], [OBEN, 1]],
     [[UNTEN, 1], [OBEN, 2]],
@@ -132,8 +140,8 @@ describe('T-21: Sitzabbildung', () => {
   });
 
   test('Sitz oben: Muldennummer n liegt auf [0, 6 - n]', () => {
-    // Der obere Spieler sitzt gegenueber, seine Zaehlung laeuft auf dem
-    // Bildschirm von rechts nach links (Konzept 4.5).
+    // Für den oberen Sitz zählt der Server die Spalten rückwärts;
+    // der Client dreht das Brett erst bei der Darstellung.
     const erwartet = [
       [OBEN, 6], [OBEN, 5], [OBEN, 4], [OBEN, 3], [OBEN, 2], [OBEN, 1],
     ];
@@ -143,12 +151,12 @@ describe('T-21: Sitzabbildung', () => {
   });
 
   test('Mulde 5 liegt bei beiden Sitzen direkt neben dem eigenen Haus', () => {
-    // "Direkt neben dem Haus" heisst: die naechste Zelle ist das eigene Haus.
+    // "Direkt neben dem Haus" heißt: die nächste Zelle ist das eigene Haus.
     expect(naechsteZelle(SITZE.unten.mulde(5))).toEqual([...SITZE.unten.haus]);
     expect(naechsteZelle(SITZE.oben.mulde(5))).toEqual([...SITZE.oben.haus]);
   });
 
-  test('Haeuser und gegnerische Haeuser sind gekreuzt zugeordnet', () => {
+  test('Häuser und gegnerische Häuser sind gekreuzt zugeordnet', () => {
     expect(zelleGleich(SITZE.unten.haus, SITZE.oben.gegnerHaus)).toBe(true);
     expect(zelleGleich(SITZE.oben.haus, SITZE.unten.gegnerHaus)).toBe(true);
     expect(SITZE.unten.gegner).toBe('oben');
@@ -165,7 +173,7 @@ describe('T-21: Sitzabbildung', () => {
 });
 
 describe('istHaus und muldenZellen', () => {
-  test('genau zwei Felder sind Haeuser', () => {
+  test('genau zwei Felder sind Häuser', () => {
     expect(istHaus([OBEN, 0])).toBe(true);
     expect(istHaus([UNTEN, 6])).toBe(true);
     expect(istHaus([OBEN, 6])).toBe(false);
@@ -188,18 +196,18 @@ describe('kopiereBrett', () => {
 
     kopie[UNTEN][0] = 99;
 
-    // Waere die Kopie flach, waere das Original jetzt mitveraendert.
+    // Wäre die Kopie flach, wäre das Original jetzt mitverändert.
     expect(original[UNTEN][0]).toBe(4);
     expect(kopie[UNTEN][0]).toBe(99);
   });
 });
 
-describe('Invarianten (Konzept 4.8)', () => {
-  test('das Startbrett erfuellt alle Invarianten', () => {
+describe('Invarianten des Bretts', () => {
+  test('das Startbrett erfüllt alle Invarianten', () => {
     expect(pruefeInvarianten(neuesBrett()).ok).toBe(true);
   });
 
-  test('I-1 schlaegt an, wenn eine Kugel verschwindet', () => {
+  test('I-1 schlägt an, wenn eine Kugel verschwindet', () => {
     const brett = neuesBrett();
     brett[UNTEN][0] -= 1;
 
@@ -208,7 +216,7 @@ describe('Invarianten (Konzept 4.8)', () => {
     expect(ergebnis.verletzungen.join(' ')).toContain('I-1');
   });
 
-  test('I-2 schlaegt bei negativen Feldern an', () => {
+  test('I-2 schlägt bei negativen Feldern an', () => {
     const brett = neuesBrett();
     brett[UNTEN][0] = -4;
     brett[UNTEN][1] = 12;   // Summe bleibt 48, nur I-2 ist verletzt
@@ -218,7 +226,7 @@ describe('Invarianten (Konzept 4.8)', () => {
     expect(ergebnis.verletzungen.join(' ')).toContain('I-2');
   });
 
-  test('I-3 schlaegt bei falscher Form an', () => {
+  test('I-3 schlägt bei falscher Form an', () => {
     expect(pruefeInvarianten([[1, 2, 3]]).ok).toBe(false);
     expect(pruefeInvarianten(null).ok).toBe(false);
   });

@@ -1,10 +1,15 @@
 /**
- * Tests von server/util/logger.js: Format der Zeilen und Absturzsicherheit.
+ * logger.test.js – Protokollformat, Schwelle und Absturzschutz.
  *
- * Die Ausgabe landet sonst in der Konsole; hier wird sie je Ebene gesammelt.
- * Die Schwelle (LOG_LEVEL) liest der Logger beim Laden – im Test ist sie
- * nicht gesetzt, es gilt also der Standard `info`.
+ * Gesammelte Konsolenausgaben lassen sich prüfen. Für eine andere
+ * LOG_LEVEL-Schwelle lädt ein eigener Prozess den Logger neu.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +32,8 @@ beforeEach(() => {
 afterEach(() => {
   Object.assign(console, echteKonsole);
 });
+
+// == 2. Testfälle ===========================================================
 
 describe('Logger', () => {
   test('eine Zeile hat Uhrzeit, Ebene, Text und die Zusatzangaben als JSON', () => {

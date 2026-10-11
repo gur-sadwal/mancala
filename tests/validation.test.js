@@ -1,9 +1,15 @@
 /**
- * Tests der Eingabevalidierung und der Ratenbegrenzung (Konzept 7.8 und 7.9).
+ * validation.test.js – Eingabeform, Namensregel und Ratenbegrenzung.
  *
- * Das ist die Anti-Cheating-Schicht: Jede Zeile hier entspricht einer Zeile
- * der Gefahrentabelle aus Konzept 7.8.
+ * Falsche Typen und manipulierte Nutzdaten werden direkt geprüft, damit
+ * der Server sie vor einer Partieaktion sicher ablehnen kann.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import {
   istObjekt,
@@ -15,6 +21,8 @@ import {
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
 import { EREIGNIS, bereinigeName } from '../shared/protokoll.js';
 
+// == 2. Testfälle ===========================================================
+
 describe('istObjekt', () => {
   test('akzeptiert einfache Objekte', () => {
     expect(istObjekt({})).toBe(true);
@@ -22,8 +30,8 @@ describe('istObjekt', () => {
   });
 
   test('lehnt null, Arrays und Grundwerte ab', () => {
-    // null und Arrays sind vom typeof her ebenfalls "object" – der haeufigste
-    // Fallstrick bei selbstgebauten Pruefungen.
+    // null und Arrays sind vom typeof her ebenfalls "object" – der häufigste
+    // Fallstrick bei selbstgebauten Prüfungen.
     expect(istObjekt(null)).toBe(false);
     expect(istObjekt([])).toBe(false);
     expect(istObjekt('x')).toBe(false);
@@ -45,7 +53,7 @@ describe('istGanzzahlZwischen', () => {
     }
   });
 
-  test('laesst sich nicht von einer eigenen valueOf-Methode taeuschen', () => {
+  test('lässt sich nicht von einer eigenen valueOf-Methode taeuschen', () => {
     // Ein Objekt, das sich als 3 ausgeben will: Da gar keine Umwandlung
     // stattfindet, kommt es nicht durch.
     const tarnung = { valueOf: () => 3 };
@@ -77,7 +85,7 @@ describe('ermittleSpielername', () => {
   });
 
   test('entfernt Steuerzeichen', () => {
-    // Zeilenumbruch und Nullbyte wuerden die Anzeige zerlegen, ohne selbst
+    // Zeilenumbruch und Nullbyte würden die Anzeige zerlegen, ohne selbst
     // sichtbar zu sein.
     const mitSteuerzeichen = `Ni${String.fromCharCode(10)}co${String.fromCharCode(0)}`;
     expect(ermittleSpielername(mitSteuerzeichen)).toBe('Nico');
@@ -91,13 +99,13 @@ describe('ermittleSpielername', () => {
     expect(ermittleSpielername('<>')).toBe('Spieler');
   });
 
-  test('zerschneidet keine Emoji', () => {
+  test('behält das einfache Würfel-Emoji im Namen', () => {
     expect(ermittleSpielername('Anna 🎲')).toBe('Anna 🎲');
   });
 });
 
 describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () => {
-  test('liefert eine leere Zeichenkette, wenn nichts uebrig bleibt', () => {
+  test('liefert eine leere Zeichenkette, wenn nichts übrig bleibt', () => {
     // Der Browser meldet dann "Bitte gib einen Namen ein.", der Server setzt
     // "Spieler" ein – das entscheidet jede Seite selbst.
     expect(bereinigeName('')).toBe('');
@@ -108,7 +116,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
 
   test('Browser und Server kommen zum selben Namen', () => {
     // Was der Browser ins Feld schreibt, muss genau das sein, was der Server
-    // daraus macht – sonst stuende auf dem Brett ein anderer Name.
+    // daraus macht – sonst stünde auf dem Brett ein anderer Name.
     const eingaben = ['Gursharan', '  Nico  ', 'A'.repeat(30), 'Anna 🎲',
       `Ni${String.fromCharCode(10)}co`, '<b>Nico</b>', 'Ölmühle Ärger'];
     for (const eingabe of eingaben) {
@@ -132,10 +140,13 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
   });
 
   test('unsichtbare Zeichen werden entfernt', () => {
-    expect(bereinigeName('\u200B')).toBe('');           // Nullbreite-Leerzeichen
+    // Nullbreite-Leerzeichen
+    expect(bereinigeName('\u200B')).toBe('');
     expect(bereinigeName('Ni\u0085co')).toBe('Nico');   // Steuerzeichen NEL
-    expect(bereinigeName('Anna\u202Etxet')).toBe('Annatxet');   // dreht die Leserichtung
-    expect(bereinigeName('Ni\u00ADco\uFEFF')).toBe('Nico');   // weiches Trennzeichen, BOM
+    // dreht die Leserichtung
+    expect(bereinigeName('Anna\u202Etxet')).toBe('Annatxet');
+    // weiches Trennzeichen, BOM
+    expect(bereinigeName('Ni\u00ADco\uFEFF')).toBe('Nico');
   });
 
   test('ein Name nur aus unsichtbaren Zeichen wird auf dem Server zu „Spieler“', () => {
@@ -152,7 +163,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
   });
 });
 
-describe('Schemapruefung der Ereignisse', () => {
+describe('Schemaprüfung der Ereignisse', () => {
   test('spiel:zug verlangt eine Muldennummer von 0 bis 5', () => {
     expect(istGueltig(EREIGNIS.ZUG, { mulde: 0 })).toBe(true);
     expect(istGueltig(EREIGNIS.ZUG, { mulde: 5 })).toBe(true);
@@ -166,12 +177,13 @@ describe('Schemapruefung der Ereignisse', () => {
 
   test('spiel:beitreten verlangt eine Zeichenkette als Name', () => {
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna' })).toBe(true);
-    expect(istGueltig(EREIGNIS.BEITRETEN, { name: '' })).toBe(true);   // wird zu "Spieler"
+    // wird zu "Spieler"
+    expect(istGueltig(EREIGNIS.BEITRETEN, { name: '' })).toBe(true);
 
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 42 })).toBe(false);
     expect(istGueltig(EREIGNIS.BEITRETEN, {})).toBe(false);
 
-    // Privates Spiel: `privat` und `code` sind freiwillig, aber typgeprueft.
+    // Privates Spiel: `privat` und `code` sind freiwillig, aber typgeprüft.
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna', privat: true })).toBe(true);
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna', code: 'K7M2QX' })).toBe(true);
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna', privat: 'ja' })).toBe(false);
@@ -179,7 +191,7 @@ describe('Schemapruefung der Ereignisse', () => {
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna', code: ['K7M2QX'] })).toBe(false);
   });
 
-  test('Ereignisse ohne Nutzdaten akzeptieren alles', () => {
+  test('Abbrechen, Aufgabe und Revanche benötigen keine Daten; erneute Suche erlaubt Zusatzfelder', () => {
     expect(istGueltig(EREIGNIS.ABBRECHEN, undefined)).toBe(true);
     expect(istGueltig(EREIGNIS.AUFGEBEN, null)).toBe(true);
     expect(istGueltig(EREIGNIS.ERNEUT, { unfug: true })).toBe(true);
@@ -195,13 +207,13 @@ describe('Schemapruefung der Ereignisse', () => {
     expect(istGueltig(EREIGNIS.ERNEUT, 'Anna')).toBe(false);
   });
 
-  test('ein unbekanntes Ereignis gilt als ungueltig', () => {
+  test('ein unbekanntes Ereignis gilt als ungültig', () => {
     expect(istGueltig('spiel:hack', { mulde: 1 })).toBe(false);
   });
 
   test('__proto__ in den Nutzdaten hat keine Wirkung', () => {
     // Es findet keine Objekt-Verschmelzung statt; gelesen wird nur das
-    // benannte Feld `mulde` (Konzept 7.8).
+    // benannte Feld `mulde`.
     const boesartig = JSON.parse('{"mulde": 2, "__proto__": {"gehackt": true}}');
 
     expect(istGueltig(EREIGNIS.ZUG, boesartig)).toBe(true);
@@ -217,9 +229,9 @@ describe('Schemapruefung der Ereignisse', () => {
 });
 
 describe('Ratenbegrenzung', () => {
-  test('laesst bis zur Grenze durch und bremst danach', () => {
+  test('lässt bis zur Grenze durch und bremst danach', () => {
     // Feste Uhr: Alle Ereignisse fallen in dasselbe Fenster, ohne dass der
-    // Test eine Sekunde lang warten muesste.
+    // Test eine Sekunde lang warten müsste.
     const begrenzer = erzeugeRatenbegrenzer(3, 1000, () => 1000);
 
     expect(begrenzer.erlaubt('a')).toBe(true);
@@ -241,7 +253,7 @@ describe('Ratenbegrenzung', () => {
     expect(begrenzer.erlaubt('a')).toBe(true);
   });
 
-  test('zaehlt jede Verbindung getrennt', () => {
+  test('zählt jede Verbindung getrennt', () => {
     const begrenzer = erzeugeRatenbegrenzer(1, 1000, () => 1000);
 
     expect(begrenzer.erlaubt('a')).toBe(true);

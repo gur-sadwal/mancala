@@ -1,16 +1,20 @@
 /**
- * Tests für den Kern des Clients (client/js/kern.js): Anzeigezustand (Store)
- * und Netzverbindung.
+ * kern.test.js – Anzeigezustand und Netzverbindung des Clients.
  *
- * Die Netzverbindung wird mit einem nachgebauten Socket geprüft: Er merkt
- * sich, welche Ereignisse angemeldet und welche Nachrichten gesendet werden.
- * So lässt sich ohne Server zeigen, was der Client wirklich verschickt.
+ * Eine Socket-Attrappe merkt sich Listener und gesendete Nachrichten.
+ * Damit wird der Clientablauf ohne laufenden Server geprüft.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
 
-/** Der nachgebaute Socket – jeder Test setzt ihn mit `neuerSocket()` neu auf. */
+/** Socket-Attrappe; jeder Test erzeugt sie mit neuerSocket() neu. */
 let socket = null;
 
 function neuerSocket() {
@@ -50,6 +54,8 @@ function seitenwechsel(name, persisted) {
   Object.defineProperty(ereignis, 'persisted', { value: persisted });
   window.dispatchEvent(ereignis);
 }
+
+// == 2. Testfälle ===========================================================
 
 describe('Store (Anzeigezustand)', () => {
   test('beginnt in der Anmeldeansicht ohne Sitz und Spielstand', () => {

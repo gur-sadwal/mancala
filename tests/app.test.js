@@ -1,11 +1,15 @@
 /**
- * Tests der Express-App (server/http/app.js): Sicherheitskopfzeilen gegen
- * Cross-Site-Scripting und die Auslieferung der Seiten.
+ * app.test.js – Express-App: Dateien, Fehlerseite und Sicherheitskopfzeilen.
  *
- * Die App wird auf Port 0 gestartet – das Betriebssystem waehlt dann einen
- * freien Port. Abgefragt wird mit `fetch`, das in Node eingebaut ist; eine
- * zusaetzliche Testbibliothek ist dafuer nicht noetig.
+ * Echte HTTP-Anfragen an einen freien Port prüfen die Auslieferung;
+ * Manager und Lobby sind für den Gesundheitsendpunkt einfache Attrappen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { erzeugeApp, CSP } from '../server/http/app.js';
 
@@ -27,6 +31,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await new Promise((fertig) => server.close(fertig));
 });
+
+// == 2. Testfälle ===========================================================
 
 describe('Schutz gegen Cross-Site-Scripting', () => {
   test('die Startseite schickt die Content-Security-Policy mit', async () => {

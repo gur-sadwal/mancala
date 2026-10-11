@@ -1,9 +1,19 @@
 /**
- * Tests von shared/protokoll.js: die Tabellen, die Server und Browser teilen.
- * (Die Namensregel `bereinigeName` steht in tests/validation.test.js.)
+ * protokoll.test.js – Gemeinsame Ereignisse, Fehler und Namen.
+ *
+ * Die Prüfungen sichern die Tabellen, die Server und Browser teilen.
+ * Die Bereinigung von Namen wird zusätzlich in validation.test.js geprüft.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
 
+// == 1. Testaufbau ==========================================================
+
 import { EREIGNIS, FEHLER, FEHLER_TEXT, GRUND, STATUS } from '../shared/protokoll.js';
+
+// == 2. Testfälle ===========================================================
 
 describe('Protokoll', () => {
   test('jeder Fehlercode hat einen Text für Menschen', () => {

@@ -1,8 +1,16 @@
 /**
- * Prüft echte Client-Abläufe mit einem Socket und Ansichten ohne Browser.
- * Der Store und die Netzwerkverteilung bleiben unverändert; nur Anzeige und
- * Socket.io werden ersetzt, damit Nachrichten gezielt überlappen können.
+ * main.test.js – Überlappende Clientabläufe und sichtbare Fehler.
+ *
+ * Store und Netzverteilung sind echt; Ansichten und Socket sind
+ * Attrappen. So treffen Nachrichten gezielt während einer Animation ein.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
+
 import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
 
@@ -13,17 +21,21 @@ let elemente;
 
 function ansicht() {
   return {
-    zeige: jest.fn(), verstecke: jest.fn(), aktualisiere: jest.fn(),
-    starte: jest.fn(), spieleZug: jest.fn(() => Promise.resolve()),
-    melde: jest.fn(), beende: jest.fn(),
+    zeige: jest.fn(),
+    verstecke: jest.fn(),
+    aktualisiere: jest.fn(),
+    starte: jest.fn(),
+    spieleZug: jest.fn(() => Promise.resolve()),
+    melde: jest.fn(),
+    beende: jest.fn(),
   };
 }
 
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 jest.mock('/socket.io/socket.io.esm.min.js', () => ({}), { virtual: true });
-jest.unstable_mockModule('/socket.io/socket.io.esm.min.js', () => ({ io: () => socket }),
-  { virtual: true });
+jest.unstable_mockModule('/socket.io/socket.io.esm.min.js',
+  () => ({ io: () => socket }), { virtual: true });
 for (const [datei, name] of [
   ['anmelden', 'erzeugeAnmeldeAnsicht'], ['warten', 'erzeugeWarteAnsicht'],
   ['spiel', 'erzeugeSpielAnsicht'], ['ende', 'erzeugeEndeAnsicht'],
@@ -41,13 +53,24 @@ jest.unstable_mockModule('../client/js/einstellungen.js', () => ({
 
 beforeEach(async () => {
   jest.resetModules();
-  socket = { on: jest.fn(), emit: jest.fn(), disconnect: jest.fn(), connect: jest.fn() };
-  ansichten = Object.fromEntries(['anmelden', 'warten', 'spiel', 'ende'].map((name) => [name, ansicht()]));
+  socket = {
+    on: jest.fn(),
+    emit: jest.fn(),
+    disconnect: jest.fn(),
+    connect: jest.fn(),
+  };
+  ansichten = Object.fromEntries(
+    ['anmelden', 'warten', 'spiel', 'ende'].map((name) => [name, ansicht()]),
+  );
   rueckrufe = {};
-  elemente = { '#verbindungshinweis': { hidden: true }, '#ladehinweis': { hidden: false } };
+  elemente = {
+    '#verbindungshinweis': { hidden: true },
+    '#ladehinweis': { hidden: false },
+  };
   global.document = { querySelector: (auswahl) => elemente[auswahl] };
   global.window = Object.assign(new EventTarget(), {
-    history: { replaceState: jest.fn() }, location: { pathname: '/' },
+    history: { replaceState: jest.fn() },
+    location: { pathname: '/' },
   });
   await import('../client/js/main.js');
 });
@@ -63,21 +86,34 @@ function sende(name, daten) {
 }
 
 function spielstand(status = protokoll.STATUS.LAEUFT) {
-  return { status, spieler: { unten: { name: 'Anna' }, oben: { name: 'Ben' } } };
+  return {
+    status,
+    spieler: { unten: { name: 'Anna' }, oben: { name: 'Ben' } },
+  };
 }
 
 function starte() {
   sende('connect');
-  sende(protokoll.EREIGNIS.START, { sitz: 'unten', gegner: { name: 'Ben' }, spielstand: spielstand() });
+  sende(protokoll.EREIGNIS.START, {
+    sitz: 'unten',
+    gegner: { name: 'Ben' },
+    spielstand: spielstand(),
+  });
 }
 
 async function beende() {
   await sende(protokoll.EREIGNIS.ENDE, {
     spielstand: spielstand(protokoll.STATUS.BEENDET),
-    ergebnis: { punkte: { unten: 25, oben: 23 }, sieger: 'unten', grund: protokoll.GRUND.REGULAER },
+    ergebnis: {
+      punkte: { unten: 25, oben: 23 },
+      sieger: 'unten',
+      grund: protokoll.GRUND.REGULAER,
+    },
     revanche: true,
   });
 }
+
+// == 2. Testfälle ===========================================================
 
 describe('Neue Suche nach dem Ergebnis', () => {
   test('bleibt während einer langsamen Antwort im Warten, auch wenn der Gegner Revanche anbietet', async () => {
@@ -110,8 +146,13 @@ describe('Zurück zur Anmeldung', () => {
 describe('Nachrichten während der Schlussanimation', () => {
   function halteAnimationAn() {
     let fertig;
-    ansichten.spiel.spieleZug.mockReturnValue(new Promise((resolve) => { fertig = resolve; }));
-    sende(protokoll.EREIGNIS.STAND, { spielstand: spielstand(protokoll.STATUS.BEENDET), bericht: {} });
+    ansichten.spiel.spieleZug.mockReturnValue(new Promise((resolve) => {
+      fertig = resolve;
+    }));
+    sende(protokoll.EREIGNIS.STAND, {
+      spielstand: spielstand(protokoll.STATUS.BEENDET),
+      bericht: {},
+    });
     return fertig;
   }
 
@@ -179,7 +220,10 @@ describe('Sichtbare Serverfehler', () => {
 
   test.each(['anmelden', 'warten', 'ende'])('zeigt Fehler in %s an der sichtbaren Ansicht', async (name) => {
     if (name === 'warten') sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
-    if (name === 'ende') { starte(); await beende(); }
+    if (name === 'ende') {
+      starte();
+      await beende();
+    }
     sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.ZU_VIELE_ANFRAGEN });
     expect(ansichten[name].melde).toHaveBeenLastCalledWith(
       protokoll.FEHLER_TEXT[protokoll.FEHLER.ZU_VIELE_ANFRAGEN]);

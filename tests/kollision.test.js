@@ -1,11 +1,15 @@
 /**
- * Kollisionen: Was passiert, wenn der Zufall zweimal dieselbe Kennung zieht?
+ * kollision.test.js – Wiederholte Kennungen bei Lobby und Manager.
  *
- * Der Zufall lässt sich nicht erzwingen. Deshalb wird server/util/ids.js hier
- * durch eine Attrappe ersetzt, die absichtlich erst zweimal denselben Wert
- * liefert. Die Attrappe muss angemeldet sein, BEVOR Lobby und Manager geladen
- * werden – darum die Importe mit `await import(…)` statt oben in der Datei.
+ * Die ID-Attrappe liefert absichtlich doppelte Werte. Sie muss vor den
+ * Modulen geladen werden, damit echte Zufälle die Prüfung nicht beeinflussen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 /** Liefert der Reihe nach die vorgegebenen Werte, danach immer den letzten. */
 function folge(...werte) {
@@ -24,6 +28,8 @@ import.meta.jest.unstable_mockModule('../server/util/ids.js', () => ({
 
 const { erzeugeLobby } = await import('../server/spiel/lobby.js');
 const { erzeugeManager } = await import('../server/spiel/manager.js');
+
+// == 2. Testfälle ===========================================================
 
 describe('Kollision bei der Spiel-ID', () => {
   test('eine schon vergebene Spiel-ID überschreibt keine laufende Partie', () => {

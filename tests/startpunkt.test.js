@@ -1,8 +1,16 @@
 /**
- * Startpunkt mit ersetzten Betriebssystem-Aufrufen: Alle Prozesswächter,
- * Portfehler und das Warten beim Beenden sind ohne echten Prozess prüfbar.
- * tests/server.test.js prüft zusätzlich denselben Einstieg als echten Prozess.
+ * startpunkt.test.js – Prozesswächter und Fehler beim Serverstart.
+ *
+ * Ersetzte Betriebssystem-Aufrufe lösen Fehler gezielt aus. Der echte
+ * Prozess wird zusätzlich in server.test.js gestartet.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
+
 import { jest } from '@jest/globals';
 
 const server = { on: jest.fn(), listen: jest.fn() };
@@ -50,6 +58,8 @@ async function lade() {
 function serverfehler(code) {
   return server.on.mock.calls.find(([name]) => name === 'error')[1]({ code });
 }
+
+// == 2. Testfälle ===========================================================
 
 test('setzt Express vor Socket.io auf und bindet ausdrücklich IPv4', async () => {
   process.argv.push('3489');

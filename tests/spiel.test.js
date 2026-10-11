@@ -1,8 +1,15 @@
 /**
- * Tests der reinen Funktionen der Spielansicht (client/js/spiel.js), die
- * nichts mit der Drehung des Bretts zu tun haben (die steht in
- * tests/sicht.test.js). Brett und Klicks selbst prüfen die Browsertests.
+ * spiel.test.js – Hinweise, Animationsschritte und Ansichtslaufzeit.
+ *
+ * Reine Funktionen und die echte Ansicht mit Elementattrappen werden
+ * geprüft. Serverberichte liefern die Daten für die Animationsbilder.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { jest } from '@jest/globals';
 import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
@@ -10,6 +17,8 @@ import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
 import { fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
 import { neuesBrett } from '../server/spiel/brett.js';
 import { STATUS } from '../shared/protokoll.js';
+
+// == 2. Testfälle ===========================================================
 
 describe('Hinweis zu den Sonderregeln', () => {
   const klauen = { sitz: 'unten', beute: { eigeneZelle: [1, 2], gegnerZelle: [0, 2], anzahl: 5 } };

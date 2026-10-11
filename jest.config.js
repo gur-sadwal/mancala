@@ -1,7 +1,16 @@
 /**
- * Jest prüft die unveränderten ES-Module ohne zusätzlichen Übersetzer.
- * Abdeckung enthält alle Serverdateien einschließlich Startpunkt und Protokoll.
+ * jest.config.js – Tests und Abdeckungsgrenzen.
+ *
+ * Jest lädt die ES-Module ohne Übersetzer, wie der Server auch.
+ * Die Abdeckung enthält den Startpunkt und das gemeinsame Protokoll,
+ * damit ungetestete Dateien nicht aus der Messung verschwinden.
+ *
+ * Inhalt:
+ *   == 1. Ausführung und Abdeckung
  */
+
+// == 1. Ausführung und Abdeckung =============================================
+
 export default {
   testEnvironment: 'node',
   transform: {},

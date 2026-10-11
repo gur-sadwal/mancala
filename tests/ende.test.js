@@ -1,9 +1,15 @@
 /**
- * Tests der reinen Textfunktionen des Ergebnisdialogs (client/js/ende.js).
+ * ende.test.js – Ergebnisansicht, Texte und Sitzungsbilanz.
  *
- * Getestet wird, welcher Satz bei welchem Ende erscheint und wie die Bilanz
- * aussieht. Der Dialog selbst braucht einen Browser (Browsertests).
+ * Die echte Ansicht nutzt hier DOM-, Speicher- und Uhrattrappen. Damit
+ * lassen sich Ergebnis, Revanchefrist und Aufräumen gezielt prüfen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
@@ -23,6 +29,8 @@ const {
   erzeugeEndeAnsicht,
 } = await import('../client/js/ende.js');
 const { GRUND } = protokoll;
+
+// == 2. Testfälle ===========================================================
 
 describe('Bilanz dieser Sitzung', () => {
   test('mit Namen: „Name, dein Ergebnis: Siege-Niederlagen | Remis“', () => {
@@ -130,23 +138,32 @@ describe('Ergebnisdialog und Bilanz', () => {
     jest.useFakeTimers();
     jest.setSystemTime(1000);
     elemente = new Map();
-    global.document = { querySelector: (auswahl) => {
-      if (!elemente.has(auswahl)) {
-        const element = {
-          textContent: '', hidden: false, open: false, disabled: false,
-          addEventListener: jest.fn(), removeEventListener: jest.fn(), focus: jest.fn(),
-        };
-        element.showModal = () => { element.open = true; };
-        element.close = () => { element.open = false; };
-        elemente.set(auswahl, element);
-      }
-      return elemente.get(auswahl);
-    } };
+    global.document = {
+      querySelector: (auswahl) => {
+        if (!elemente.has(auswahl)) {
+          const element = {
+            textContent: '',
+            hidden: false,
+            open: false,
+            disabled: false,
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+            focus: jest.fn(),
+          };
+          element.showModal = () => { element.open = true; };
+          element.close = () => { element.open = false; };
+          elemente.set(auswahl, element);
+        }
+        return elemente.get(auswahl);
+      },
+    };
     speicher = new Map();
-    global.window = { sessionStorage: {
-      getItem: (name) => speicher.get(name) ?? null,
-      setItem: (name, text) => speicher.set(name, text),
-    } };
+    global.window = {
+      sessionStorage: {
+        getItem: (name) => speicher.get(name) ?? null,
+        setItem: (name, text) => speicher.set(name, text),
+      },
+    };
     ansicht = erzeugeEndeAnsicht({});
   });
 
@@ -162,8 +179,11 @@ describe('Ergebnisdialog und Bilanz', () => {
   }
 
   test.each(['unten', 'oben'])('Timeout zählt für %s auch bei ungleichem Stand nicht als Niederlage', (sitz) => {
-    zeigeErgebnis({ grund: GRUND.ZU_LANGE_KEIN_ZUG, sieger: null,
-      punkte: { unten: 0, oben: 3 } }, sitz, null);
+    zeigeErgebnis({
+      grund: GRUND.ZU_LANGE_KEIN_ZUG,
+      sieger: null,
+      punkte: { unten: 0, oben: 3 },
+    }, sitz, null);
 
     expect(elemente.get('#t-ende').textContent).toBe('Partie abgebrochen');
     expect(elemente.get('#ende-bilanz').textContent).toContain('0-0 | 0 Remis');
@@ -171,14 +191,22 @@ describe('Ergebnisdialog und Bilanz', () => {
   });
 
   test('wiederholtes Zeichnen zählt dasselbe Ergebnis genau einmal', () => {
-    const ergebnis = { grund: GRUND.REGULAER, sieger: 'unten', punkte: { unten: 25, oben: 23 } };
+    const ergebnis = {
+      grund: GRUND.REGULAER,
+      sieger: 'unten',
+      punkte: { unten: 25, oben: 23 },
+    };
     zeigeErgebnis(ergebnis);
     zeigeErgebnis(ergebnis);
     expect(JSON.parse(speicher.get('mancala.bilanz')).siege).toBe(1);
   });
 
   test('Serverfehler bleibt trotz Sekundentakt sichtbar, ein neuer Revanche-Stand ersetzt ihn', () => {
-    const ergebnis = { grund: GRUND.REGULAER, sieger: 'unten', punkte: { unten: 25, oben: 23 } };
+    const ergebnis = {
+      grund: GRUND.REGULAER,
+      sieger: 'unten',
+      punkte: { unten: 25, oben: 23 },
+    };
     zeigeErgebnis(ergebnis);
     ansicht.melde('Bitte kurz warten.');
     jest.advanceTimersByTime(1000);

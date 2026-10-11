@@ -1,11 +1,15 @@
 /**
- * Rauchtest des Startpunkts (server/index.js): Der Server läuft hier als
- * eigener Prozess – genau so, wie ihn `npm run start <port>` startet.
+ * server.test.js – Serverstart und geordnetes Prozessende.
  *
- * Geprüft wird nur das, was index.js selbst tut: Port lesen, lauschen und
- * sich bei SIGTERM geordnet beenden. Die Spiellogik testen die anderen
- * Dateien ohne Netzwerk.
+ * Ein echter Node-Prozess prüft Port, Bindung und SIGTERM. Startfehler
+ * und die Ausgabe werden geprüft, ohne einen Browser zu benötigen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { spawn } from 'node:child_process';
 import net from 'node:net';
@@ -60,6 +64,8 @@ async function warteAuf(lauf, gesucht) {
     await new Promise((weiter) => setTimeout(weiter, 20));
   }
 }
+
+// == 2. Testfälle ===========================================================
 
 describe('Startpunkt server/index.js', () => {
   test('lauscht, antwortet und endet bei SIGTERM mit Code 0', async () => {

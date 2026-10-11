@@ -1,11 +1,19 @@
 /**
- * Tests der Ratenbegrenzung (server/socket/rateLimit.js).
+ * rateLimit.test.js – Nachrichten pro Verbindung begrenzen.
  *
- * Die Uhr wird hereingereicht: Der Test stellt die Zeit selbst ein, statt
- * eine Sekunde lang zu warten.
+ * Die Uhrzeit wird vorgegeben. Grenzwerte und das nächste Zeitfenster
+ * sind dadurch ohne echtes Warten prüfbar.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
 
+// == 1. Testaufbau ==========================================================
+
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
+
+// == 2. Testfälle ===========================================================
 
 describe('Ratenbegrenzung', () => {
   test('lässt bis zur Grenze durch und verwirft dann', () => {

@@ -1,15 +1,23 @@
 /**
- * Tests der Warteschlange und der Partieverwaltung (Konzept 7.4 bis 7.6).
+ * lobby.test.js – Warteschlange, Einladungen und Partieverwaltung.
  *
- * Beide Module kennen Sockets nur als Zeichenketten – deshalb laesst sich
- * hier ein vollstaendiges Matchmaking ohne laufenden Server durchspielen.
+ * Sockets sind hier Kennungen; die Uhrzeit wird vorgegeben. Dadurch
+ * lassen sich Paarung, Revanche und Fristen ohne Netzwerk prüfen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { REVANCHE_STATUS, erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
 import { erzeugeManager } from '../server/spiel/manager.js';
 import { sitzVon, spielstandVon, beendeVorzeitig } from '../server/spiel/partie.js';
 import { STATUS, FEHLER, GRUND, GRENZEN, CODE_ZEICHEN } from '../shared/protokoll.js';
 import { gesamtSumme } from '../server/spiel/brett.js';
+
+// == 2. Testfälle ===========================================================
 
 describe('Warteschlange', () => {
   test('nimmt Spieler in der Reihenfolge ihres Eintreffens auf', () => {
@@ -30,12 +38,12 @@ describe('Warteschlange', () => {
     expect(lobby.anzahl()).toBe(1);
   });
 
-  test('entfernt Eintraege und meldet, ob etwas entfernt wurde', () => {
+  test('entfernt Einträge und meldet, ob etwas entfernt wurde', () => {
     const lobby = erzeugeLobby();
     lobby.beitreten('a', 'Anna');
 
     expect(lobby.entferne('a')).toBe(true);
-    expect(lobby.entferne('a')).toBe(false);   // zweiter Aufruf faellt ins Leere
+    expect(lobby.entferne('a')).toBe(false);   // zweiter Aufruf fällt ins Leere
     expect(lobby.anzahl()).toBe(0);
   });
 
@@ -72,11 +80,11 @@ describe('Warteschlange', () => {
     ]);
   });
 
-  test('raeumt alte Eintraege ab (NFA-10)', () => {
+  test('raeumt alte Einträge ab (NFA-10)', () => {
     const lobby = erzeugeLobby();
     lobby.beitreten('a', 'Anna');
 
-    // maxAlter 0 heisst: alles ist zu alt.
+    // maxAlter 0 heißt: alles ist zu alt.
     expect(lobby.raeumeAuf(0)).toEqual(['a']);
     expect(lobby.anzahl()).toBe(0);
   });
@@ -84,7 +92,8 @@ describe('Warteschlange', () => {
   test('zwei Spieler mit gleichem Namen werden ganz normal gepaart', () => {
     const lobby = erzeugeLobby();
 
-    // Der Name ist nur eine Anzeige – unterschieden wird nach der Socket-Kennung.
+    // Gleiche Anzeigenamen dürfen verschiedene Spieler nicht zusammenlegen:
+    // Die Socket-Kennung unterscheidet ihre Warteplätze.
     expect(lobby.beitreten('a', 'Anna').ok).toBe(true);
     expect(lobby.beitreten('b', 'Anna').ok).toBe(true);
     expect(lobby.naechstesPaar().map((e) => e.socketId)).toEqual(['a', 'b']);
@@ -134,7 +143,7 @@ describe('Privates Spiel', () => {
     lobby.erstellePrivat('a', 'Anna');
     lobby.beitreten('b', 'Ben');
 
-    // Anna darf nicht mit einem zufaelligen Spieler gepaart werden.
+    // Anna darf nicht mit einem zufälligen Spieler gepaart werden.
     expect(lobby.naechstesPaar()).toBeNull();
     expect(lobby.positionen()).toEqual([{ socketId: 'b', position: 1 }]);
   });
@@ -175,7 +184,7 @@ describe('Privates Spiel', () => {
 
     expect(lobby.entferne('a')).toBe(true);
     expect(lobby.enthaelt('a')).toBe(false);
-    // Der Link ist damit ungueltig.
+    // Der Link ist damit ungültig.
     expect(lobby.nimmPrivat(einladung)).toBeNull();
   });
 
@@ -200,7 +209,7 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
     expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.START, paar: [anna, ben] });
 
-    // Danach ist das Revanche-Buch fuer beide leer.
+    // Danach ist das Revanche-Buch für beide leer.
     expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
@@ -217,12 +226,12 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.wuenscheRevanche('x')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
-  test('wer geht, laesst die Revanche verfallen – der Gegner wird genannt', () => {
+  test('wer geht, lässt die Revanche verfallen – der Gegner wird genannt', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben);
 
     expect(lobby.vergissRevanche('a')).toBe('b');
-    // Bens Knopf fuehrt jetzt ins Leere und meldet das auch.
+    // Bens Knopf führt jetzt ins Leere und meldet das auch.
     expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.KEINE });
     expect(lobby.vergissRevanche('niemand')).toBeNull();
   });
@@ -274,7 +283,7 @@ describe('Revanche-Frist', () => {
     expect(REVANCHE_FRIST_MS).toBe(17000);
   });
 
-  test('ohne offene Revanche laeuft nichts ab', () => {
+  test('ohne offene Revanche läuft nichts ab', () => {
     const lobby = erzeugeLobby();
     expect(lobby.abgelaufeneRevanchen(ENDE)).toEqual([]);
   });
@@ -287,7 +296,7 @@ describe('Revanche-Frist', () => {
     expect(lobby.wuenscheRevanche('a', ENDE)).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
   });
 
-  test('zum Fristende verfallen beide Eintraege – auch ein schon gedrueckter', () => {
+  test('zum Fristende verfallen beide Einträge – auch ein schon gedrueckter', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.wuenscheRevanche('a', ENDE);   // Anna wollte, Ben hat nicht reagiert
@@ -295,7 +304,7 @@ describe('Revanche-Frist', () => {
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS).sort()).toEqual(['a', 'b']);
   });
 
-  test('nach Ablauf startet ein spaeter Wunsch nichts mehr', () => {
+  test('nach Ablauf startet ein später Wunsch nichts mehr', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS);
@@ -312,7 +321,7 @@ describe('Revanche-Frist', () => {
     expect(lobby.abgelaufeneRevanchen(ENDE + 2 * REVANCHE_FRIST_MS)).toEqual([]);
   });
 
-  test('nach dem Start der Revanche laeuft nichts mehr ab', () => {
+  test('nach dem Start der Revanche läuft nichts mehr ab', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.wuenscheRevanche('a', ENDE);
@@ -333,13 +342,13 @@ describe('Partieverwaltung', () => {
     return { manager, partie };
   }
 
-  test('wer anfaengt, ist zufaellig – kein fester Vorteil fuer den Ersten', () => {
+  test('wer anfängt, ist zufällig – kein fester Vorteil für den Ersten', () => {
     const manager = erzeugeManager();
     const DURCHLAEUFE = 2000;
     let annaBeginnt = 0;
 
     for (let i = 0; i < DURCHLAEUFE; i += 1) {
-      // Anna wird immer als ERSTE uebergeben – so, als haette sie zuerst
+      // Anna wird immer zuerst übergeben – so, als hätte sie zuerst
       // gewartet oder das private Spiel erstellt.
       const partie = manager.starte(
         { socketId: `a${i}`, name: 'Anna' },
@@ -348,22 +357,20 @@ describe('Partieverwaltung', () => {
       if (partie.spieler[partie.amZug].name === 'Anna') annaBeginnt += 1;
     }
 
-    // Erwartet ist etwa die Haelfte. Die Spanne 40 bis 60 % ist so breit,
-    // dass ein fairer Zufall praktisch nie herausfaellt (rund 9
-    // Standardabweichungen). Ein fest eingebauter Vorteil – Anna beginnt
-    // immer (100 %) oder nie (0 %) – faellt dagegen sofort auf.
+    // Die breite Spanne erkennt eine feste Bevorzugung, ohne einen
+    // exakten Zufallsanteil zu verlangen. Sie beweist keine perfekte Fairness.
     expect(annaBeginnt).toBeGreaterThan(DURCHLAEUFE * 0.4);
     expect(annaBeginnt).toBeLessThan(DURCHLAEUFE * 0.6);
   });
 
-  test('gleiche Namen stoeren nicht: der Sitz haengt an der Socket-Kennung', () => {
+  test('gleiche Namen stören nicht: der Sitz hängt an der Socket-Kennung', () => {
     const manager = erzeugeManager();
     const partie = manager.starte(
       { socketId: 'a', name: 'Anna' },
       { socketId: 'b', name: 'Anna' },
     );
 
-    // Beide heissen Anna, sitzen aber auf verschiedenen Plaetzen.
+    // Beide heißen Anna, sitzen aber auf verschiedenen Plätzen.
     expect([sitzVon(partie, 'a'), sitzVon(partie, 'b')].sort()).toEqual(['oben', 'unten']);
     expect(manager.holeNachSocket('b')).toBe(partie);
   });
@@ -387,7 +394,7 @@ describe('Partieverwaltung', () => {
     expect(gesamtSumme(partie.brett)).toBe(48);
   });
 
-  test('findet die Partie ueber beide Socket-Kennungen', () => {
+  test('findet die Partie über beide Socket-Kennungen', () => {
     const { manager, partie } = mitPartie();
 
     expect(manager.holeNachSocket('a').id).toBe(partie.id);
@@ -427,7 +434,7 @@ describe('Partieverwaltung', () => {
     expect(sitzVon(partie, 'fremd')).toBeNull();
   });
 
-  test('entfernt beim Aufloesen beide Eintraege aus beiden Maps', () => {
+  test('entfernt beim Aufloesen beide Einträge aus beiden Maps', () => {
     const { manager, partie } = mitPartie();
 
     manager.entferne(partie.id);
@@ -450,7 +457,7 @@ describe('Partieverwaltung', () => {
 
     expect(manager.findeRuhendePartien(500, 1499)).toEqual([]);
     expect(manager.findeRuhendePartien(500, 1500)).toEqual([partie]);
-    // Entfernt wird erst über den Handler, damit beide Spieler Bescheid bekommen.
+    // Erst der Handler entfernt die Partie und benachrichtigt beide Spieler.
     expect(manager.anzahl()).toBe(1);
   });
 
@@ -462,8 +469,8 @@ describe('Partieverwaltung', () => {
   });
 });
 
-describe('Spielstand nach aussen', () => {
-  test('enthaelt keine Socket-Kennungen (Konzept 6.3)', () => {
+describe('Spielstand nach außen', () => {
+  test('enthält keine internen Socket-Kennungen', () => {
     const manager = erzeugeManager();
     const partie = manager.starte(
       { socketId: 'geheim-a', name: 'Anna' },
@@ -478,7 +485,7 @@ describe('Spielstand nach aussen', () => {
     expect(text).toContain('Anna');
   });
 
-  test('enthaelt Brett, Zugrecht und Namen', () => {
+  test('enthält Brett, Zugrecht und Namen', () => {
     const manager = erzeugeManager();
     const partie = manager.starte(
       { socketId: 'a', name: 'Anna' },
@@ -493,7 +500,7 @@ describe('Spielstand nach aussen', () => {
 });
 
 describe('vorzeitiges Partieende', () => {
-  test('Aufgabe macht den Gegner zum Sieger, unabhaengig vom Punktestand', () => {
+  test('Aufgabe macht den Gegner zum Sieger, unabhängig vom Punktestand', () => {
     const manager = erzeugeManager();
     const partie = manager.starte(
       { socketId: 'a', name: 'Anna' },
@@ -514,7 +521,7 @@ describe('vorzeitiges Partieende', () => {
     expect(partie.status).toBe(STATUS.BEENDET);
   });
 
-  test('ein Verbindungsabbruch gilt als Abbruch, nicht als regulaeres Ende', () => {
+  test('ein Verbindungsabbruch gilt als Abbruch, nicht als reguläres Ende', () => {
     const manager = erzeugeManager();
     const partie = manager.starte(
       { socketId: 'a', name: 'Anna' },

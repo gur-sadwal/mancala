@@ -135,13 +135,13 @@ entscheidet über die Spielregeln.
 
 | Schicht | Vorgehen |
 | --- | --- |
-| Spiellogik | erwartbare Fehler als `{ ok:false, code }`; Nachschlagen liefert Objekt oder `null` |
+| Spiellogik | erwartbare Fehler als `{ ok: false, code }`; Nachschlagen liefert Objekt oder `null` |
 | Handler | Ratenbegrenzung, Schema, dann `try/catch`; Fehler nur an den Verursacher |
 | Partie | kaputter Zustand beendet nur die betroffene Partie; Zuordnungen werden aufgeräumt |
 | Prozess | unerwartete Fehler protokollieren; geordnetes Beenden wartet auf offene Ressourcen |
 | Client | Fehler in der aktiven Ansicht anzeigen; Animationsfehler abfangen |
 
-Der Browser sendet für einen Zug nur `{ mulde:0 }` mit dem Ereignis
+Der Browser sendet für einen Zug nur `{ mulde: 0 }` mit dem Ereignis
 `spiel:zug`: keine Punkte, kein Brett und keine Spiel-ID. Die Zahl 0–5
 bezieht sich auf die eigene Reihe. Die serverseitige Socket-Zuordnung
 bestimmt Partie und Sitz. Der Server prüft Zugrecht, ganze Zahl im Bereich,

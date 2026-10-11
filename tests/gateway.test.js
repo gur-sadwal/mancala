@@ -1,15 +1,15 @@
 /**
- * Tests von server/socket/gateway.js mit echtem HTTP-Server und echtem
- * Socket.io – nur der Browser ist nachgebaut.
+ * gateway.test.js – Socket.io am echten HTTP-Server.
  *
- * Eine Client-Bibliothek ist nicht installiert (und soll es nicht werden).
- * Deshalb spricht `verbindeRoh` das Socket.io-Protokoll von Hand über den
- * WebSocket, den Node mitbringt. Die Pakete sind kurze Texte:
+ * Ein roher WebSocket spricht die benötigten Socket.io-Nachrichten.
+ * So lassen sich Verbindungen und Aufräumtakte ohne Browser prüfen.
  *
- *   0{…}     Verbindung steht (Engine.IO)    2 / 3    Ping / Pong
- *   40       „ich möchte mitmachen“           40{…}    „du bist dabei“
- *   42[…]    ein Ereignis mit Nutzdaten, z. B. 42["spiel:zug",{"mulde":0}]
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import http from 'node:http';
 
@@ -94,6 +94,8 @@ function verbindeRoh() {
   browser.push(b);
   return b;
 }
+
+// == 2. Testfälle ===========================================================
 
 describe('Gateway: Verbindungen', () => {
   test('ein Browser verbindet sich und wartet auf einen Gegner', async () => {
@@ -217,7 +219,7 @@ describe('Gateway: Takte', () => {
 });
 
 describe('Gateway: Herunterfahren trotz kaputter Partie', () => {
-  test('benachrichtigt weitere Partien und schließt auch bei einem Fehler', async () => {
+  test('räumt alle Partien auf und schließt HTTP trotz einer beschädigten Partie', async () => {
     const kaputt = manager.starte(
       { socketId: 'kaputt-a', name: 'A' }, { socketId: 'kaputt-b', name: 'B' },
     );

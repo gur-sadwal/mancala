@@ -1,10 +1,21 @@
 /**
- * Tests der Spiel-Engine (Konzept 10.3, Faelle T-04 bis T-20 und T-22).
+ * engine.test.js – Kalaha-Spielregeln und ungültige Züge.
  *
- * Jedes Testbrett ist von Hand so gebaut, dass es genau 48 Kugeln enthaelt –
- * sonst schluege schon die Invariantenpruefung in `fuehreZugAus` an und der
- * Test pruefte gar nicht die gemeinte Regel.
+ * Regeltests verwenden Bretter mit 48 Kugeln. Beschädigte Bretter werden
+ * gezielt getrennt geprüft, damit sie einen Regeltest nicht verdecken.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Säen
+ *   == 3. Extrazug
+ *   == 4. Klauen
+ *   == 5. Spielende
+ *   == 6. Zugvalidierung
+ *   == 7. Reinheit und Zufallstest
+ *   == 8. Beschädigte Bretter und beide Sitze
  */
+
+// == 1. Testaufbau ==========================================================
 
 import {
   pruefeZug,
@@ -16,9 +27,6 @@ import {
 import { neuesBrett, gesamtSumme, muldenSumme, OBEN, UNTEN } from '../server/spiel/brett.js';
 import { STATUS, FEHLER, GRUND, REMIS } from '../shared/protokoll.js';
 
-// ---------------------------------------------------------------------------
-// Hilfsmittel
-// ---------------------------------------------------------------------------
 
 /** Baut eine laufende Partie um ein vorgegebenes Brett. */
 function partieMit(brett, amZug = 'unten') {
@@ -40,7 +48,7 @@ function partieMit(brett, amZug = 'unten') {
 /** Kurzform: Partie im Startzustand. */
 const startPartie = (amZug = 'unten') => partieMit(neuesBrett(), amZug);
 
-/** Fuehrt einen Zug aus und besteht darauf, dass er gelingt. */
+/** Führt einen Zug aus und besteht darauf, dass er gelingt. */
 function zug(partie, sitz, mulde) {
   const ergebnis = fuehreZugAus(partie, sitz, mulde);
   if (!ergebnis.ok) {
@@ -49,9 +57,7 @@ function zug(partie, sitz, mulde) {
   return ergebnis;
 }
 
-// ---------------------------------------------------------------------------
-// Saeen
-// ---------------------------------------------------------------------------
+// == 2. Säen ================================================================
 
 describe('T-04: einfacher Zug innerhalb der eigenen Reihe', () => {
   test('vier Mulden bekommen je eine Kugel, die Startmulde wird leer', () => {
@@ -74,7 +80,7 @@ describe('T-04: einfacher Zug innerhalb der eigenen Reihe', () => {
   });
 });
 
-describe('T-05: Zug, dessen Pfad das eigene Haus beruehrt', () => {
+describe('T-05: Zug, dessen Pfad das eigene Haus berührt', () => {
   test('das eigene Haus bekommt genau eine Kugel', () => {
     // Sitz unten spielt Mulde 3 = [1,3]: [1,4], [1,5], [1,6] (Haus), [0,6].
     const { partie, bericht } = zug(startPartie(), 'unten', 3);
@@ -89,8 +95,8 @@ describe('T-05: Zug, dessen Pfad das eigene Haus beruehrt', () => {
   });
 });
 
-describe('T-06: Zug ueber die gegnerische Seite', () => {
-  test('gegnerische Mulden werden besaet, das gegnerische Haus nicht', () => {
+describe('T-06: Zug über die gegnerische Seite', () => {
+  test('gegnerische Mulden werden besät, das gegnerische Haus nicht', () => {
     // Sitz unten spielt Mulde 5 = [1,5] mit 6 Kugeln:
     // [1,6] (eigenes Haus), [0,6], [0,5], [0,4], [0,3], [0,2].
     const partie = partieMit([
@@ -101,8 +107,7 @@ describe('T-06: Zug ueber die gegnerische Seite', () => {
 
     const ergebnis = zug(partie, 'unten', 5);
 
-    // Das gegnerische Haus [0,0] bleibt unberuehrt – der haeufigste
-    // Denkfehler bei Mancala-Implementierungen (Konzept 5.3).
+    // REGEL 3.2: Das gegnerische Haus wird beim Säen übersprungen.
     expect(ergebnis.partie.brett[OBEN][0]).toBe(0);
 
     expect(ergebnis.partie.brett[OBEN]).toEqual([0, 4, 5, 5, 5, 5, 5]);
@@ -110,8 +115,8 @@ describe('T-06: Zug ueber die gegnerische Seite', () => {
     expect(gesamtSumme(ergebnis.partie.brett)).toBe(48);
   });
 
-  test('ein sehr langer Zug ueberspringt das gegnerische Haus genau einmal', () => {
-    // 13 Kugeln = eine volle Runde ueber alle erreichbaren Felder.
+  test('ein sehr langer Zug überspringt das gegnerische Haus genau einmal', () => {
+    // 13 Kugeln = eine volle Runde über alle erreichbaren Felder.
     const partie = partieMit([
       [0, 1, 1, 1, 1, 1, 1],
       [13, 0, 0, 0, 0, 0, 29],
@@ -126,13 +131,11 @@ describe('T-06: Zug ueber die gegnerische Seite', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Sonderregel 1: Extrazug
-// ---------------------------------------------------------------------------
+// == 3. Extrazug ============================================================
 
 describe('T-07: letzte Kugel im eigenen Haus', () => {
   test('Extrazug: amZug bleibt beim selben Spieler (Beispiel B1)', () => {
-    // Anhang B1: Sitz unten spielt Mulde 2 aus der Eroeffnung.
+    // REGEL 3.3: Aus Mulde 2 endet der Eröffnungszug im eigenen Haus.
     const { partie, bericht } = zug(startPartie(), 'unten', 2);
 
     expect(partie.brett[UNTEN]).toEqual([4, 4, 0, 5, 5, 5, 1]);
@@ -144,7 +147,7 @@ describe('T-07: letzte Kugel im eigenen Haus', () => {
   });
 
   test('Beispiel B2: der Anschlusszug wechselt das Zugrecht', () => {
-    // Anhang B2 setzt B1 fort: Sitz unten spielt Mulde 5 mit 5 Kugeln.
+    // Der Anschlusszug aus Mulde 5 endet auf der gegnerischen Seite.
     const nachB1 = zug(startPartie(), 'unten', 2).partie;
     const { partie } = zug(nachB1, 'unten', 5);
 
@@ -164,11 +167,9 @@ describe('T-07: letzte Kugel im eigenen Haus', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Sonderregel 2: Klauen
-// ---------------------------------------------------------------------------
+// == 4. Klauen ==============================================================
 
-describe('T-11: Klauen mit gefuellter Gegenmulde (Beispiel B3)', () => {
+describe('T-11: Klauen mit gefüllter Gegenmulde (Beispiel B3)', () => {
   test('Beute und eigene Kugel wandern ins Haus, beide Mulden werden leer', () => {
     // [1,0] = 1 Kugel, [1,1] leer, gegenueber [0,2] = 6 Kugeln.
     const partie = partieMit([
@@ -210,7 +211,7 @@ describe('T-12: Klauen mit leerer Gegenmulde', () => {
 
     expect(bericht.beute).toBeNull();
     expect(neu.brett[UNTEN][1]).toBe(1);    // Kugel bleibt liegen
-    expect(neu.brett[UNTEN][6]).toBe(11);   // Haus unveraendert
+    expect(neu.brett[UNTEN][6]).toBe(11);   // Haus unverändert
     expect(gesamtSumme(neu.brett)).toBe(48);
   });
 });
@@ -235,7 +236,7 @@ describe('T-08: letzte Kugel in leerer gegnerischer Mulde', () => {
 });
 
 describe('T-09: Mulde mit genau 13 Kugeln (Randfall R-01)', () => {
-  test('die letzte Kugel faellt in die geleerte Startmulde und klaut', () => {
+  test('die letzte Kugel fällt in die geleerte Startmulde und klaut', () => {
     const partie = partieMit([
       [0, 1, 1, 1, 1, 1, 1],
       [13, 0, 0, 0, 0, 0, 29],
@@ -244,22 +245,22 @@ describe('T-09: Mulde mit genau 13 Kugeln (Randfall R-01)', () => {
 
     const { partie: neu, bericht } = zug(partie, 'unten', 0);
 
-    // Die Startmulde zaehlt als "war leer" – sie wurde ja zu Beginn geleert.
+    // Die Startmulde zählt als "war leer" – sie wurde ja zu Beginn geleert.
     expect(bericht.beute).toEqual({
       eigeneZelle: [1, 0],
       gegnerZelle: [0, 1],
-      anzahl: 3,          // [0,1] hatte 1 + 1 gesaet = 2, plus eigene Kugel
+      anzahl: 3,          // [0,1] hatte 1 + 1 gesät = 2, plus eigene Kugel
     });
 
     expect(neu.brett[UNTEN][0]).toBe(0);
     expect(neu.brett[OBEN][1]).toBe(0);
-    expect(neu.brett[UNTEN][6]).toBe(33);   // 29 + 1 gesaet + 3 Beute
+    expect(neu.brett[UNTEN][6]).toBe(33);   // 29 + 1 gesät + 3 Beute
     expect(gesamtSumme(neu.brett)).toBe(48);
   });
 });
 
 describe('T-10: Mulde mit mehr als 13 Kugeln (Randfall R-02)', () => {
-  test('die Startmulde wird mitbesaet und ist dann nicht mehr leer', () => {
+  test('die Startmulde wird mitbesät und ist dann nicht mehr leer', () => {
     const partie = partieMit([
       [0, 1, 1, 1, 1, 1, 1],
       [14, 0, 0, 0, 0, 0, 28],
@@ -268,17 +269,16 @@ describe('T-10: Mulde mit mehr als 13 Kugeln (Randfall R-02)', () => {
 
     const { partie: neu, bericht } = zug(partie, 'unten', 0);
 
-    // 14. Kugel landet in [1,1], die schon eine Kugel bekommen hat -> keine Beute.
+    // REGEL 3.4: [1,1] ist beim letzten Einwurf bereits besetzt;
+    // deshalb löst die 14. Kugel kein Klauen aus.
     expect(bericht.beute).toBeNull();
-    expect(neu.brett[UNTEN][0]).toBe(1);    // Startmulde wurde mitbesaet
+    expect(neu.brett[UNTEN][0]).toBe(1);    // Startmulde wurde mitbesät
     expect(neu.brett[UNTEN][1]).toBe(2);
     expect(gesamtSumme(neu.brett)).toBe(48);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Spielende
-// ---------------------------------------------------------------------------
+// == 5. Spielende ===========================================================
 
 describe('T-13: Zug leert die eigene Reihe bei gleichzeitigem Extrazug', () => {
   test('die Partie endet, statt einen Extrazug ins Leere zu geben (R-06)', () => {
@@ -326,7 +326,7 @@ describe('T-14: Zug leert die gegnerische Reihe', () => {
 });
 
 describe('T-15: Endabrechnung', () => {
-  test('nach dem Ende sind alle zwoelf Mulden leer und die Haeuser ergeben 48', () => {
+  test('nach dem Ende sind alle zwölf Mulden leer und die Häuser ergeben 48', () => {
     const partie = partieMit([
       [0, 2, 2, 2, 2, 2, 2],
       [0, 0, 0, 0, 0, 1, 35],
@@ -338,7 +338,7 @@ describe('T-15: Endabrechnung', () => {
     expect(muldenSumme(neu.brett, UNTEN)).toBe(0);
     expect(neu.brett[OBEN][0] + neu.brett[UNTEN][6]).toBe(48);
 
-    // Invariante I-5 aus Konzept 4.8.
+    // REGEL 3.5: Nach der Restabrechnung ist die Partie beendet.
     expect(neu.status).toBe(STATUS.BEENDET);
   });
 });
@@ -364,9 +364,7 @@ describe('T-16: Endstand 24:24', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Zugvalidierung
-// ---------------------------------------------------------------------------
+// == 6. Zugvalidierung ======================================================
 
 describe('T-17: Zug, wenn man nicht am Zug ist', () => {
   test('wird mit NICHT_AM_ZUG abgelehnt', () => {
@@ -377,7 +375,7 @@ describe('T-17: Zug, wenn man nicht am Zug ist', () => {
     expect(ergebnis.code).toBe(FEHLER.NICHT_AM_ZUG);
   });
 
-  test('eine beendete Partie nimmt keine Zuege mehr an', () => {
+  test('eine beendete Partie nimmt keine Züge mehr an', () => {
     const partie = { ...startPartie(), status: STATUS.BEENDET };
     expect(fuehreZugAus(partie, 'unten', 0).code).toBe(FEHLER.PARTIE_NICHT_AKTIV);
   });
@@ -398,7 +396,7 @@ describe('T-18: Zug auf eine leere eigene Mulde', () => {
 });
 
 describe('T-19: unbrauchbare Muldennummern', () => {
-  // Genau die Werte, die ein manipulierter Client schicken koennte.
+  // Genau die Werte, die ein manipulierter Client schicken könnte.
   const schlechteWerte = [6, -1, 1.5, '2', null, undefined, NaN, Infinity, {}, []];
 
   test.each(schlechteWerte)('%p wird mit MULDE_UNGUELTIG abgelehnt', (wert) => {
@@ -412,12 +410,10 @@ describe('T-19: unbrauchbare Muldennummern', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reinheit und Zufallstest
-// ---------------------------------------------------------------------------
+// == 7. Reinheit und Zufallstest ============================================
 
-describe('T-22: fuehreZugAus veraendert die Eingabe nicht', () => {
-  test('Ausgangsbrett und Ausgangspartie bleiben unberuehrt', () => {
+describe('T-22: fuehreZugAus verändert die Eingabe nicht', () => {
+  test('Ausgangsbrett und Ausgangspartie bleiben unberührt', () => {
     const partie = startPartie();
     const vorher = JSON.stringify(partie);
 
@@ -444,13 +440,12 @@ describe('T-22: fuehreZugAus veraendert die Eingabe nicht', () => {
   });
 });
 
-describe('T-20: Zufallstest ueber vollstaendige Partien', () => {
+describe('T-20: Zufallstest über vollständige Partien', () => {
   /**
-   * Spielt ganze Partien mit zufaellig gewaehlten GUELTIGEN Zuegen und prueft
-   * nach jedem Zug alle Invarianten. Findet Fehlerkombinationen, an die man
-   * beim Schreiben einzelner Testfaelle nicht denkt (Konzept 10.3).
+   * Zufällige gültige Züge verbinden mehrere Regeln in einem Ablauf.
+   * Nach jedem Zug müssen Kugelzahl, Feldwerte und Sitz weiterhin stimmen.
    */
-  test('die Invarianten halten ueber 200 Zuege', () => {
+  test('die Invarianten halten über 200 Züge', () => {
     let partie = startPartie();
     let gespielteZuege = 0;
     let beendetePartien = 0;
@@ -463,8 +458,8 @@ describe('T-20: Zufallstest ueber vollstaendige Partien', () => {
 
       const zuege = moeglicheZuege(partie, partie.amZug);
 
-      // Solange die Partie laeuft, muss der Spieler am Zug etwas spielen
-      // koennen – sonst haette die Endeerkennung versagt.
+      // Solange die Partie läuft, muss der Spieler am Zug etwas spielen
+      // können – sonst hätte die Endeerkennung versagt.
       expect(zuege.length).toBeGreaterThan(0);
 
       const gewaehlt = zuege[Math.floor(Math.random() * zuege.length)];
@@ -474,21 +469,20 @@ describe('T-20: Zufallstest ueber vollstaendige Partien', () => {
       partie = ergebnis.partie;
       gespielteZuege += 1;
 
-      // I-1 und I-2 nach jedem einzelnen Zug.
+      // Kein Zug darf Kugeln verlieren oder negative Zahlen erzeugen.
       expect(gesamtSumme(partie.brett)).toBe(48);
       expect(partie.brett.flat().every((feld) => feld >= 0)).toBe(true);
       expect(['unten', 'oben']).toContain(partie.amZug);
     }
 
     expect(gespielteZuege).toBe(200);
-    // Bei 200 Zuegen muss mindestens eine Partie zu Ende gegangen sein –
-    // sonst laeuft die Endeerkennung nie an.
+    // Die Stichprobe soll auch den Übergang zur nächsten Partie prüfen.
     expect(beendetePartien).toBeGreaterThan(0);
   });
 });
 
 describe('pruefeZug ohne Seiteneffekte', () => {
-  test('liefert die Zelle, aber veraendert nichts', () => {
+  test('liefert die Zelle, aber verändert nichts', () => {
     const partie = startPartie();
     const vorher = JSON.stringify(partie.brett);
 
@@ -505,10 +499,7 @@ describe('pruefeZug ohne Seiteneffekte', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Sicherheitsnetz vor dem Umbau: Fälle, die bisher nur mit Sitz unten oder
-// nur indirekt (über die Handler) geprüft waren.
-// ---------------------------------------------------------------------------
+// == 8. Beschädigte Bretter und beide Sitze =================================
 
 describe('T-23: kaputtes Brett im Zug', () => {
   test('49 Kugeln: der Zug wird mit INTERNER_FEHLER und Begründung abgelehnt', () => {

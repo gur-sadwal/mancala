@@ -1,11 +1,15 @@
 /**
- * Tests der Ereignis-Handler (server/socket/handlers.js).
+ * handlers.test.js – Nachrichten, Partieabläufe und Absturzschutz.
  *
- * Ohne echten Server und ohne Netzwerk: `io` und die Sockets sind kleine
- * Attrappen, die sich jede gesendete Nachricht merken. Lobby, Manager und
- * Ratenbegrenzer sind die echten Module. So laesst sich pruefen, was die
- * Handler an wen schicken – und dass der Prozess bei Unsinn nicht stirbt.
+ * Socket-Attrappen merken sich Antworten; Lobby, Manager und
+ * Ratenbegrenzung sind echte Module. Fehler lassen sich gezielt auslösen.
+ *
+ * Inhalt:
+ *   == 1. Testaufbau
+ *   == 2. Testfälle
  */
+
+// == 1. Testaufbau ==========================================================
 
 import { erzeugeHandler } from '../server/socket/handlers.js';
 import { erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
@@ -14,9 +18,8 @@ import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
 import { EREIGNIS, FEHLER, GRUND, GRENZEN, STATUS } from '../shared/protokoll.js';
 
 /*
- * Die Handler protokollieren jeden Schritt (Konzept 7.10). Im Test waere das
- * nur Rauschen – die Zeilen werden deshalb gesammelt statt ausgegeben. Ein
- * Test prueft damit sogar, dass ein Fehler protokolliert wurde.
+ * Die Protokollausgabe wird gesammelt, damit sie den Testlauf nicht
+ * überlagert. Fehlerfälle prüfen zusätzlich, dass ein Eintrag entsteht.
  */
 const protokoll = [];
 const echteKonsole = { log: console.log, warn: console.warn, error: console.error };
@@ -43,7 +46,7 @@ function imProtokoll(text) {
 
 /**
  * Baut eine Testumgebung: echte Lobby und echter Manager, dazu eine Attrappe
- * fuer `io`, die Raeume kennt und Nachrichten an die Sockets verteilt.
+ * für `io`, die Räume kennt und Nachrichten an die Sockets verteilt.
  *
  * Lobby, Manager und Ratenbegrenzer lassen sich ersetzen – etwa durch eine
  * Lobby, die absichtlich wirft, oder einen Ratenbegrenzer mit kleiner Grenze.
@@ -95,12 +98,12 @@ function erzeugeUmgebung({
         raeume.get(raum)?.delete(id);
       },
 
-      // --- Hilfen fuer die Tests ---
+      // --- Hilfen für die Tests ---
       /** Schickt ein Ereignis "vom Browser" an den Server. */
       sende(ereignis, daten) {
         angemeldet.get(ereignis)(daten);
       },
-      /** Tab zu: Wie bei Socket.io ist der Socket weg, BEVOR `disconnect` laeuft. */
+      // Socket.io entfernt die Kennung vor dem disconnect-Handler.
       trenne() {
         sockets.delete(id);
         angemeldet.get('disconnect')('transport close');
@@ -154,6 +157,8 @@ function privatesSpiel() {
   return { ...umgebung, anna, code: anna.letzte(EREIGNIS.PRIVAT).daten.code };
 }
 
+// == 2. Testfälle ===========================================================
+
 describe('Handler: Revanche nach jedem Spiel', () => {
   test('nach einer Aufgabe im schnellen Spiel wird beiden eine Revanche angeboten', () => {
     const { anna, ben } = schnellesSpiel();
@@ -173,7 +178,7 @@ describe('Handler: Revanche nach jedem Spiel', () => {
 
     // Wer unten sitzt, beginnt. Das Brett wird so gestellt, dass sein Zug aus
     // Mulde 5 die letzte Kugel ins eigene Haus legt und damit die eigene Reihe
-    // leert – die Partie endet regulaer. Summe weiterhin 48.
+    // leert – die Partie endet regulär. Summe weiterhin 48.
     const unten = anna.letzte(EREIGNIS.START).daten.sitz === 'unten' ? anna : ben;
     manager.holeNachSocket(unten.id).brett = [
       [15, 2, 2, 2, 2, 2, 2],   // oben: Haus 15, sechs Mulden mit je 2
@@ -224,7 +229,7 @@ describe('Handler: Revanche-Frist', () => {
     expect(ben.letzte(EREIGNIS.REVANCHE_ABGELAUFEN)).toBeUndefined();
   });
 
-  test('nach Ablauf erfahren es beide, und ein spaeter Wunsch startet nichts', () => {
+  test('nach Ablauf erfahren es beide, und ein später Wunsch startet nichts', () => {
     const { anna, ben, handler } = schnellesSpiel();
     anna.sende(EREIGNIS.AUFGEBEN);
     anna.sende(EREIGNIS.REVANCHE);   // Anna wollte, Ben hat nicht reagiert
@@ -234,7 +239,7 @@ describe('Handler: Revanche-Frist', () => {
     expect(anna.letzte(EREIGNIS.REVANCHE_ABGELAUFEN)).toBeDefined();
     expect(ben.letzte(EREIGNIS.REVANCHE_ABGELAUFEN)).toBeDefined();
 
-    // Ben drueckt zu spaet: keine neue Partie.
+    // Ben drückt zu spät: keine neue Partie.
     ben.sende(EREIGNIS.REVANCHE);
     expect(ben.letzte(EREIGNIS.REVANCHE_WEG)).toBeDefined();
     expect(ben.alle(EREIGNIS.START)).toHaveLength(1);
@@ -256,7 +261,7 @@ describe('Handler: gleiche Namen', () => {
 });
 
 describe('Handler: Absturzsicherung', () => {
-  test('Muell-Nutzdaten werden abgelehnt – nur beim Verursacher, ohne Absturz', () => {
+  test('Müll-Nutzdaten werden abgelehnt – nur beim Verursacher, ohne Absturz', () => {
     const { anna, ben, manager } = schnellesSpiel();
     const muell = [undefined, null, 42, 'zug', [], { mulde: '3' }, { mulde: 99 }, { mulde: -1 }, { mulde: 2.5 }];
 
@@ -266,7 +271,7 @@ describe('Handler: Absturzsicherung', () => {
 
     const fehler = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
     expect(fehler).toEqual(muell.map(() => FEHLER.NUTZDATEN_UNGUELTIG));
-    // Der Gegner erfaehrt davon nichts, und die Partie laeuft weiter.
+    // Der Gegner erfährt davon nichts, und die Partie läuft weiter.
     expect(ben.alle(EREIGNIS.FEHLER)).toHaveLength(0);
     expect(manager.holeNachSocket('a')).not.toBeNull();
   });
@@ -470,7 +475,8 @@ describe('Handler: Abbrechen', () => {
 
     anna.sende(EREIGNIS.ABBRECHEN);   // der Klick war unterwegs, als START kam
 
-    expect(anna.empfangen.length).toBe(vorher);   // keine Antwort, auch kein Fehler
+    // keine Antwort, auch kein Fehler
+    expect(anna.empfangen.length).toBe(vorher);
     expect(anna.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
     expect(manager.holeNachSocket('a')).not.toBeNull();
@@ -487,7 +493,8 @@ describe('Handler: Abbrechen', () => {
 
     ben.sende(EREIGNIS.ABBRECHEN);  // Ben schloss den Dialog, bevor START ankam
 
-    expect(anna.alle(EREIGNIS.ABBRUCH)).toHaveLength(1);   // nur die erste Partie
+    // nur die erste Partie
+    expect(anna.alle(EREIGNIS.ABBRUCH)).toHaveLength(1);
     expect(manager.holeNachSocket('b')).not.toBeNull();
   });
 
@@ -804,7 +811,8 @@ describe('Handler: Ratenbegrenzung', () => {
 describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
   test('scheitert auch das Aufräumen, läuft der Server weiter', () => {
     const { amZug, manager } = schnellesSpiel();
-    manager.holeNachSocket(amZug.id).brett = null;   // simulierter Programmierfehler
+    // simulierter Programmierfehler
+    manager.holeNachSocket(amZug.id).brett = null;
 
     expect(() => amZug.sende(EREIGNIS.ZUG, { mulde: 0 })).not.toThrow();
 
@@ -955,7 +963,8 @@ describe('Handler: Aufräumen nach Fristen', () => {
       spieler.sende(EREIGNIS.BEITRETEN, { name: spieler.id });
     }
     lobby.beitreten('e', 'Emil', 0);                   // wartet seit 1970
-    manager.holeNachSocket('a').brett = null;          // Programmierfehler in Partie 1
+    // Programmierfehler in Partie 1
+    manager.holeNachSocket('a').brett = null;
     manager.holeNachSocket('a').letzteAktivitaet = 0;
     manager.holeNachSocket('c').letzteAktivitaet = 0;
 
@@ -1192,7 +1201,8 @@ describe('Handler: Erneut – weitere Fälle', () => {
     anna.sende(EREIGNIS.ERNEUT, { name: 'Anna' });
 
     expect(anna.letzte(EREIGNIS.WARTESCHLANGE).daten).toEqual({ position: 1 });
-    expect(anna.letzte(EREIGNIS.PRIVAT).daten.code).toBe(code);   // kein neuer Code
+    // kein neuer Code
+    expect(anna.letzte(EREIGNIS.PRIVAT).daten.code).toBe(code);
   });
 });
 
