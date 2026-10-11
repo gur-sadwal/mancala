@@ -32,7 +32,8 @@ export function erzeugeStore() {
 
   const abonnenten = new Set();
 
-  // Flache Kopie: Die Felder selbst sollen nicht von außen ersetzt werden.
+  // Flache Kopie schützt die obersten Felder. Enthaltene Objekte bleiben
+  // geteilt und werden von den Ansichten nur gelesen.
   function lies() {
     return { ...zustand };
   }
@@ -70,9 +71,11 @@ export function verbinde(rueckrufe) {
   // Seitenweite Listener: Servernachrichten können in jeder Ansicht eintreffen.
   socket.on('connect', () => rueckrufe.beiVerbindung?.());
   socket.on('disconnect', (grund) => rueckrufe.beiTrennung?.(grund));
-  socket.on('connect_error', (fehler) => rueckrufe.beiTrennung?.(fehler.message));
+  socket.on('connect_error',
+    (fehler) => rueckrufe.beiTrennung?.(fehler.message));
 
-  socket.on(EREIGNIS.WARTESCHLANGE, (daten) => rueckrufe.beiWarteschlange?.(daten));
+  socket.on(EREIGNIS.WARTESCHLANGE,
+    (daten) => rueckrufe.beiWarteschlange?.(daten));
   socket.on(EREIGNIS.PRIVAT, (daten) => rueckrufe.beiPrivat?.(daten));
   socket.on(EREIGNIS.START, (daten) => rueckrufe.beiStart?.(daten));
   socket.on(EREIGNIS.STAND, (daten) => rueckrufe.beiStand?.(daten));
@@ -81,10 +84,12 @@ export function verbinde(rueckrufe) {
   socket.on(EREIGNIS.FEHLER, (daten) => rueckrufe.beiFehler?.(daten));
   socket.on(EREIGNIS.REVANCHE_ANGEBOT, () => rueckrufe.beiRevancheAngebot?.());
   socket.on(EREIGNIS.REVANCHE_WEG, () => rueckrufe.beiRevancheWeg?.());
-  socket.on(EREIGNIS.REVANCHE_ABGELAUFEN, () => rueckrufe.beiRevancheAbgelaufen?.());
+  socket.on(EREIGNIS.REVANCHE_ABGELAUFEN,
+    () => rueckrufe.beiRevancheAbgelaufen?.());
 
   // SCHUTZ: Vor dem Einfrieren schließen; ein alter WebSocket überlebt den
-  // Zurück-Cache nicht zuverlässig. Die Ansichts-Listener bleiben bestehen.
+  // Zurück-Cache nicht zuverlässig. Bei Cache-Rückkehr neu verbinden; main.js
+  // führt dann zur Anmeldung. Die Ansichts-Listener bleiben bestehen.
   window.addEventListener('pagehide', () => socket.disconnect());
   window.addEventListener('pageshow', (ereignis) => {
     if (ereignis.persisted) socket.connect();
@@ -107,6 +112,5 @@ export function verbinde(rueckrufe) {
     aufgeben: () => socket.emit(EREIGNIS.AUFGEBEN),
     erneut: () => socket.emit(EREIGNIS.ERNEUT, { name: letzterName }),
     revanche: () => socket.emit(EREIGNIS.REVANCHE),
-
   };
 }

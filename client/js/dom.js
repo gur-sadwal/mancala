@@ -16,7 +16,9 @@ export function $(auswahl, wurzel = document) {
 }
 
 // Erzeugt ein Element mit Klassen, Text, Attributen und Kindern.
-export function erzeuge(tag, { klassen = [], text, attribute = {} } = {}, kinder = []) {
+export function erzeuge(
+  tag, { klassen = [], text, attribute = {} } = {}, kinder = [],
+) {
   const element = document.createElement(tag);
 
   if (klassen.length > 0) element.classList.add(...klassen);
@@ -51,8 +53,8 @@ export function warte(ms) {
   return new Promise((fertig) => setTimeout(fertig, ms));
 }
 
-// Aufrunden: 0,4 Sekunden Rest werden noch als 1 angezeigt. Grenze: 0 bis
-// Dauer.
+// Aufrunden hält 0,4 Sekunden Rest als 1 sichtbar. Die Grenzen verhindern
+// negative Restzeit und mehr als die volle Dauer bei zurückgestellter Uhr.
 export function restSekunden(startMs, jetztMs, dauerSek) {
   const rest = Math.ceil(dauerSek - (jetztMs - startMs) / 1000);
   return Math.min(dauerSek, Math.max(0, rest));

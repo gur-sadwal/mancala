@@ -23,13 +23,13 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
 
   let einladung = null;
 
-  // Speicher ist optional: Ein gesperrter Browser-Speicher darf nicht
-  // blockieren.
+  // Der gemerkte Name ist optional; gesperrter Speicher darf die Anmeldung
+  // nicht verhindern.
   try {
     const gemerkt = window.localStorage.getItem(SPEICHER_NAME);
     if (gemerkt) feldName.value = gemerkt;
   } catch {
-    // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
+    // Ein Name lässt sich auch ohne gespeicherten Wert eingeben.
   }
 
   // == 2. Formularaktionen =================================================
@@ -54,7 +54,8 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
 
   // Beim Anzeigen neu lesen: main.js entfernt verbrauchte oder ungültige Links.
   function aktualisiereEinladung() {
-    einladung = new URLSearchParams(window.location.search).get('spiel') || null;
+    einladung = new URLSearchParams(window.location.search).get('spiel')
+      || null;
 
     zeige(umschalter, !einladung);
     zeige(einladungHinweis, Boolean(einladung));
@@ -66,7 +67,9 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     ereignis.preventDefault();
 
     // Verbotene Zeichen erklären, statt den Namen unbemerkt zu verändern.
-    const verboten = [...feldName.value].some((zeichen) => NAME_VERBOTEN.includes(zeichen));
+    const verboten = [...feldName.value].some(
+      (zeichen) => NAME_VERBOTEN.includes(zeichen),
+    );
     if (verboten) {
       zeigeFehler('Die Zeichen < und > sind im Namen nicht erlaubt.');
       feldName.focus();
@@ -87,7 +90,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     try {
       window.localStorage.setItem(SPEICHER_NAME, name);
     } catch {
-      // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
+      // Der Name gilt trotzdem für diese Anmeldung; nur das Merken entfällt.
     }
 
     // Nur dieser Absende-Listener reicht den fertig bereinigten Namen weiter.
@@ -106,8 +109,8 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     formular.removeEventListener('change', aktualisiereKnopf);
   }
 
-  // Listener nur während der sichtbaren Ansicht; gleiche Referenz verhindert
-  // Doppelung.
+  // Listener gelten nur für die sichtbare Ansicht. Gleiche Rückrufe werden
+  // auch bei wiederholtem Zeichnen nicht doppelt angemeldet.
   return {
     zeige(sichtbar) {
       // Fokus und Fehlertext nur beim echten Wechsel anfassen, nicht bei jedem

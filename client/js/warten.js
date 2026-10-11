@@ -33,9 +33,14 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
 
     try {
       await navigator.clipboard.writeText(feldLink.value);
-      setzeText(kopierStatus, 'Link kopiert! Schicke ihn jetzt deinem Mitspieler.');
+      setzeText(
+        kopierStatus, 'Link kopiert! Schicke ihn jetzt deinem Mitspieler.',
+      );
     } catch {
-      setzeText(kopierStatus, 'Kopieren ging nicht. Der Link ist markiert – kopiere ihn mit Cmd+C bzw. Strg+C.');
+      setzeText(
+        kopierStatus,
+        'Kopieren ging nicht. Der Link ist markiert – kopiere ihn mit Cmd+C bzw. Strg+C.',
+      );
     }
   }
 
@@ -76,7 +81,9 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       if (einladung) {
         // Der eigene Seitenpfad bleibt erhalten; nur der Einladungscode kommt
         // dazu.
-        feldLink.value = `${window.location.origin}${window.location.pathname}?spiel=${einladung}`;
+        feldLink.value = `${window.location.origin}${
+          window.location.pathname
+        }?spiel=${einladung}`;
         setzeText(positionAnzeige, 'Dein privates Spiel ist bereit.');
       } else if (typeof position === 'number') {
         setzeText(

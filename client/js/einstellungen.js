@@ -1,7 +1,7 @@
 /**
  * einstellungen.js – größere Schrift und weniger Animation.
- * Einstellungen bleiben in localStorage; das CSS liest Attribute am
- * html-Element.
+ * localStorage merkt die Wahl, falls verfügbar. Das CSS liest die Attribute
+ * am html-Element; die Bewegungsabfrage in dom.js liest sie ebenfalls.
  * Inhalt: == 1. Gespeicherte Werte · == 2. Dialog
  * Benutzt von main.js; benutzt dom.js.
  */
@@ -11,8 +11,8 @@ import { $ } from './dom.js';
 // == 1. Gespeicherte Werte ================================================
 const SPEICHER_EINSTELLUNGEN = 'mancala.einstellungen';
 
-// Kaputter Text gilt als erster Besuch; fehlende bekannte Werte erhalten den
-// Standard.
+// null öffnet den Erstbesuch-Dialog. Ungültiger Speichertext gilt ebenfalls
+// als erster Besuch; fehlende bekannte Werte erhalten den Standard.
 export function ausSpeichertext(text, standard) {
   if (text === null) return null;
 
@@ -48,7 +48,9 @@ export function erzeugeEinstellungen() {
 
   function lies() {
     try {
-      return ausSpeichertext(window.localStorage.getItem(SPEICHER_EINSTELLUNGEN), standard);
+      return ausSpeichertext(
+        window.localStorage.getItem(SPEICHER_EINSTELLUNGEN), standard,
+      );
     } catch {
       return null;
     }
@@ -56,7 +58,9 @@ export function erzeugeEinstellungen() {
 
   function speichere(einstellungen) {
     try {
-      window.localStorage.setItem(SPEICHER_EINSTELLUNGEN, JSON.stringify(einstellungen));
+      window.localStorage.setItem(
+        SPEICHER_EINSTELLUNGEN, JSON.stringify(einstellungen),
+      );
     } catch {
       // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
     }
@@ -92,8 +96,8 @@ export function erzeugeEinstellungen() {
     wendeAn(ausFormular());
   }
 
-  // Auch Esc speichert, was bereits sichtbar wirkte; sonst öffnet der
-  // Erstbesuch erneut.
+  // Auch Esc übernimmt die bereits sichtbare Wahl. Ein gespeicherter Standard
+  // verhindert, dass der Erstbesuch-Dialog beim Neuladen wieder erscheint.
   function beiSchliessen() {
     aktuell = ausFormular();
     wendeAn(aktuell);

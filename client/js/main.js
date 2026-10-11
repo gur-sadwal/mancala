@@ -24,13 +24,15 @@ const verbindungshinweis = $('#verbindungshinweis');
 // Ende-Nachrichten warten auf diese letzte Zuganimation.
 let letzteAnimation = Promise.resolve();
 
-// Ein später abgelehnter Klick darf das eintreffende Ergebnis nicht verdrängen.
+// Eine verspätete Meldung KEINE_PARTIE darf das bereits eintreffende Ergebnis
+// nicht durch die Anmeldung ersetzen.
 let partieVorbei = false;
 
 // Die erste Verbindung braucht keinen Hinweis auf verlorene Warteplätze.
 let warSchonVerbunden = false;
 
-// SCHUTZ: Eine neue Nummer macht wartende alte Endabläufe ungültig.
+// SCHUTZ: Start, neue Suche und Rückkehr zur Anmeldung erhöhen diese Nummer.
+// Nach einem await dürfen alte Endabläufe dann keinen Dialog mehr öffnen.
 let ablaufNr = 0;
 
 // Socket-Nachrichten treffen erst nach Einrichtung aller Ansichten ein.
@@ -60,7 +62,9 @@ function beiVerbindung() {
   if (warSchonVerbunden && hingAmServer) {
     zurueckZurAnmeldung();
 
-    anmeldeAnsicht.melde('Die Verbindung war unterbrochen. Bitte tritt erneut bei.');
+    anmeldeAnsicht.melde(
+      'Die Verbindung war unterbrochen. Bitte tritt erneut bei.',
+    );
   }
 
   warSchonVerbunden = true;
@@ -101,7 +105,9 @@ function beiStart({ sitz, spielstand }) {
 function beiStand({ spielstand, bericht }) {
   if (spielstand.status !== STATUS.LAEUFT) markierePartieVorbei();
   store.setze({ spielstand });
-  letzteAnimation = warteAufAnimation(spielAnsicht.spieleZug(bericht, spielstand));
+  letzteAnimation = warteAufAnimation(
+    spielAnsicht.spieleZug(bericht, spielstand),
+  );
 }
 
 // Die Revanche-Frist beginnt beim Empfang, bevor die Animation fertig ist.
@@ -133,7 +139,9 @@ async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
   store.setze({
     ansicht: ANSICHT.ENDE,
     spielstand: spielstand ?? store.lies().spielstand,
-    ergebnis: ergebnis ?? { punkte: { unten: 0, oben: 0 }, sieger: REMIS, grund },
+    ergebnis: ergebnis ?? {
+      punkte: { unten: 0, oben: 0 }, sieger: REMIS, grund,
+    },
     revanche: revancheStand(revanche),
     revancheSeit,
   });
@@ -239,7 +247,9 @@ async function warteAufAnimation(animation = letzteAnimation) {
   try {
     await animation;
   } catch (fehler) {
-    console.error('Zug-Animation gescheitert – zeige trotzdem das Ergebnis.', fehler);
+    console.error(
+      'Zug-Animation gescheitert – zeige trotzdem das Ergebnis.', fehler,
+    );
   }
 }
 
@@ -250,12 +260,14 @@ function revancheStand(moeglich) {
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
-  // Sofort warten: Ein fremdes Ereignis darf den alten Dialog nicht erneut
-  // öffnen.
+  // Sofort warten: Verspätete Revanche-Nachrichten des alten Gegners dürfen
+  // den Ergebnisdialog während der neuen Suche nicht erneut öffnen.
   beiNeuemSpiel() {
     ablaufNr += 1;
     partieVorbei = false;
-    store.setze({ ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null });
+    store.setze({
+      ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null,
+    });
     aktionen.erneut();
   },
 
@@ -271,7 +283,6 @@ const endeAnsicht = erzeugeEndeAnsicht({
 
   beiSchliessen() {
     aktionen.abbrechen();
-
     zurueckZurAnmeldung();
   },
 });
@@ -320,6 +331,6 @@ store.setze({ ansicht: ANSICHT.ANMELDEN });
 
 einstellungen.zeigeBeimErstenBesuch();
 
-// ACHTUNG: Erst nach erfolgreicher Einrichtung ausblenden. Bei Ladefehlern
-// bleibt er.
+// ACHTUNG: Den Ladehinweis erst nach erfolgreicher Einrichtung ausblenden.
+// Bei einem Fehler davor bleibt die Erklärung sichtbar.
 zeige($('#ladehinweis'), false);

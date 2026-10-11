@@ -4,7 +4,7 @@
  * Inhalt: == 1. Anzeigeordnung und Zeiten · == 2. Sicht
  *         == 3. Brett aufbauen · == 4. Zeichnen · == 5. Animation
  *         == 6. Ansicht: Klicks, Tasten und Aufgeben
- * Benutzt von main.js; reine Helfer werden zusätzlich in Jest geprüft.
+ * Benutzt von main.js; benutzt dom.js. Reine Helfer prüft zusätzlich Jest.
  */
 
 import {
@@ -17,9 +17,12 @@ import {
   wenigerBewegung,
 } from './dom.js';
 
-// ACHTUNG: Der DOM-Helfer heißt zeigeElement, weil die Ansicht selbst zeige hat.
+// ACHTUNG: zeigeElement benennt den DOM-Helfer eindeutig. Die Ansicht hat
+// ebenfalls eine Funktion zeige; ohne Alias würde sie sich selbst aufrufen.
 
 // == 1. Anzeigeordnung und Zeiten =========================================
+// Die DOM-Reihenfolge bleibt für beide Sitze gleich. baueBrett übersetzt diese
+// Anzeigekoordinaten zurück in die Server-Sicht.
 const ANZEIGE_REIHENFOLGE = [
   [0, 0],
   [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6],
@@ -37,6 +40,8 @@ const TAKT_HINWEIS = 640;
 const TAKT_ABRECHNUNG = 700;
 
 // == 2. Sicht ============================================================
+// Der Sitz oben braucht eine halbe Drehung. Das Serverbrett selbst bleibt
+// unverändert; nur die Koordinaten wechseln die Sicht.
 export function ausSicht(sitz, [reihe, spalte]) {
   return sitz === 'unten' ? [reihe, spalte] : [1 - reihe, 6 - spalte];
 }
@@ -53,7 +58,6 @@ export function rolleVon(sitz, zelle) {
 
   return spalte === 0
     ? { art: 'haus', seite: 'gegner', pos: null }
-
     : { art: 'mulde', seite: 'gegner', pos: 6 - spalte };
 }
 
@@ -128,7 +132,9 @@ function erzeugeHaus(rolle) {
 function erzeugeMulde(rolle, alsButton) {
   const tag = alsButton ? 'button' : 'div';
 
-  const attribute = alsButton ? { type: 'button', 'data-mulde': rolle.pos } : {};
+  const attribute = alsButton
+    ? { type: 'button', 'data-mulde': rolle.pos }
+    : {};
 
   const kinder = [
     erzeuge('span', { klassen: ['kugeln'] }),
@@ -136,7 +142,9 @@ function erzeugeMulde(rolle, alsButton) {
   ];
 
   if (alsButton) {
-    kinder.push(erzeuge('span', { klassen: ['mulde__taste'], text: rolle.pos + 1 }));
+    kinder.push(erzeuge('span', {
+      klassen: ['mulde__taste'], text: rolle.pos + 1,
+    }));
   }
 
   return erzeuge(tag, {
@@ -207,7 +215,9 @@ function zeichneStand(elemente, spielstand, sitz) {
 
   const eigenerName = spielstand.spieler[sitz].name;
   const gegnerName = spielstand.spieler[gegnerSitz].name;
-  setzeText(elemente.nameEigen, eigenerName === gegnerName ? 'Du' : eigenerName);
+  setzeText(
+    elemente.nameEigen, eigenerName === gegnerName ? 'Du' : eigenerName,
+  );
   setzeText(elemente.nameGegner, gegnerName);
 
   schalte(elemente.standEigen, 'stand__spieler--dran', ichBinDran);
@@ -235,7 +245,9 @@ export function hinweisText(bericht, sitz) {
       : `Gegner klaut! ${anzahl} Kugeln wandern in sein Haus.`;
   }
   if (bericht.extrazug) {
-    return ichWars ? 'Extrazug! Du bist noch einmal dran.' : 'Extrazug für den Gegner.';
+    return ichWars
+      ? 'Extrazug! Du bist noch einmal dran.'
+      : 'Extrazug für den Gegner.';
   }
   return '';
 }
@@ -246,8 +258,12 @@ export function hausVon(sitz) {
 }
 
 // Jedes Bild besitzt seine eigene Brettkopie; spätere Schritte ändern es nicht.
-function animationsbild(brett, hervorheben = [], klasse = '', dauer = TAKT_SAAT) {
-  return { brett: brett.map((reihe) => [...reihe]), hervorheben, klasse, dauer };
+function animationsbild(
+  brett, hervorheben = [], klasse = '', dauer = TAKT_SAAT,
+) {
+  return {
+    brett: brett.map((reihe) => [...reihe]), hervorheben, klasse, dauer,
+  };
 }
 
 // Nur den gelieferten Pfad abzeichnen, keine Zugprüfung oder Siegerrechnung.
@@ -260,7 +276,9 @@ export function schritteDesZuges(bericht) {
   // REGEL 3.2: Ein Bild je gesäter Kugel im vom Server gelieferten Pfad.
   for (const [zielReihe, zielSpalte] of bericht.pfad) {
     brett[zielReihe][zielSpalte] += 1;
-    bilder.push(animationsbild(brett, [[zielReihe, zielSpalte]], 'zelle--saat'));
+    bilder.push(animationsbild(
+      brett, [[zielReihe, zielSpalte]], 'zelle--saat',
+    ));
   }
   if (bericht.beute) {
     const { eigeneZelle, gegnerZelle, anzahl } = bericht.beute;
@@ -322,7 +340,9 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     try {
       await spieleBilder(bericht, meineNr);
     } catch (fehler) {
-      console.error('Zug-Animation gescheitert – zeige den Serverstand.', fehler);
+      console.error(
+        'Zug-Animation gescheitert – zeige den Serverstand.', fehler,
+      );
     }
     if (meineNr !== laufNr) return false;
     zeichneBrett(zellen, spielstand.brett, sitz, spielstand.amZug === sitz);
@@ -362,9 +382,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   };
 
   let zellen = null;
-
   let animator = null;
-
   let sitz = null;
 
   // Lokale Doppelklicks sperren; verbindlich prüft weiterhin der Server jeden
@@ -384,7 +402,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
     if (!fokusVerloren) return;
 
-    const zuletzt = brettElement.querySelector(`button[data-mulde="${letzteMulde}"]`);
+    const zuletzt = brettElement.querySelector(
+      `button[data-mulde="${letzteMulde}"]`,
+    );
     const ziel = zuletzt && !zuletzt.disabled
       ? zuletzt
       : brettElement.querySelector('button.mulde:not(:disabled)');
@@ -477,8 +497,8 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
   // ACHTUNG: animationName ruetteln steht in css/07-zustaende.css.
   function beiRuettelnEnde(ereignis) {
-    // Kugel-Animationen steigen auf; sie dürfen den Mulden-Listener nicht
-    // verbrauchen.
+    // animationend steigt von Kugeln zur Mulde auf. Nur das Ende ihres eigenen
+    // Rüttelns darf die Fehlerklasse und diesen Listener entfernen.
     if (ereignis.target !== ereignis.currentTarget
       || ereignis.animationName !== 'ruetteln') return;
     const mulde = ereignis.currentTarget;

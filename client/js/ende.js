@@ -14,7 +14,9 @@ const SPEICHER_BILANZ = 'mancala.bilanz';
 // sessionStorage überlebt Neuladen; fehlender Speicher darf nicht blockieren.
 function leseBilanz() {
   try {
-    return bilanzAusSpeichertext(window.sessionStorage.getItem(SPEICHER_BILANZ));
+    return bilanzAusSpeichertext(
+      window.sessionStorage.getItem(SPEICHER_BILANZ),
+    );
   } catch {
     return bilanzAusSpeichertext(null);
   }
@@ -61,7 +63,9 @@ export function revancheText(stand, rest) {
     case 'moeglich':
       return `Noch ${rest} s für eine Revanche.`;
     case 'gewuenscht':
-      return `Warte, ob dein Gegner auch eine Revanche möchte … (noch ${rest} s)`;
+      return (
+        `Warte, ob dein Gegner auch eine Revanche möchte … (noch ${rest} s)`
+      );
     case 'angeboten':
       return `Dein Gegner möchte eine Revanche! (noch ${rest} s)`;
     case 'weg':
@@ -80,7 +84,8 @@ export function ohneWertung(grund) {
     || grund === GRUND.ZU_LANGE_KEIN_ZUG;
 }
 
-// REGEL 3.5: Das reguläre Ende rechnet die verbliebenen Kugeln ab.
+// REGEL 3.5: Beim regulären Ende erklärt der Text die Endabrechnung, die der
+// Server bereits durchgeführt hat.
 export function grundText(grund, gewonnen) {
   switch (grund) {
     case GRUND.GEGNER_WEG:
@@ -100,7 +105,9 @@ export function grundText(grund, gewonnen) {
 }
 
 // == 3. Dialog und Revanche ===============================================
-export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, beiSchliessen }) {
+export function erzeugeEndeAnsicht({
+  beiNeuemSpiel, beiAbmelden, beiRevanche, beiSchliessen,
+}) {
   const dialog = $('#dialog-ende');
   const titel = $('#t-ende');
   const grundAnzeige = $('#ende-grund');
@@ -122,7 +129,8 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
 
   const bilanz = leseBilanz();
 
-  // Wiederholtes Zeichnen desselben Ergebnisses darf die Bilanz nicht erhöhen.
+  // Bei geänderter Revanche reicht main.js dasselbe Ergebnisobjekt weiter.
+  // Seine Referenz verhindert, dass Zeichnen die Bilanz erneut erhöht.
   let gezaehltesErgebnis = null;
 
   function stoppeZaehler() {
@@ -133,7 +141,9 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
   // Der Zähler ist nur Anzeige; der Server entscheidet, ob die Frist abgelaufen
   // ist.
   function zeichneRevanche() {
-    const rest = restSekunden(fristBeginn, Date.now(), GRENZEN.REVANCHE_SEKUNDEN);
+    const rest = restSekunden(
+      fristBeginn, Date.now(), GRENZEN.REVANCHE_SEKUNDEN,
+    );
     const offen = OFFENE_STAENDE.includes(aktuelleRevanche);
     const fristLaeuft = offen && rest > 0;
 
@@ -141,7 +151,9 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
 
     zeigeElement(knopfRevanche, stand !== null);
     knopfRevanche.disabled = stand !== 'moeglich' && stand !== 'angeboten';
-    setzeText(knopfRevanche, stand === 'angeboten' ? 'Revanche annehmen' : 'Revanche');
+    setzeText(
+      knopfRevanche, stand === 'angeboten' ? 'Revanche annehmen' : 'Revanche',
+    );
 
     // Eine Fehlermeldung bleibt auch beim nächsten Sekundentakt sichtbar.
     const hinweis = fehlermeldung || revancheText(stand, rest);
@@ -170,8 +182,8 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     beiAbmelden();
   }
 
-  // cancel meldet Esc, eigenes close() dagegen nicht; ein Schließzähler ist
-  // unnötig.
+  // cancel meldet Esc an main.js. close() löst kein cancel aus; das Schließen
+  // vor einer neuen Suche darf nicht zusätzlich zur Anmeldung zurückführen.
   function meldeListenerAn() {
     knopfErneut.addEventListener('click', beiErneut);
     knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
@@ -203,7 +215,9 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     setzeText(bilanzAnzeige, bilanzText(name, bilanz));
     setzeText(punkteEigen, meine);
     setzeText(punkteGegner, seine);
-    setzeText(grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz));
+    setzeText(
+      grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz),
+    );
     if (ohneWertung(ergebnis.grund)) {
       setzeText(titel, 'Partie abgebrochen');
       setzeText(text, `Stand beim Abbruch: ${meine} zu ${seine}.`);
@@ -229,7 +243,9 @@ export function erzeugeEndeAnsicht({ beiNeuemSpiel, beiAbmelden, beiRevanche, be
     knopfErneut.focus();
   }
 
-  function zeige({ ergebnis, sitz, revanche = null, revancheSeit = 0, name = '' }) {
+  function zeige({
+    ergebnis, sitz, revanche = null, revancheSeit = 0, name = '',
+  }) {
     if (ergebnis !== angezeigtesErgebnis || revanche !== aktuelleRevanche) {
       fehlermeldung = '';
     }
