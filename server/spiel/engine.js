@@ -34,7 +34,9 @@ import {
   pruefeInvarianten,
   SITZ_NAMEN,
 } from './brett.js';
-import { FEHLER, STATUS, GRUND, GRENZEN, REMIS } from '../../shared/protokoll.js';
+import {
+  FEHLER, STATUS, GRUND, GRENZEN, REMIS,
+} from '../../shared/protokoll.js';
 
 // == 1. Einen Zug ausführen ==============================================
 /** Liefert { ok: true, partie, bericht } oder { ok: false, code }. */
@@ -59,7 +61,11 @@ export function fuehreZugAus(partie, sitz, mulde) {
   // SCHUTZ: Einen kaputten Zustand zurückweisen, statt ihn weiterzugeben.
   const invarianten = pruefeInvarianten(brett);
   if (!invarianten.ok) {
-    return { ok: false, code: FEHLER.INTERNER_FEHLER, verletzungen: invarianten.verletzungen };
+    return {
+      ok: false,
+      code: FEHLER.INTERNER_FEHLER,
+      verletzungen: invarianten.verletzungen,
+    };
   }
 
   // beute ist der feste Protokollname für das Klauen.
@@ -73,7 +79,11 @@ export function fuehreZugAus(partie, sitz, mulde) {
     abrechnung,
     brettVorher,
   };
-  return { ok: true, partie: partieNachZug(partie, brett, sitz, beendet, extrazug), bericht };
+  return {
+    ok: true,
+    partie: partieNachZug(partie, brett, sitz, beendet, extrazug),
+    bericht,
+  };
 }
 
 function partieNachZug(partie, brett, sitz, beendet, extrazug) {
@@ -101,7 +111,9 @@ export function pruefeZug(partie, sitz, mulde) {
     return { ok: false, code: FEHLER.NICHT_AM_ZUG };
   }
 
-  if (!Number.isInteger(mulde) || mulde < GRENZEN.MULDE_MIN || mulde > GRENZEN.MULDE_MAX) {
+  if (!Number.isInteger(mulde)
+    || mulde < GRENZEN.MULDE_MIN
+    || mulde > GRENZEN.MULDE_MAX) {
     return { ok: false, code: FEHLER.MULDE_UNGUELTIG };
   }
 
@@ -121,8 +133,7 @@ export function pruefeZug(partie, sitz, mulde) {
 
 // == 3. Kugeln säen ======================================================
 // REGEL 3.2: Das gegnerische Haus überspringen, das eigene mitzählen.
-// Der Pfad beginnt nach der Startmulde; bei langen Runden enthält er sie
-// wieder.
+// Der Animationspfad enthält jeden Einwurf, auch erneut besäte Mulden.
 function saee(brett, sitz, startZelle) {
   const gegnerHaus = SITZE[sitz].gegnerHaus;
 
@@ -150,17 +161,13 @@ function saee(brett, sitz, startZelle) {
 // Die letzte eigene Kugel wird mit ins Haus gelegt. Verändert die Brettkopie.
 function klaueKugeln(brett, sitz, letzteZelle) {
   if (!istInEigenerReihe(sitz, letzteZelle)) return null;
-
   if (istHaus(letzteZelle)) return null;
-
   if (lies(brett, letzteZelle) !== 1) return null;
 
   const gegnerZelle = gegenueber(letzteZelle);
-
   if (lies(brett, gegnerZelle) === 0) return null;
 
   const anzahl = lies(brett, gegnerZelle) + 1;
-
   setze(brett, gegnerZelle, 0);
   setze(brett, letzteZelle, 0);
   erhoehe(brett, SITZE[sitz].haus, anzahl);

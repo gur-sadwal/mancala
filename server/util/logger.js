@@ -18,6 +18,7 @@
 const EBENEN = { debug: 10, info: 20, warn: 30, error: 40 };
 
 const gewuenscht = (process.env.LOG_LEVEL ?? '').toLowerCase();
+// SCHUTZ: Auch unbekannte oder geerbte Namen wie constructor fallen auf info.
 const schwelle = Object.hasOwn(EBENEN, gewuenscht)
   ? EBENEN[gewuenscht] : EBENEN.info;
 
@@ -43,8 +44,8 @@ function schreibe(ebene, text, zusatz) {
       try {
         teile.push(JSON.stringify(zusatz));
       } catch {
-        // SCHUTZ: Auch kreisförmige Zusatzdaten dürfen den Logger nicht
-        // stoppen.
+        // SCHUTZ: Kreisförmige Daten können nicht als JSON geschrieben werden.
+        // Trotzdem die eigentliche Logmeldung ausgeben.
         teile.push('[nicht serialisierbar]');
       }
     }

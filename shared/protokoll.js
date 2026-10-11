@@ -66,9 +66,11 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.ZU_VIELE_ANFRAGEN]: 'Zu viele Anfragen. Bitte kurz warten.',
   [FEHLER.BEREITS_IN_WARTESCHLANGE]: 'Du suchst bereits nach einem Gegner.',
   [FEHLER.BEREITS_IN_PARTIE]: 'Du bist bereits in einer Partie.',
-  [FEHLER.CODE_UNBEKANNT]: 'Dieses private Spiel gibt es nicht mehr. Bitte um einen neuen Link.',
+  [FEHLER.CODE_UNBEKANNT]:
+    'Dieses private Spiel gibt es nicht mehr. Bitte um einen neuen Link.',
   [FEHLER.INTERNER_FEHLER]: 'Es ist ein interner Fehler aufgetreten.',
-  [FEHLER.WARTEZEIT_ABGELAUFEN]: 'Die Wartezeit ist abgelaufen. Bitte starte ein neues Spiel.',
+  [FEHLER.WARTEZEIT_ABGELAUFEN]:
+    'Die Wartezeit ist abgelaufen. Bitte starte ein neues Spiel.',
 });
 
 // == 3. Status, Endegründe und Grenzen ===================================
@@ -93,7 +95,7 @@ export const REMIS = 'remis';
 
 // EINSTELLBAR: Gemeinsame Fristen und Eingabegrenzen stehen an einer Stelle.
 export const GRENZEN = Object.freeze({
-  // ACHTUNG: Zählt ganze Unicode-Zeichen. HTML maxlength zählt UTF-16-Hälften.
+  // ACHTUNG: Zählt Unicode-Codepunkte. HTML maxlength zählt UTF-16-Einheiten.
   NAME_MAX: 20,
   MULDE_MIN: 0,
   MULDE_MAX: 5,
@@ -101,7 +103,6 @@ export const GRENZEN = Object.freeze({
   REVANCHE_SEKUNDEN: 15,
 
   PARTIE_RUHE_MINUTEN: 15,
-
   WARTEN_MINUTEN: 7.5,
 });
 
@@ -114,7 +115,7 @@ const UNSICHTBAR = /[\p{Cc}\p{Cf}]/u;
 export const NAME_VERBOTEN = '<>';
 
 /**
- * Entfernt unsichtbare/verbotene Zeichen und kürzt auf ganze Unicode-Zeichen.
+ * Entfernt verbotene und unsichtbare Zeichen, kürzt auf Unicode-Codepunkte.
  * Kann leer liefern: Der Browser meldet es, der Server setzt einen Ersatz ein.
  * Familien-Emoji zerfallen, weil ihr unsichtbares Verbindungszeichen entfällt.
  * @param {string} text
@@ -128,7 +129,7 @@ export function bereinigeName(text) {
     }
   }
 
-  // Array.from erhält ganze Zeichen; slice direkt auf Text halbiert Emoji.
+  // Array.from erhält Codepunkte; slice direkt auf Text kann Emoji halbieren.
   const zeichenListe = Array.from(erlaubt.trim());
   const gekuerzt = zeichenListe.slice(0, GRENZEN.NAME_MAX).join('');
 

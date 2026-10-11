@@ -21,7 +21,6 @@ import { STATUS } from '../../shared/protokoll.js';
 // == 1. Zustand und Schnittstelle ========================================
 export function erzeugeManager() {
   const partien = new Map();
-
   const zuordnung = new Map();
 
   return {
@@ -34,7 +33,7 @@ export function erzeugeManager() {
   };
 
   // == 2. Partie starten =================================================
-  // Implementationsentscheidung: Unten beginnt. Die Sitze werden ausgelost.
+  // Projektentscheidung: Unten beginnt; wer dort sitzt, wird neu ausgelost.
   function starte(a, b) {
     const [unten, oben] = Math.random() < 0.5 ? [a, b] : [b, a];
 
@@ -65,8 +64,7 @@ export function erzeugeManager() {
     const partie = partien.get(spielId);
     if (!partie) return null;
 
-    // Auch bei kaputten Spielerfeldern alle Zuordnungen dieser Partie
-    // entfernen.
+    // Die Socket-Map durchgehen statt möglicherweise kaputte Spielerfelder.
     for (const [socketId, id] of zuordnung) {
       if (id === spielId) zuordnung.delete(socketId);
     }
@@ -76,8 +74,7 @@ export function erzeugeManager() {
   }
 
   // == 5. Fristen, Anzahl und Herunterfahren =============================
-  // Entfernt nichts: Erst handlers.js benachrichtigt beide und verlässt den
-  // Raum.
+  // Nur finden: handlers.js benachrichtigt die Spieler vor dem Entfernen.
   function findeRuhendePartien(maxRuheMs, jetzt = Date.now()) {
     const grenze = jetzt - maxRuheMs;
     const ruhend = [];

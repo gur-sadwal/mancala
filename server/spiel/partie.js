@@ -37,7 +37,8 @@ export function neuePartie(id, spielerUnten, spielerOben) {
 
 // == 2. Sitz und öffentlicher Spielstand =================================
 export function sitzVon(partie, socketId) {
-  return SITZ_NAMEN.find((sitz) => partie.spieler[sitz].socketId === socketId) ?? null;
+  return SITZ_NAMEN.find((sitz) => partie.spieler[sitz].socketId === socketId)
+    ?? null;
 }
 
 // SCHUTZ: Nur benötigte Felder senden, keine Socket-Kennungen oder Zeiten.
@@ -63,7 +64,8 @@ export function spielstandVon(partie) {
  * @param {string|null} sieger Gegner bei Aufgabe/Trennung, sonst keine Wertung
  */
 export function beendeVorzeitig(partie, grund, sieger = null) {
-  partie.status = grund === GRUND.AUFGEGEBEN ? STATUS.BEENDET : STATUS.ABGEBROCHEN;
+  partie.status = grund === GRUND.AUFGEGEBEN
+    ? STATUS.BEENDET : STATUS.ABGEBROCHEN;
 
   partie.ergebnis = { ...ergebnisVon(partie.brett, grund), sieger };
   beruehre(partie);

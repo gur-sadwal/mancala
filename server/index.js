@@ -1,7 +1,8 @@
 /**
  * index.js – Startpunkt des Servers.
  *
- * Start: npm run start 3000. Ohne Argument gilt PORT, danach Port 3000.
+ * Start: npm run start 3000. Ohne Portargument gilt die Umgebungsvariable
+ * PORT oder der Standardport 3000.
  * Bindet IPv4, protokolliert Prozessfehler und beendet bei SIGTERM/SIGINT
  * geordnet.
  *
@@ -59,9 +60,8 @@ function baueServer() {
 }
 
 // == 3. Prozess- und Serverfehler ========================================
-// SCHUTZ: Nach Regelwerk 5.2 bleibt der Prozess am Leben. Der Fehler wird
-// protokolliert und muss behoben werden; die Handler fangen Fehler schon vorher
-// ab.
+// SCHUTZ: Prozessfehler protokollieren und für andere Partien weiterlaufen.
+// Das behebt den Fehler nicht. Die Handler fangen ihre Fehler vorher selbst ab.
 function beiUncaughtException(fehler) {
   logger.error('uncaughtException – Prozess läuft bewusst weiter', fehler);
 }
@@ -72,11 +72,15 @@ function beiUnhandledRejection(grund) {
 
 function meldeServerfehler(fehler) {
   if (fehler.code === 'EADDRINUSE') {
-    logger.error(`Port ${port} ist bereits belegt. Anderen Port wählen: npm run start 3001`);
+    logger.error(
+      `Port ${port} ist bereits belegt. Anderen Port wählen: npm run start 3001`
+    );
     process.exit(1);
   }
   if (fehler.code === 'EACCES') {
-    logger.error(`Keine Berechtigung für Port ${port}. Ports unter 1024 brauchen Adminrechte.`);
+    logger.error(
+      `Keine Berechtigung für Port ${port}. Ports unter 1024 brauchen Adminrechte.`
+    );
     process.exit(1);
   }
   logger.error('Serverfehler', fehler);
@@ -88,7 +92,8 @@ function meldeBereit() {
   logger.info(`Im Browser öffnen: http://localhost:${port}`);
 }
 
-// SCHUTZ: Auf das Schließen warten; die Notbremse löst einen hängenden Vorgang.
+// SCHUTZ: Auf Socket.io warten. Die Notbremse beendet auch bei hängendem
+// Schließen den Prozess; sie repariert den hängenden Vorgang nicht.
 async function beendeGeordnet(signal) {
   logger.info(`${signal} empfangen, fahre herunter`);
   setTimeout(() => process.exit(0), BEENDEN_MAX_MS).unref();

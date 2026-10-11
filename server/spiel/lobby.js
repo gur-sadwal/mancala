@@ -28,8 +28,7 @@ export const REVANCHE_STATUS = Object.freeze({
   START: 'START',
 });
 
-// EINSTELLBAR: Zuschlag für die Übertragung eines rechtzeitig gedrückten
-// Knopfs.
+// EINSTELLBAR: Zeitpuffer für die Übertragung eines Revanchewunschs.
 const REVANCHE_KULANZ_MS = 2000;
 export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
   + REVANCHE_KULANZ_MS;
@@ -38,10 +37,9 @@ export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
 export const REVANCHE_TAKT_MS = 1000;
 
 // == 2. Zustand und Schnittstelle ========================================
-// Die inneren Funktionen teilen diese Maps; jeder Test bekommt frische.
+// Jede neue Lobby hat eigenen Zustand; ihre inneren Funktionen teilen ihn.
 export function erzeugeLobby() {
   const warteschlange = [];
-
   const privat = new Map();
   const revanchen = new Map();
 
@@ -129,7 +127,10 @@ export function erzeugeLobby() {
   }
 
   function positionen() {
-    return warteschlange.map((e, i) => ({ socketId: e.socketId, position: i + 1 }));
+    return warteschlange.map((e, i) => ({
+      socketId: e.socketId,
+      position: i + 1,
+    }));
   }
 
   /**
@@ -184,12 +185,18 @@ export function erzeugeLobby() {
 
     eintrag.gewuenscht = true;
     if (!gegenueber.gewuenscht) {
-      return { status: REVANCHE_STATUS.WARTET, gegnerId: eintrag.gegner.socketId };
+      return {
+        status: REVANCHE_STATUS.WARTET,
+        gegnerId: eintrag.gegner.socketId,
+      };
     }
 
     revanchen.delete(socketId);
     revanchen.delete(eintrag.gegner.socketId);
-    return { status: REVANCHE_STATUS.START, paar: [gegenueber.ich, eintrag.ich] };
+    return {
+      status: REVANCHE_STATUS.START,
+      paar: [gegenueber.ich, eintrag.ich],
+    };
   }
 
   // Beide Seiten vergessen, damit der alte Gegner nicht vergeblich wartet.

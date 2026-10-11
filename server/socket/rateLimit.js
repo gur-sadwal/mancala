@@ -1,8 +1,8 @@
 /**
  * rateLimit.js – Nachrichten je Verbindung begrenzen.
  *
- * Zählt in festen Zeitfenstern. Die erste abgewiesene Nachricht bekommt
- * eine Antwort; weitere verworfene Nachrichten erzeugen keine Antwortflut.
+ * Zählt in festen Zeitfenstern. Der Handler beantwortet nur die erste
+ * abgewiesene Nachricht, damit die Sperre keine Antwortflut erzeugt.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Grenzen
@@ -14,15 +14,14 @@
  */
 
 // == 1. Grenzen ==========================================================
-// EINSTELLBAR: Erlaubte Ereignisse je Zeitfenster und dessen Länge in ms.
+// EINSTELLBAR: Erlaubte Nachrichten je Zeitfenster und dessen Länge in ms.
 const GRENZE_JE_FENSTER = 20;
-
 const FENSTER_MS = 1000;
 
 // == 2. Nachrichten zählen ===============================================
 /** @param {Function} uhr Zeitquelle, damit Tests keine Sekunde warten. */
-// An der Fenstergrenze sind zwei schnelle Gruppen möglich; kein gleitendes
-// Limit.
+// An der Fenstergrenze sind zwei schnelle Nachrichtengruppen möglich:
+// Der Zähler beginnt dort wieder bei eins.
 export function erzeugeRatenbegrenzer(
   grenze = GRENZE_JE_FENSTER,
   fensterMs = FENSTER_MS,

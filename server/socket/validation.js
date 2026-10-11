@@ -35,7 +35,6 @@ export function ermittleSpielername(wert) {
   if (typeof wert !== 'string') return ERSATZ_NAME;
 
   const bereinigt = bereinigeName(wert);
-
   return bereinigt.length > 0 ? bereinigt : ERSATZ_NAME;
 }
 
@@ -64,8 +63,8 @@ export function istGueltig(ereignis, nutzdaten) {
 
   try {
     return pruefer(nutzdaten) === true;
-    // SCHUTZ: Auch ein werfender Getter gilt als ungültige Eingabe.
   } catch {
+    // SCHUTZ: Auch ein Getter, der beim Lesen wirft, ist ungültige Eingabe.
     return false;
   }
 }

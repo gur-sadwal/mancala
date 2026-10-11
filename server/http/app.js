@@ -1,8 +1,8 @@
 /**
  * app.js – Browserdateien und Gesundheit über HTTP ausliefern.
  *
- * Liefert HTML, CSS und ES-Module direkt aus. Eine gemeinsame Namensregel
- * liegt unter /shared; /gesundheit meldet laufende Partien und Wartende.
+ * Liefert HTML, CSS und ES-Module direkt aus. Das gemeinsame Protokoll liegt
+ * unter /shared; /gesundheit meldet laufende Partien und Wartende.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Pfade und Sicherheitsrichtlinie
@@ -45,7 +45,10 @@ export function erzeugeApp({ manager, lobby }) {
     });
   });
   // maxAge: 0 verlangt sofortige Nachprüfung; der Browser darf trotzdem cachen.
-  app.use(express.static(pfadZu('client'), { extensions: ['html'], maxAge: 0 }));
+  app.use(express.static(pfadZu('client'), {
+    extensions: ['html'],
+    maxAge: 0,
+  }));
   app.use('/shared', express.static(pfadZu('shared'), { maxAge: 0 }));
   app.use(sende404);
   app.use(meldeHttpFehler);
@@ -57,7 +60,8 @@ function pfadZu(...teile) {
   return path.join(WURZEL, ...teile);
 }
 
-// SCHUTZ: nosniff verhindert, dass der Browser den Dateityp selbst errät.
+// SCHUTZ: nosniff sperrt Skripte und Styles mit unpassendem MIME-Typ
+// (dem Dateityp aus der HTTP-Antwort).
 function sichereAntwort(req, res, next) {
   res.setHeader('Content-Security-Policy', CSP);
   res.setHeader('X-Content-Type-Options', 'nosniff');

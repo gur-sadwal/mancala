@@ -1,8 +1,8 @@
 /**
  * handlers.js – Ereignisse empfangen und Nachrichten senden.
  *
- * Verbindet Lobby, Manager und Engine mit Socket.io. Jede Client-Nachricht
- * läuft durch dieselbe Prüfung; Fehler beenden höchstens die betroffene Partie.
+ * Verbindet Lobby, Manager und Engine mit Socket.io. Registrierte
+ * Spielereignisse werden begrenzt und geprüft; Handlerfehler werden abgefangen.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Ereignisse registrieren
@@ -76,7 +76,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
         }
 
         if (!istGueltig(ereignis, nutzdaten)) {
-          logger.debug('Nutzdaten abgelehnt', { ereignis, socketId: socket.id });
+          logger.debug('Nutzdaten abgelehnt', {
+            ereignis,
+            socketId: socket.id,
+          });
           sendeFehler(socket, FEHLER.NUTZDATEN_UNGUELTIG);
           return;
         }
@@ -170,7 +173,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   // SCHUTZ: Ein verspätetes Abbrechen nach START ist keine Aufgabe.
   function aufAbbrechen(socket) {
     if (manager.holeNachSocket(socket.id)) {
-      logger.debug('Abbrechen ignoriert, Partie läuft schon', { socketId: socket.id });
+      logger.debug('Abbrechen ignoriert, Partie läuft schon', {
+        socketId: socket.id,
+      });
       return;
     }
 
@@ -224,7 +229,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     Object.assign(partie, ergebnis.partie);
     beruehre(partie);
     const spielstand = spielstandVon(partie);
-    io.to(partie.id).emit(EREIGNIS.STAND, { spielstand, bericht: ergebnis.bericht });
+    io.to(partie.id).emit(EREIGNIS.STAND, {
+      spielstand,
+      bericht: ergebnis.bericht,
+    });
     if (partie.status === STATUS.BEENDET) beendeRegulaer(partie, spielstand);
   }
 
@@ -269,6 +277,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
+    // Doppelklicks erzeugen kein zweites Angebot an den Gegner.
     if (ergebnis.status === REVANCHE_STATUS.SCHON_GEWUENSCHT) return;
 
     const [a, b] = ergebnis.paar;
@@ -280,7 +289,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     starteMitPaar(a, b);
   }
 
-  // SCHUTZ: Zuerst den Ratenzähler löschen, auch wenn später etwas scheitert.
+  // SCHUTZ: Den Ratenzähler vor Lobby und Partie vergessen. So bleibt er
+  // auch bei einem späteren Aufräumfehler nicht liegen.
   function aufTrennen(socket, grund) {
     // Der getrennte Socket ist bereits aus io.sockets entfernt.
     logger.info('Verbindung getrennt', { socketId: socket.id, grund });
@@ -354,7 +364,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     sendePositionen();
   }
 
-  // REGEL 3.5: Endstand senden, eine Revanche ermöglichen, dann auflösen.
+  // REGEL 3.5: Die Engine hat die Restkugeln bereits abgerechnet.
+  // Revanche vorm Auflösen merken; diese Option gehört zum Onlinebetrieb.
   function beendeRegulaer(partie, spielstand) {
     try {
       const revanche = ermoeglicheRevanche(partie, GRUND.REGULAER);
@@ -385,7 +396,12 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       for (const sitz of SITZ_NAMEN) {
         const socketId = partie.spieler[sitz].socketId;
 
-        socketVon(socketId)?.emit(EREIGNIS.ABBRUCH, { grund, spielstand, ergebnis, revanche });
+        socketVon(socketId)?.emit(EREIGNIS.ABBRUCH, {
+          grund,
+          spielstand,
+          ergebnis,
+          revanche,
+        });
       }
 
       logger.info('Partie beendet', { spielId: partie.id, grund });
@@ -394,6 +410,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
+  // Nach Aufgabe oder regulärem Ende dürfen dieselben Spieler neu beginnen.
+  // Bei Trennung oder technischem Abbruch ist das alte Paar nicht geeignet.
   function ermoeglicheRevanche(partie, grund) {
     const echtesEnde = grund === GRUND.REGULAER || grund === GRUND.AUFGEGEBEN;
     const { unten, oben } = partie.spieler;

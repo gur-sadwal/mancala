@@ -22,7 +22,7 @@ import { logger } from '../util/logger.js';
 import { GRUND } from '../../shared/protokoll.js';
 
 // == 1. Grenzen ==========================================================
-// EINSTELLBAR: Eine Minute bis zur nächsten Prüfung der Warte-/Zugfristen.
+// EINSTELLBAR: Abstand zwischen den Prüfungen der Warte- und Zugfristen.
 const AUFRAEUM_TAKT_MS = 60 * 1000;
 // EINSTELLBAR: Nachrichten höchstens 1 KB, Ping alle 20 s, 20 s Antwortfrist.
 // SCHUTZ: Größere Nachrichten trennen nur diese Verbindung vor dem Handler.
@@ -61,8 +61,7 @@ export function erzeugeGateway(httpServer, { lobby, manager }) {
         logger.error('Partie beim Herunterfahren fehlgeschlagen', fehler);
       }
     }
-    // Trennt die Sockets und schließt den HTTP-Server; nicht zusätzlich
-    // schließen.
+    // Socket.io schließt auch den HTTP-Server. Ein zweites Schließen entfällt.
     await io.close();
   }
 }

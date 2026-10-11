@@ -17,19 +17,14 @@
 // == 1. Größen und Sitze =================================================
 // REGEL 3.1: Zwei Reihen, sechs Mulden je Sitz, vier Kugeln je Mulde.
 export const OBEN = 0;
-
 export const UNTEN = 1;
 
 const MULDEN_JE_SEITE = 6;
-
 const START_KUGELN = 4;
-
 export const KUGELN_GESAMT = MULDEN_JE_SEITE * 2 * START_KUGELN;
-
 const SPALTEN = MULDEN_JE_SEITE + 1;
 
 const HAUS_OBEN = Object.freeze([OBEN, 0]);
-
 const HAUS_UNTEN = Object.freeze([UNTEN, MULDEN_JE_SEITE]);
 
 // Der Sitz beschreibt die Server-Sicht. Oben sieht der Browser gedreht.
@@ -91,7 +86,7 @@ export function erhoehe(brett, [reihe, spalte], betrag = 1) {
   brett[reihe][spalte] += betrag;
 }
 
-// Arrays vergleicht === nur als Objekte, deshalb die beiden Zahlen prüfen.
+// === erkennt nur dasselbe Array. Für gleiche Zellen beide Zahlen vergleichen.
 export function zelleGleich(a, b) {
   return a[0] === b[0] && a[1] === b[1];
 }
@@ -104,7 +99,7 @@ export function istInEigenerReihe(sitz, [reihe]) {
   return reihe === SITZE[sitz].reihe;
 }
 
-// REGEL 3.2: Unten geht es nach rechts, oben nach links um das Brett.
+// REGEL 3.2: In der Server-Sicht geht es unten nach rechts, oben nach links.
 export function naechsteZelle([reihe, spalte]) {
   if (reihe === UNTEN) {
     if (spalte < MULDEN_JE_SEITE) return [UNTEN, spalte + 1];
@@ -162,7 +157,10 @@ export function pruefeInvarianten(brett) {
     && brett.every((reihe) => Array.isArray(reihe) && reihe.length === SPALTEN);
 
   if (!formOk) {
-    return { ok: false, verletzungen: ['I-3: Brett hat nicht die Form [2][7]'] };
+    return {
+      ok: false,
+      verletzungen: ['I-3: Brett hat nicht die Form [2][7]'],
+    };
   }
 
   for (const reihe of brett) {
