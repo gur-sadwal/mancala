@@ -5,6 +5,8 @@ jede geänderte Zeile selbst erklären können. README.md beschreibt Regeln und 
 
 ## Verbindliche Arbeitsregeln
 
+- Auf ausdrücklichen Nutzerwunsch keine KI-Co-Autoren in Commit-Nachrichten:
+  keine Co-Authored-By-Zeilen für Claude, Codex oder OpenAI ergänzen.
 - Server autoritativ: Client sendet Muldennummer, keine berechneten Spielstände.
   Müll-Nachrichten, Disconnects und einzelne kaputte Partien dürfen den Server nicht stoppen.
 - Express, Socket.io, Vanilla-JavaScript, HTML und CSS; keine zusätzlichen Dependencies,
