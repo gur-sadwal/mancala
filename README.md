@@ -155,7 +155,7 @@ im DOM; die Content-Security-Policy sperrt eingeschleuste Inline-Skripte.
 
 ## 6. Weg eines Zuges
 
-1. `spiel.js` meldet die gewählte Mulde an `main.js`.
+1. `spiel.js` ruft für die gewählte Mulde die übergebene Aktion `zug` auf.
 2. `kern.js` sendet `spiel:zug` mit der Muldennummer.
 3. Der Handler prüft Rate, Schema, Partie und Sitz.
 4. Die Engine sät, prüft Klauen und Spielende, dann den neuen Zustand.

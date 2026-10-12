@@ -14,7 +14,7 @@
 import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
 
-/** Socket-Attrappe; jeder Test erzeugt sie mit neuerSocket() neu. */
+/** Jeder Aufruf von verbinde() bekommt einen neuen Socket. */
 let socket = null;
 
 function neuerSocket() {

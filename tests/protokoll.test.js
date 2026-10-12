@@ -1,8 +1,8 @@
 /**
- * protokoll.test.js – Gemeinsame Ereignisse, Fehler und Namen.
+ * protokoll.test.js – Gemeinsame Ereignisse, Fehler, Gründe und Status.
  *
  * Die Prüfungen sichern die Tabellen, die Server und Browser teilen.
- * Die Bereinigung von Namen wird zusätzlich in validation.test.js geprüft.
+ * Die Namensbereinigung prüft validation.test.js.
  *
  * Inhalt:
  *   == 1. Testaufbau
