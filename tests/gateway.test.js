@@ -192,7 +192,6 @@ describe('Gateway: Takte', () => {
     }
   });
 
-
   test('ein Fehler in einem Takt wird nur protokolliert', async () => {
     const jest = import.meta.jest;
     // Ein Manager, der beim Suchen ruhender Partien wirft – wie ein

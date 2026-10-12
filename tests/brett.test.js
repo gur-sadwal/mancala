@@ -113,7 +113,7 @@ describe('T-02: gegenueber', () => {
     [[UNTEN, 5], [OBEN, 6]],
   ];
 
-  test.each(paare)('%j liegt gegenueber von %j', (unten, oben) => {
+  test.each(paare)('%j liegt gegenüber von %j', (unten, oben) => {
     expect(gegenueber(unten)).toEqual(oben);
   });
 

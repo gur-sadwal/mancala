@@ -173,7 +173,7 @@ describe('Handler: Revanche nach jedem Spiel', () => {
     }
   });
 
-  test('nach dem regulaeren Ende eines schnellen Spiels ebenso', () => {
+  test('nach dem regulären Ende eines schnellen Spiels ebenso', () => {
     const { anna, ben, manager } = schnellesSpiel();
 
     // Wer unten sitzt, beginnt. Das Brett wird so gestellt, dass sein Zug aus

@@ -74,7 +74,7 @@ export function erzeugeManager() {
   }
 
   // == 5. Fristen, Anzahl und Herunterfahren =============================
-  // Nur finden: handlers.js benachrichtigt die Spieler vor dem Entfernen.
+  // Nur finden: handlers.js entscheidet über Benachrichtigung und Entfernen.
   function findeRuhendePartien(maxRuheMs, jetzt = Date.now()) {
     const grenze = jetzt - maxRuheMs;
     const ruhend = [];

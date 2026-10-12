@@ -23,7 +23,7 @@ const schwelle = Object.hasOwn(EBENEN, gewuenscht)
   ? EBENEN[gewuenscht] : EBENEN.info;
 
 // == 2. Zeitstempel ======================================================
-// UTC bleibt ganzjährig eindeutig, unabhängig von Sommer- und Winterzeit.
+// UTC-Uhrzeit ohne Datum; kein Wechsel zwischen Sommer- und Winterzeit.
 function zeitstempel() {
   return new Date().toISOString().slice(11, 19);
 }

@@ -1,7 +1,7 @@
 /**
  * validation.js – Nutzdaten vor der Spiellogik prüfen.
  *
- * Prüft Typen und Felder ohne Umwandlung. Müll wird zurückgewiesen;
+ * Prüft Typen und Felder der Ereignisse mit Nutzdaten ohne Umwandlung.
  * Namen werden mit derselben Regel wie im Browser bereinigt.
  *
  * Inhalt (Cmd+F nach „== 2.“):

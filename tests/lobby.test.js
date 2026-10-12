@@ -47,7 +47,7 @@ describe('Warteschlange', () => {
     expect(lobby.anzahl()).toBe(0);
   });
 
-  test('gibt das aelteste Paar heraus und entfernt es dabei', () => {
+  test('gibt das älteste Paar heraus und entfernt es dabei', () => {
     const lobby = erzeugeLobby();
     lobby.beitreten('a', 'Anna');
     lobby.beitreten('b', 'Ben');
@@ -66,7 +66,7 @@ describe('Warteschlange', () => {
     expect(lobby.naechstesPaar()).toBeNull();
   });
 
-  test('rueckt Positionen nach, wenn jemand die Schlange verlaesst', () => {
+  test('rückt Positionen nach, wenn jemand die Schlange verlässt', () => {
     const lobby = erzeugeLobby();
     lobby.beitreten('a', 'Anna');
     lobby.beitreten('b', 'Ben');
@@ -80,7 +80,7 @@ describe('Warteschlange', () => {
     ]);
   });
 
-  test('raeumt alte Einträge ab (NFA-10)', () => {
+  test('räumt alte Einträge ab', () => {
     const lobby = erzeugeLobby();
     lobby.beitreten('a', 'Anna');
 
@@ -138,7 +138,7 @@ describe('Privates Spiel', () => {
     expect(lobby.anzahl()).toBe(1);
   });
 
-  test('der private Platz steht NICHT in der oeffentlichen Warteschlange', () => {
+  test('der private Platz steht nicht in der öffentlichen Warteschlange', () => {
     const lobby = erzeugeLobby();
     lobby.erstellePrivat('a', 'Anna');
     lobby.beitreten('b', 'Ben');
@@ -178,7 +178,7 @@ describe('Privates Spiel', () => {
     expect(lobby.beitreten('a', 'Anna').ok).toBe(false);
   });
 
-  test('Abbrechen oder Verbindungsabbruch loescht den privaten Platz', () => {
+  test('Abbrechen oder Verbindungsabbruch löscht den privaten Platz', () => {
     const lobby = erzeugeLobby();
     const { einladung } = lobby.erstellePrivat('a', 'Anna');
 
@@ -188,7 +188,7 @@ describe('Privates Spiel', () => {
     expect(lobby.nimmPrivat(einladung)).toBeNull();
   });
 
-  test('raeumt alte private Plaetze ab (NFA-10)', () => {
+  test('räumt alte private Plätze ab', () => {
     const lobby = erzeugeLobby();
     lobby.erstellePrivat('a', 'Anna');
 
@@ -213,7 +213,7 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
   });
 
-  test('zweimal druecken startet nichts – es braucht den Gegner', () => {
+  test('zweimal drücken startet nichts – es braucht den Gegner', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben);
 
@@ -236,7 +236,7 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.vergissRevanche('niemand')).toBeNull();
   });
 
-  test('spielt jemand schon gegen einen anderen, verfaellt die alte Revanche', () => {
+  test('spielt jemand schon gegen einen anderen, verfällt die alte Revanche', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben);
     // Anna hat inzwischen gegen Carl gespielt.
@@ -296,7 +296,7 @@ describe('Revanche-Frist', () => {
     expect(lobby.wuenscheRevanche('a', ENDE)).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
   });
 
-  test('zum Fristende verfallen beide Einträge – auch ein schon gedrueckter', () => {
+  test('zum Fristende verfallen beide Einträge – auch ein schon gedrückter', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.wuenscheRevanche('a', ENDE);   // Anna wollte, Ben hat nicht reagiert
@@ -410,7 +410,7 @@ describe('Partieverwaltung', () => {
     expect(sitzVon(partie, 'unbekannt')).toBeNull();
   });
 
-  test('haelt mehrere Partien voneinander getrennt (NFA-02)', () => {
+  test('hält mehrere Partien voneinander getrennt', () => {
     const manager = erzeugeManager();
     const eins = manager.starte({ socketId: 'a', name: 'A' }, { socketId: 'b', name: 'B' });
     const zwei = manager.starte({ socketId: 'c', name: 'C' }, { socketId: 'd', name: 'D' });
@@ -434,7 +434,7 @@ describe('Partieverwaltung', () => {
     expect(sitzVon(partie, 'fremd')).toBeNull();
   });
 
-  test('entfernt beim Aufloesen beide Einträge aus beiden Maps', () => {
+  test('entfernt beim Auflösen beide Einträge aus beiden Maps', () => {
     const { manager, partie } = mitPartie();
 
     manager.entferne(partie.id);

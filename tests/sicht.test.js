@@ -125,7 +125,7 @@ describe('Client und Server sind sich einig (die eigentliche Probe)', () => {
 
         expect(rolle.art).toBe('mulde');
         expect(rolle.seite).toBe('gegner');
-        // Die Server-Spaltennummer bleibt gleich, obwohl die Darstellung
+        // Die Muldennummer bleibt gleich, obwohl die Darstellung
         // für den Gegner gedreht wird.
         expect(rolle.pos).toBe(n);
       }

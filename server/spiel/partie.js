@@ -1,8 +1,8 @@
 /**
  * partie.js – Zustand einer einzelnen Partie.
  *
- * Kennt Spieler nur als Socket-Kennungen. Ein Test kann deshalb eine Partie
- * ohne laufenden Server anlegen, lesen und vorzeitig beenden.
+ * Speichert Kennungen und Namen, keine Socket-Objekte. Tests können eine
+ * Partie deshalb ohne laufenden Server anlegen, lesen und beenden.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Neue Partie

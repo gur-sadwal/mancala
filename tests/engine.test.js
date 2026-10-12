@@ -27,7 +27,6 @@ import {
 import { neuesBrett, gesamtSumme, muldenSumme, OBEN, UNTEN } from '../server/spiel/brett.js';
 import { STATUS, FEHLER, GRUND, REMIS } from '../shared/protokoll.js';
 
-
 /** Baut eine laufende Partie um ein vorgegebenes Brett. */
 function partieMit(brett, amZug = 'unten') {
   return {
@@ -171,7 +170,7 @@ describe('T-07: letzte Kugel im eigenen Haus', () => {
 
 describe('T-11: Klauen mit gefüllter Gegenmulde (Beispiel B3)', () => {
   test('Beute und eigene Kugel wandern ins Haus, beide Mulden werden leer', () => {
-    // [1,0] = 1 Kugel, [1,1] leer, gegenueber [0,2] = 6 Kugeln.
+    // [1,0] = 1 Kugel, [1,1] leer, gegenüber [0,2] = 6 Kugeln.
     const partie = partieMit([
       [0, 4, 6, 4, 4, 4, 4],
       [1, 0, 4, 4, 4, 4, 5],
@@ -219,7 +218,7 @@ describe('T-12: Klauen mit leerer Gegenmulde', () => {
 describe('T-08: letzte Kugel in leerer gegnerischer Mulde', () => {
   test('keine Beute – die Regel greift nur auf der eigenen Seite (R-04)', () => {
     // Sitz unten spielt Mulde 5 = [1,5] mit 3 Kugeln:
-    // [1,6], [0,6], [0,5]. [0,5] ist leer, gegenueber liegt [1,4] mit 4 Kugeln.
+    // [1,6], [0,6], [0,5]. [0,5] ist leer, gegenüber liegt [1,4] mit 4 Kugeln.
     const partie = partieMit([
       [0, 4, 4, 4, 4, 0, 4],
       [4, 4, 4, 4, 4, 3, 5],
@@ -230,7 +229,7 @@ describe('T-08: letzte Kugel in leerer gegnerischer Mulde', () => {
 
     expect(bericht.beute).toBeNull();
     expect(neu.brett[OBEN][5]).toBe(1);     // die Kugel liegt dort
-    expect(neu.brett[UNTEN][4]).toBe(4);    // gegenueber unangetastet
+    expect(neu.brett[UNTEN][4]).toBe(4);    // gegenüber unangetastet
     expect(neu.brett[UNTEN][6]).toBe(6);    // Haus: nur die eine Saatkugel
   });
 });

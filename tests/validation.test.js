@@ -53,7 +53,7 @@ describe('istGanzzahlZwischen', () => {
     }
   });
 
-  test('lässt sich nicht von einer eigenen valueOf-Methode taeuschen', () => {
+  test('lässt sich nicht von einer eigenen valueOf-Methode täuschen', () => {
     // Ein Objekt, das sich als 3 ausgeben will: Da gar keine Umwandlung
     // stattfindet, kommt es nicht durch.
     const tarnung = { valueOf: () => 3 };
@@ -62,7 +62,7 @@ describe('istGanzzahlZwischen', () => {
 });
 
 describe('ermittleSpielername', () => {
-  test('behaelt einen normalen Namen', () => {
+  test('behält einen normalen Namen', () => {
     expect(ermittleSpielername('Gursharan')).toBe('Gursharan');
   });
 
@@ -70,7 +70,7 @@ describe('ermittleSpielername', () => {
     expect(ermittleSpielername('  Nico  ')).toBe('Nico');
   });
 
-  test('kuerzt auf 20 Zeichen', () => {
+  test('kürzt auf 20 Zeichen', () => {
     const lang = 'A'.repeat(500);
     expect(ermittleSpielername(lang)).toHaveLength(20);
   });
@@ -220,7 +220,7 @@ describe('Schemaprüfung der Ereignisse', () => {
     expect({}.gehackt).toBeUndefined();
   });
 
-  test('ein werfender Getter bringt die Pruefung nicht zum Absturz', () => {
+  test('ein werfender Getter bringt die Prüfung nicht zum Absturz', () => {
     const boesartig = {
       get mulde() { throw new Error('boom'); },
     };
@@ -241,7 +241,7 @@ describe('Ratenbegrenzung', () => {
     expect(begrenzer.erlaubt('a')).toBe(false);
   });
 
-  test('beginnt im naechsten Fenster von vorn', () => {
+  test('beginnt im nächsten Fenster von vorn', () => {
     let jetzt = 1000;
     const begrenzer = erzeugeRatenbegrenzer(2, 1000, () => jetzt);
 
@@ -261,7 +261,7 @@ describe('Ratenbegrenzung', () => {
     expect(begrenzer.erlaubt('a')).toBe(false);
   });
 
-  test('vergisst getrennte Verbindungen (NFA-10)', () => {
+  test('vergisst getrennte Verbindungen', () => {
     const begrenzer = erzeugeRatenbegrenzer();
 
     begrenzer.erlaubt('a');
