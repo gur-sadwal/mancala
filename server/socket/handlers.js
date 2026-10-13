@@ -187,19 +187,10 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
   }
 
-  // SCHUTZ: Partie und Sitz immer aus dem Serverzustand lesen.
   function aufZug(socket, nutzdaten) {
-    const partie = manager.holeNachSocket(socket.id);
-    if (!partie) {
-      sendeFehler(socket, FEHLER.KEINE_PARTIE);
-      return;
-    }
-
-    const sitz = sitzVon(partie, socket.id);
-    if (!sitz) {
-      sendeFehler(socket, FEHLER.KEINE_PARTIE);
-      return;
-    }
+    const gefunden = partieUndSitz(socket);
+    if (!gefunden) return;
+    const { partie, sitz } = gefunden;
 
     // pitIndex ist der Name in der Zugnachricht; die Engine sagt mulde.
     const ergebnis = fuehreZugAus(partie, sitz, nutzdaten.pitIndex);
@@ -209,6 +200,20 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
     uebernehmeZug(partie, ergebnis);
+  }
+
+  // SCHUTZ: Partie und Sitz immer aus dem Serverzustand lesen. Ein fehlender
+  // Sitz hieße, dass die Zuordnung im Manager kaputt ist; auch dann gilt
+  // für den Verursacher: keine Partie.
+  function partieUndSitz(socket) {
+    const partie = manager.holeNachSocket(socket.id);
+    const sitz = partie ? sitzVon(partie, socket.id) : null;
+
+    if (!partie || !sitz) {
+      sendeFehler(socket, FEHLER.KEINE_PARTIE);
+      return null;
+    }
+    return { partie, sitz };
   }
 
   // Ein kaputtes Brett beendet die Partie; ein Regelverstoß nur diesen Versuch.
@@ -238,20 +243,11 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   }
 
   function aufAufgeben(socket) {
-    const partie = manager.holeNachSocket(socket.id);
-    if (!partie) {
-      sendeFehler(socket, FEHLER.KEINE_PARTIE);
-      return;
-    }
+    const gefunden = partieUndSitz(socket);
+    if (!gefunden) return;
 
-    const sitz = sitzVon(partie, socket.id);
-    if (!sitz) {
-      sendeFehler(socket, FEHLER.KEINE_PARTIE);
-      return;
-    }
-
-    const sieger = SITZE[sitz].gegner;
-    beendeKontrolliert(partie, GRUND.AUFGEGEBEN, sieger);
+    const sieger = SITZE[gefunden.sitz].gegner;
+    beendeKontrolliert(gefunden.partie, GRUND.AUFGEGEBEN, sieger);
   }
 
   // Der Socket merkt den Namen; nach Neuverbindung gilt der mitgeschickte Name.
