@@ -1,11 +1,12 @@
 /**
  * protokoll.js – gemeinsame Begriffe von Server und Browser.
  *
- * Beide Seiten laden dieselbe Datei: Ereignisse, Fehlertexte, Gründe und
- * Namensregel. Hier dürfen keine Node-Funktionen oder Browserzugriffe stehen.
+ * Beide Seiten laden dieselbe Datei: Ereignisse, Zugform, Fehlertexte,
+ * Gründe und Namensregel. Hier dürfen keine Node-Funktionen oder
+ * Browserzugriffe stehen.
  *
  * Inhalt (Cmd+F nach „== 2.“):
- *   == 1. Ereignisnamen
+ *   == 1. Ereignisnamen und Zugform
  *   == 2. Fehler und sichtbare Texte
  *   == 3. Status, Endegründe und Grenzen
  *   == 4. Gemeinsame Namensregel
@@ -15,7 +16,7 @@
  * ausgeliefert.
  */
 
-// == 1. Ereignisnamen ====================================================
+// == 1. Ereignisnamen und Zugform ========================================
 export const EREIGNIS = Object.freeze({
   // Vom Browser zum Server. Der Zug enthält nur { type: ZUG_TYP, pitIndex }.
   BEITRETEN: 'spiel:beitreten',
@@ -39,7 +40,7 @@ export const EREIGNIS = Object.freeze({
 });
 
 // SCHUTZ: Ein Zug meldet genau { type: "MOVE", pitIndex: 0..5 }, wie es die
-// Projektvorgabe verlangt. pitIndex ist die Nummer der eigenen Mulde; Brett
+// Aufgabenstellung verlangt. pitIndex ist die Nummer der eigenen Mulde; Brett
 // und Punkte rechnet nur der Server.
 export const ZUG_TYP = 'MOVE';
 

@@ -166,7 +166,7 @@ function beiFehler({ code, text }) {
 }
 
 // Ein doppelt abgeschickter Beitritt meldet nur, was die Ansicht schon zeigt.
-// Als Text würde sie „Du bist am Zug“ oder den Einladungslink verdecken.
+// Als Text würde sie „Du bist am Zug“ oder den Hinweis zum Link ersetzen.
 function istNurBestaetigung(code) {
   const { ansicht } = store.lies();
   const imSpiel = ansicht === ANSICHT.SPIEL;

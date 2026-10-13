@@ -370,7 +370,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   }
 
   // REGEL 3.5: Die Engine hat die Restkugeln bereits abgerechnet.
-  // Die Revanche zuerst merken: Die Endnachricht sagt beiden, ob sie geht.
+  // Die Revanche zuerst merken: Die Endnachricht sagt beiden, ob eine
+  // Revanche möglich ist.
   function beendeRegulaer(partie, spielstand) {
     try {
       const revanche = ermoeglicheRevanche(partie, GRUND.REGULAER);
