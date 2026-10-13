@@ -1,8 +1,9 @@
 /**
  * einstellungen.test.js – Gespeicherte Einstellungen einlesen.
  *
- * Geprüft wird ausSpeichertext ohne echten Speicher. Dialog, Speichern
- * und erneutes Laden prüfen zusätzlich die automatisierten Browsertests.
+ * Geprüft wird ausSpeichertext ohne echten Speicher und der Erstbesuch mit
+ * Attrappen für Seite und Speicher. Dialog, Speichern und erneutes Laden
+ * prüfen zusätzlich die automatisierten Browsertests.
  *
  * Inhalt:
  *   == 1. Testaufbau
@@ -11,7 +12,10 @@
 
 // == 1. Testaufbau ==========================================================
 
-import { ausSpeichertext } from '../client/js/einstellungen.js';
+import { jest } from '@jest/globals';
+import {
+  ausSpeichertext, erzeugeEinstellungen,
+} from '../client/js/einstellungen.js';
 
 const STANDARD = { grosseSchrift: false, wenigerAnimation: false };
 
@@ -52,5 +56,53 @@ describe('Einstellungen aus dem Speicher lesen', () => {
     expect(ausSpeichertext('null', STANDARD)).toBeNull();
     expect(ausSpeichertext('42', STANDARD)).toBeNull();
     expect(ausSpeichertext('[]', STANDARD)).toBeNull();
+  });
+});
+
+describe('Erstbesuch-Dialog', () => {
+  /** Baut nur die Elemente nach, die einstellungen.js tatsächlich benutzt. */
+  function baueSeite(speicher) {
+    const dialog = { showModal: jest.fn(), addEventListener: jest.fn() };
+    const elemente = {
+      '#dialog-einstellungen': dialog,
+      '#form-einstellungen': {
+        addEventListener: jest.fn(),
+        elements: {
+          grosseSchrift: { checked: false },
+          wenigerAnimation: { checked: false },
+        },
+      },
+      '#knopf-einstellungen': { addEventListener: jest.fn() },
+    };
+    global.document = {
+      querySelector: (auswahl) => elemente[auswahl],
+      documentElement: { dataset: {} },
+    };
+    global.window = { localStorage: speicher };
+    return dialog;
+  }
+
+  afterEach(() => {
+    delete global.document;
+    delete global.window;
+  });
+
+  test('ohne gespeicherte Wahl öffnet sich der Dialog', () => {
+    const dialog = baueSeite({ getItem: () => null, setItem: jest.fn() });
+    erzeugeEinstellungen().zeigeBeimErstenBesuch();
+
+    expect(dialog.showModal).toHaveBeenCalledTimes(1);
+  });
+
+  test('gesperrter Speicher öffnet den Dialog nicht bei jedem Laden', () => {
+    const gesperrt = () => {
+      throw new Error('SecurityError');
+    };
+    const dialog = baueSeite({ getItem: gesperrt, setItem: gesperrt });
+    erzeugeEinstellungen().zeigeBeimErstenBesuch();
+
+    expect(dialog.showModal).not.toHaveBeenCalled();
+    expect(document.documentElement.dataset)
+      .toEqual({ schrift: 'normal', bewegung: 'normal' });
   });
 });

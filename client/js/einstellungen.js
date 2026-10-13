@@ -46,13 +46,14 @@ export function erzeugeEinstellungen() {
     wenigerAnimation: false,
   };
 
+  // Ohne lesbaren Speicher scheitert auch das Speichern. Der Erstbesuch-Dialog
+  // käme dann bei jedem Laden wieder; deshalb gilt der Standard ohne Dialog.
   function lies() {
     try {
-      return ausSpeichertext(
-        window.localStorage.getItem(SPEICHER_EINSTELLUNGEN), standard,
-      );
+      const text = window.localStorage.getItem(SPEICHER_EINSTELLUNGEN);
+      return { gespeichert: ausSpeichertext(text, standard), lesbar: true };
     } catch {
-      return null;
+      return { gespeichert: null, lesbar: false };
     }
   }
 
@@ -87,7 +88,7 @@ export function erzeugeEinstellungen() {
     return einstellungen;
   }
 
-  const gespeichert = lies();
+  const { gespeichert, lesbar } = lies();
 
   let aktuell = gespeichert ?? standard;
   wendeAn(aktuell);
@@ -116,7 +117,7 @@ export function erzeugeEinstellungen() {
 
   return {
     zeigeBeimErstenBesuch() {
-      if (gespeichert === null) beiOeffnen();
+      if (lesbar && gespeichert === null) beiOeffnen();
     },
   };
 }
