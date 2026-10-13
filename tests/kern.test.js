@@ -198,6 +198,17 @@ describe('Netzverbindung: nach einer Unterbrechung nichts nachschicken', () => {
     expect(socket.sendBuffer).toEqual([]);
   });
 
+  test('beitreten meldet, ob der Beitritt hinausging', () => {
+    const aktionen = verbinde({});
+    socket.connected = true;
+    socket.ereignisse.get('connect')();
+
+    expect(aktionen.beitreten('Anna')).toBe(true);
+    socket.connected = false;
+    socket.ereignisse.get('disconnect')('transport close');
+    expect(aktionen.beitreten('Anna')).toBe(false);
+  });
+
   test('nach der Wiederverbindung wird wieder gesendet', () => {
     const aktionen = verbindeUndTrenne();
     socket.connected = true;

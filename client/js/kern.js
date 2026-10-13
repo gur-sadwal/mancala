@@ -119,17 +119,20 @@ export function verbinde(rueckrufe) {
   // SCHUTZ: Während einer Unterbrechung nichts senden. Socket.io würde die
   // Nachricht sonst puffern und nach der Wiederverbindung mit neuer
   // Socket-Kennung nachreichen; diese gehört zu keiner Partie mehr.
+  // Liefert false, wenn die Nachricht deshalb nicht hinausging.
   function sende(ereignis, ...nutzdaten) {
-    if (warVerbunden && !socket.connected) return;
+    if (warVerbunden && !socket.connected) return false;
     socket.emit(ereignis, ...nutzdaten);
+    return true;
   }
 
   return {
     // Ein Einladungscode gewinnt vor der Wahl „schnell“ oder „privat“.
+    // Die Anmeldung erfährt, ob der Beitritt hinausging.
     beitreten(name, { privat = false, code = null } = {}) {
       letzterName = name;
       const nutzdaten = code ? { name, code } : { name, privat };
-      sende(EREIGNIS.BEITRETEN, nutzdaten);
+      return sende(EREIGNIS.BEITRETEN, nutzdaten);
     },
     abbrechen: () => sende(EREIGNIS.ABBRECHEN),
     // SCHUTZ: Nur die Muldennummer senden; Spielstand und Punkte bestimmt der

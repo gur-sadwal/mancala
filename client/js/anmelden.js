@@ -11,6 +11,9 @@ import { bereinigeName, NAME_VERBOTEN } from '/shared/protokoll.js';
 // == 1. Einrichtung ======================================================
 const SPEICHER_NAME = 'mancala.name';
 
+const OHNE_VERBINDUNG = 'Ohne Verbindung wurde dein Beitritt nicht gesendet. '
+  + 'Versuche es erneut, sobald die Verbindung wieder steht.';
+
 export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const abschnitt = $('#ansicht-anmelden');
   const formular = $('#form-anmelden');
@@ -95,7 +98,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
 
     // Nur dieser Absende-Listener reicht den fertig bereinigten Namen weiter.
     beiAnmeldung(name);
-    aktionen.beitreten(name, { privat: istPrivatGewaehlt(), code: einladung });
+    const gesendet = aktionen.beitreten(
+      name, { privat: istPrivatGewaehlt(), code: einladung },
+    );
+
+    // Ohne Verbindung geht der Beitritt nicht hinaus; die Ansicht sagt das.
+    if (!gesendet) zeigeFehler(OHNE_VERBINDUNG);
   }
 
   // == 3. Ansicht ==========================================================
