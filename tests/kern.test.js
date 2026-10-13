@@ -170,6 +170,56 @@ describe('Netzverbindung: was der Client sendet', () => {
   });
 });
 
+describe('Netzverbindung: nach einer Unterbrechung nichts nachschicken', () => {
+  function verbindeUndTrenne() {
+    const aktionen = verbinde({});
+    socket.connected = true;
+    socket.ereignisse.get('connect')();
+    socket.connected = false;
+    socket.ereignisse.get('disconnect')('transport close');
+    return aktionen;
+  }
+
+  test('vor der ersten Verbindung darf Socket.io noch puffern', () => {
+    const aktionen = verbinde({});
+    socket.connected = false;
+    aktionen.beitreten('Anna');
+
+    expect(socket.gesendet).toEqual([
+      [EREIGNIS.BEITRETEN, { name: 'Anna', privat: false }],
+    ]);
+  });
+
+  test('während der Unterbrechung geht keine Aktion an Socket.io', () => {
+    const aktionen = verbindeUndTrenne();
+    aktionen.beitreten('Anna');
+    aktionen.zug(2);
+    aktionen.aufgeben();
+    aktionen.erneut();
+    aktionen.revanche();
+    aktionen.abbrechen();
+
+    expect(socket.gesendet).toEqual([]);
+  });
+
+  test('beim Trennen verwirft der Client den Puffer von Socket.io', () => {
+    verbinde({});
+    socket.sendBuffer = [{ data: [EREIGNIS.ZUG] }];
+    socket.ereignisse.get('disconnect')('ping timeout');
+
+    expect(socket.sendBuffer).toEqual([]);
+  });
+
+  test('nach der Wiederverbindung wird wieder gesendet', () => {
+    const aktionen = verbindeUndTrenne();
+    socket.connected = true;
+    socket.ereignisse.get('connect')();
+    aktionen.abbrechen();
+
+    expect(socket.gesendet).toEqual([[EREIGNIS.ABBRECHEN]]);
+  });
+});
+
 describe('Netzverbindung: was beim Client ankommt', () => {
   test('Spielereignisse rufen den passenden Rückruf mit den Daten auf', () => {
     const angekommen = [];

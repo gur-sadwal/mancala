@@ -53,7 +53,10 @@ jest.unstable_mockModule('../client/js/einstellungen.js', () => ({
 
 beforeEach(async () => {
   jest.resetModules();
+  // connected wie bei einem echten Socket; kern.js sendet sonst nach einer
+  // Unterbrechung bewusst nichts.
   socket = {
+    connected: true,
     on: jest.fn(),
     emit: jest.fn(),
     disconnect: jest.fn(),

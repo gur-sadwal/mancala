@@ -68,9 +68,19 @@ export function verbinde(rueckrufe) {
     reconnectionDelayMax: 4000,
   });
 
+  // Erst nach der ersten Verbindung kann eine Nachricht veralten.
+  let warVerbunden = false;
+
   // Seitenweite Listener: Servernachrichten können in jeder Ansicht eintreffen.
-  socket.on('connect', () => rueckrufe.beiVerbindung?.());
-  socket.on('disconnect', (grund) => rueckrufe.beiTrennung?.(grund));
+  socket.on('connect', () => {
+    warVerbunden = true;
+    rueckrufe.beiVerbindung?.();
+  });
+  socket.on('disconnect', (grund) => {
+    // SCHUTZ: Was Socket.io noch zurückhält, gehört zur alten Verbindung.
+    socket.sendBuffer = [];
+    rueckrufe.beiTrennung?.(grund);
+  });
   socket.on('connect_error',
     (fehler) => rueckrufe.beiTrennung?.(fehler.message));
 
@@ -98,19 +108,27 @@ export function verbinde(rueckrufe) {
   // Nach einer neuen Verbindung muss die erneute Suche den Namen mitsenden.
   let letzterName = '';
 
+  // SCHUTZ: Während einer Unterbrechung nichts senden. Socket.io würde die
+  // Nachricht sonst puffern und nach der Wiederverbindung mit neuer
+  // Socket-Kennung nachreichen; diese gehört zu keiner Partie mehr.
+  function sende(ereignis, ...nutzdaten) {
+    if (warVerbunden && !socket.connected) return;
+    socket.emit(ereignis, ...nutzdaten);
+  }
+
   return {
     // Ein Einladungscode gewinnt vor der Wahl „schnell“ oder „privat“.
     beitreten(name, { privat = false, code = null } = {}) {
       letzterName = name;
       const nutzdaten = code ? { name, code } : { name, privat };
-      socket.emit(EREIGNIS.BEITRETEN, nutzdaten);
+      sende(EREIGNIS.BEITRETEN, nutzdaten);
     },
-    abbrechen: () => socket.emit(EREIGNIS.ABBRECHEN),
+    abbrechen: () => sende(EREIGNIS.ABBRECHEN),
     // SCHUTZ: Nur die Muldennummer senden; Spielstand und Punkte bestimmt der
     // Server.
-    zug: (mulde) => socket.emit(EREIGNIS.ZUG, { mulde }),
-    aufgeben: () => socket.emit(EREIGNIS.AUFGEBEN),
-    erneut: () => socket.emit(EREIGNIS.ERNEUT, { name: letzterName }),
-    revanche: () => socket.emit(EREIGNIS.REVANCHE),
+    zug: (mulde) => sende(EREIGNIS.ZUG, { mulde }),
+    aufgeben: () => sende(EREIGNIS.AUFGEBEN),
+    erneut: () => sende(EREIGNIS.ERNEUT, { name: letzterName }),
+    revanche: () => sende(EREIGNIS.REVANCHE),
   };
 }
