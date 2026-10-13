@@ -149,11 +149,16 @@ entscheidet über die Spielregeln.
 | Client | Fehler in der aktiven Ansicht anzeigen; Animationsfehler abfangen |
 
 Der Browser sendet für einen Zug nur `{ type: "MOVE", pitIndex: 0 }` mit
-dem Ereignis `spiel:zug`, wie es die Projektvorgabe verlangt: keine Punkte,
-kein Brett und keine Spiel-ID. `pitIndex` 0–5 bezieht sich auf die eigene
-Reihe. Die serverseitige Socket-Zuordnung
-bestimmt Partie und Sitz. Der Server prüft Zugrecht, ganze Zahl im Bereich,
-eigene Reihe und mindestens eine Kugel, bevor er rechnet.
+dem Ereignis `spiel:zug`, wie es die Aufgabenstellung verlangt: keine
+Punkte, kein Brett und keine Spiel-ID. `pitIndex` 0–5 bezieht sich auf die
+eigene Reihe. Die serverseitige Socket-Zuordnung bestimmt Partie und Sitz.
+Der Server prüft Zugrecht, ganze Zahl im Bereich, eigene Reihe und
+mindestens eine Kugel, bevor er rechnet.
+
+Während einer Verbindungsunterbrechung sendet der Browser nichts. Socket.io
+würde Nachrichten sonst puffern und nach der Wiederverbindung unter einer
+neuen Socket-Kennung nachreichen. Nach der Wiederverbindung beginnt man
+wieder bei der Anmeldung; ein verworfener Beitritt wird dort gemeldet.
 
 Nach einem Zug werden die Brettregeln geprüft, etwa die Summe 48 und gültige
 nicht negative Kugelzahlen. Einzelne Fehler dürfen andere Partien nicht
