@@ -118,6 +118,7 @@ async function zeigeErgebnis({ spielstand, ergebnis, revanche }) {
   await warteAufAnimation();
   // SCHUTZ: Während des Wartens kann eine neue Partie begonnen haben.
   if (meineNr !== ablaufNr) return;
+  spielAnsicht.zeigeEnde();
   store.setze({
     ansicht: ANSICHT.ENDE,
     spielstand,

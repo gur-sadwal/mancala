@@ -204,8 +204,9 @@ function zeichneMulde(element, anzahl, rolle, ichBinDran) {
   mulde.disabled = !spielbar;
 }
 
-function zeichneStand(elemente, spielstand, sitz, laeuft) {
+function zeichneStand(elemente, spielstand, sitz) {
   const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
+  const ichBinDran = spielstand.amZug === sitz;
 
   const [eigenReihe, eigenSpalte] = hausVon(sitz);
   const [gegnerReihe, gegnerSpalte] = hausVon(gegnerSitz);
@@ -219,31 +220,16 @@ function zeichneStand(elemente, spielstand, sitz, laeuft) {
   );
   setzeText(elemente.nameGegner, gegnerName);
 
-  zeichneZuganzeige(elemente, {
-    laeuft, ichBinDran: spielstand.amZug === sitz, gegnerName,
-  });
-}
-
-// REGEL 3.5: Nach dem Spielende ist niemand mehr am Zug. Der Server lässt
-// amZug beim letzten Ziehenden stehen; die Anzeige zeigt das nicht an.
-function zeichneZuganzeige(elemente, { laeuft, ichBinDran, gegnerName = '' }) {
-  const ichDran = laeuft && ichBinDran;
-  const gegnerDran = laeuft && !ichBinDran;
-
-  schalte(elemente.standEigen, 'stand__spieler--dran', ichDran);
-  schalte(elemente.standGegner, 'stand__spieler--dran', gegnerDran);
+  schalte(elemente.standEigen, 'stand__spieler--dran', ichBinDran);
+  schalte(elemente.standGegner, 'stand__spieler--dran', !ichBinDran);
 
   setzeText(
-    elemente.zuganzeige, zuganzeigeText({ laeuft, ichBinDran, gegnerName }),
+    elemente.zuganzeige,
+    ichBinDran ? 'Du bist am Zug' : `${gegnerName} überlegt…`,
   );
-  schalte(elemente.zuganzeige, 'zuganzeige--ich', ichDran);
-  schalte(elemente.zuganzeige, 'zuganzeige--gegner', gegnerDran);
+  schalte(elemente.zuganzeige, 'zuganzeige--ich', ichBinDran);
+  schalte(elemente.zuganzeige, 'zuganzeige--gegner', !ichBinDran);
   schalte(elemente.zuganzeige, 'zuganzeige--hinweis', false);
-}
-
-export function zuganzeigeText({ laeuft, ichBinDran, gegnerName }) {
-  if (!laeuft) return 'Partie beendet';
-  return ichBinDran ? 'Du bist am Zug' : `${gegnerName} überlegt…`;
 }
 
 // REGEL 3.4: beute.anzahl enthält auch die eigene letzte Kugel; der Text nennt
@@ -399,9 +385,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   let animator = null;
   let sitz = null;
 
-  // Nur zwischen starte und beende kann jemand am Zug sein.
-  let partieLaeuft = false;
-
   // Lokale Doppelklicks sperren; verbindlich prüft weiterhin der Server jeden
   // Zug.
   let wartetAufAntwort = false;
@@ -508,7 +491,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
   function zeichneAlles(spielstand) {
     zeichneBrett(zellen, spielstand.brett, sitz, spielstand.amZug === sitz);
-    zeichneStand(elemente, spielstand, sitz, partieLaeuft);
+    zeichneStand(elemente, spielstand, sitz);
     schalte(brettElement, 'brett--gesperrt', false);
   }
 
@@ -547,7 +530,6 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
   function starte(spielstand, eigenerSitz) {
     sitz = eigenerSitz;
-    partieLaeuft = true;
     wartetAufAntwort = false;
     letzteMulde = null;
     knopfAufgeben.disabled = false;
@@ -563,10 +545,20 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   }
 
   function beende() {
-    partieLaeuft = false;
     knopfAufgeben.disabled = true;
     schliesseRueckfrage();
-    zeichneZuganzeige(elemente, { laeuft: false });
+  }
+
+  // REGEL 3.5: Nach dem Spielende ist niemand mehr am Zug; der Server lässt
+  // amZug beim letzten Ziehenden stehen. main.js ruft das erst nach der
+  // letzten Animation, damit ein Sonderregel-Hinweis bis dahin sichtbar bleibt.
+  function zeigeEnde() {
+    setzeText(elemente.zuganzeige, 'Partie beendet');
+    schalte(elemente.standEigen, 'stand__spieler--dran', false);
+    schalte(elemente.standGegner, 'stand__spieler--dran', false);
+    schalte(elemente.zuganzeige, 'zuganzeige--ich', false);
+    schalte(elemente.zuganzeige, 'zuganzeige--gegner', false);
+    schalte(elemente.zuganzeige, 'zuganzeige--hinweis', false);
   }
 
   // Punkte und „am Zug“ erst nach der Animation wechseln, Sonderregelhinweis
@@ -580,7 +572,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
     if (!zuEnde) return;
 
-    zeichneStand(elemente, spielstand, sitz, partieLaeuft);
+    zeichneStand(elemente, spielstand, sitz);
 
     // Ohne Pause wäre der Hinweis vor dem nächsten Browserbild bereits
     // überschrieben.
@@ -602,5 +594,5 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     stelleFokusWiederHer();
   }
 
-  return { zeige, starte, beende, spieleZug, melde };
+  return { zeige, starte, beende, zeigeEnde, spieleZug, melde };
 }

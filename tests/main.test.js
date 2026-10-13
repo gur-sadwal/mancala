@@ -28,6 +28,7 @@ function ansicht() {
     spieleZug: jest.fn(() => Promise.resolve()),
     melde: jest.fn(),
     beende: jest.fn(),
+    zeigeEnde: jest.fn(),
   };
 }
 
@@ -176,6 +177,17 @@ describe('Nachrichten während der Schlussanimation', () => {
     },
   );
 
+  test('„Partie beendet“ erst nach der Schlussanimation', async () => {
+    starte();
+    const fertig = halteAnimationAn();
+    const ende = beende();
+    expect(ansichten.spiel.zeigeEnde).not.toHaveBeenCalled();
+
+    fertig();
+    await ende;
+    expect(ansichten.spiel.zeigeEnde).toHaveBeenCalledTimes(1);
+  });
+
   test.each([
     [protokoll.EREIGNIS.REVANCHE_WEG, 'weg'],
     [protokoll.EREIGNIS.REVANCHE_ABGELAUFEN, 'abgelaufen'],
@@ -266,5 +278,24 @@ describe('Doppelt abgeschickter Beitritt', () => {
     expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
     expect(ansichten.warten.melde).toHaveBeenLastCalledWith(
       protokoll.FEHLER_TEXT[protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE]);
+  });
+});
+
+describe('Ergebnis nach einem Abbruch', () => {
+  test('ein Abbruch zeigt das Ende und öffnet das Ergebnis', async () => {
+    starte();
+    const aufgegeben = protokoll.GRUND.AUFGEGEBEN;
+    await sende(protokoll.EREIGNIS.ABBRUCH, {
+      grund: aufgegeben,
+      spielstand: spielstand(protokoll.STATUS.BEENDET),
+      ergebnis: {
+        punkte: { unten: 10, oben: 8 }, sieger: 'unten', grund: aufgegeben,
+      },
+      revanche: true,
+    });
+
+    expect(ansichten.spiel.zeigeEnde).toHaveBeenCalledTimes(1);
+    expect(ansichten.ende.zeige.mock.lastCall[0].ergebnis.sieger)
+      .toBe('unten');
   });
 });
