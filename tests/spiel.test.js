@@ -13,7 +13,7 @@
 
 import { jest } from '@jest/globals';
 import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
-  erzeugeSpielAnsicht } from '../client/js/spiel.js';
+  erzeugeSpielAnsicht, zuganzeigeText } from '../client/js/spiel.js';
 import { fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
 import { neuesBrett } from '../server/spiel/brett.js';
 import { STATUS } from '../shared/protokoll.js';
@@ -50,6 +50,50 @@ describe('Tastenkürzel und Häuser', () => {
     }
     expect(hausVon('unten')).toEqual([1, 6]);
     expect(hausVon('oben')).toEqual([0, 0]);
+  });
+});
+
+describe('Zuganzeige', () => {
+  test('während der Partie steht dort, wer am Zug ist', () => {
+    const dran = { laeuft: true, ichBinDran: true, gegnerName: 'Ben' };
+    const wartet = { laeuft: true, ichBinDran: false, gegnerName: 'Ben' };
+
+    expect(zuganzeigeText(dran)).toBe('Du bist am Zug');
+    expect(zuganzeigeText(wartet)).toBe('Ben überlegt…');
+  });
+
+  test('nach dem Spielende ist niemand mehr am Zug', () => {
+    const vorbei = { laeuft: false, ichBinDran: true, gegnerName: 'Ben' };
+
+    expect(zuganzeigeText(vorbei)).toBe('Partie beendet');
+  });
+
+  test('beende() zeigt „Partie beendet“ ohne Hervorhebung', () => {
+    const elemente = new Map();
+    global.document = {
+      querySelector: (auswahl) => {
+        if (!elemente.has(auswahl)) {
+          elemente.set(auswahl, {
+            textContent: '', open: false, classList: { toggle: jest.fn() },
+          });
+        }
+        return elemente.get(auswahl);
+      },
+    };
+    try {
+      erzeugeSpielAnsicht({ aktionen: {} }).beende();
+
+      const anzeige = elemente.get('#zuganzeige');
+      expect(anzeige.textContent).toBe('Partie beendet');
+      expect(anzeige.classList.toggle)
+        .toHaveBeenCalledWith('zuganzeige--ich', false);
+      expect(elemente.get('#stand-eigen').classList.toggle)
+        .toHaveBeenCalledWith('stand__spieler--dran', false);
+      expect(elemente.get('#stand-gegner').classList.toggle)
+        .toHaveBeenCalledWith('stand__spieler--dran', false);
+    } finally {
+      delete global.document;
+    }
   });
 });
 
