@@ -2,7 +2,7 @@
  * kern.js – lokaler Anzeigezustand und die einzige Socket-Verbindung.
  * Der Store kennt kein DOM; die Netzverbindung kennt keine Ansichten.
  * Inhalt: == 1. Anzeigezustand · == 2. Netzverbindung
- * Benutzt von main.js; Protokoll und Socket.io liefert der Server.
+ * Benutzt von main.js und ende.js; Protokoll und Socket.io liefert der Server.
  */
 
 import { io } from '/socket.io/socket.io.esm.min.js';

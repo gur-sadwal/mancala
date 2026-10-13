@@ -30,7 +30,9 @@ const SOCKET_OPTIONEN = {
   maxHttpBufferSize: 1024,
   pingInterval: 20000,
   pingTimeout: 20000,
-  // Keine CORS-Freigabe für fremde Browserseiten; kein Schutz vor Rohclients.
+  // Keine CORS-Freigabe: Fremde Webseiten können Antworten über HTTP nicht
+  // lesen. Den WebSocket-Aufbau und Rohclients hält das nicht auf; ohne
+  // Anmeldedaten lässt sich damit aber nichts übernehmen.
   cors: { origin: false },
 };
 

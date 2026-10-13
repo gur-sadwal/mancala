@@ -348,7 +348,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       const socketA = socketVon(a.socketId);
       const socketB = socketVon(b.socketId);
 
-      // SCHUTZ: Nach einem Fehler beim Trennen kann ein alter Platz übrig sein.
+      // SCHUTZ: Ein Platz ohne Socket bleibt nur übrig, wenn das Aufräumen
+      // beim Trennen scheitert; Socket.io meldet das Trennen sonst sofort.
+      // Auch dann entsteht keine Partie mit einem leeren Sitz.
       if (!socketA || !socketB) {
         let uebrig = null;
         if (socketA) uebrig = a;
@@ -368,7 +370,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   }
 
   // REGEL 3.5: Die Engine hat die Restkugeln bereits abgerechnet.
-  // Revanche vorm Auflösen merken; diese Option gehört zum Onlinebetrieb.
+  // Die Revanche zuerst merken: Die Endnachricht sagt beiden, ob sie geht.
   function beendeRegulaer(partie, spielstand) {
     try {
       const revanche = ermoeglicheRevanche(partie, GRUND.REGULAER);
