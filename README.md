@@ -1,11 +1,14 @@
 # Mancala (Kalaha)
 
 Verteiltes Spiel für zwei Personen nach den BrainKing-Regeln. Studienprojekt
-von Gursharan Sadwal, DHBW, Modul W 3 WI_110.2 Web-Entwicklung bei
+von Gursharan Sadwal, DHBW, Modul W3WI_110.2 Web-Entwicklung bei
 Prof. Dr. Michael Eichberg.
 
 Der Server hält den gültigen Spielstand und prüft jeden Zug. Zwei getrennte
 Browserfenster genügen zum Ausprobieren; mehrere Partien laufen gleichzeitig.
+
+Technik: Node.js, Express und Socket.io im Backend; HTML5, CSS3 und
+Vanilla-JavaScript (ES-Module) im Frontend, ohne Framework und ohne Bundler.
 
 Inhalt: [Starten](#1-starten) · [Testen](#2-testen) · [Regeln](#3-regeln) ·
 [Aufbau](#4-aufbau) · [Fehlerbehandlung](#5-fehlerbehandlung) ·
@@ -27,6 +30,10 @@ Das Spiel ist unter `http://localhost:3000` erreichbar. Der Server bindet an
 `0.0.0.0`; im selben Netz funktioniert auch `http://<server-ip>:3000`.
 Der Port muss eine ganze Zahl zwischen 1 und 65535 sein. Ohne Argument ist 3000
 voreingestellt. Mit `Control+C` endet der Server geordnet.
+
+Zum Ausprobieren öffnet man `http://localhost:3000` in zwei Browserfenstern
+und startet in beiden eine Partie. Ein Fenster genügt nicht, weil jede Partie
+zwei Personen braucht.
 
 Es gibt keinen Bundler: Der Browser lädt die JavaScript-Module direkt.
 `npm run build` prüft jede Quelldatei einzeln mit `node --check` und führt
