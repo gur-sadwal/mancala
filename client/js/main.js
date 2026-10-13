@@ -13,7 +13,7 @@ import { erzeugeWarteAnsicht } from './warten.js';
 import { erzeugeSpielAnsicht } from './spiel.js';
 import { erzeugeEndeAnsicht } from './ende.js';
 import { erzeugeEinstellungen } from './einstellungen.js';
-import { FEHLER, FEHLER_TEXT, STATUS, REMIS } from '/shared/protokoll.js';
+import { FEHLER, FEHLER_TEXT, STATUS } from '/shared/protokoll.js';
 
 // == 1. Einrichtung ======================================================
 const einstellungen = erzeugeEinstellungen();
@@ -43,8 +43,8 @@ const aktionen = verbinde({
   beiPrivat,
   beiStart,
   beiStand,
-  beiEnde,
-  beiAbbruch,
+  beiEnde: zeigeErgebnis,
+  beiAbbruch: zeigeErgebnis,
   beiRevancheAngebot,
   beiRevancheWeg,
   beiRevancheAbgelaufen,
@@ -85,9 +85,7 @@ function beiPrivat({ code }) {
 // Ein Start verwirft den alten Ablauf und baut das Brett für diesen Sitz.
 function beiStart({ sitz, spielstand }) {
   entferneEinladungAusAdresse();
-  ablaufNr += 1;
-  letzteAnimation = Promise.resolve();
-  partieVorbei = false;
+  beginneNeuenAblauf();
 
   store.setze({
     ansicht: ANSICHT.SPIEL,
@@ -110,10 +108,10 @@ function beiStand({ spielstand, bericht }) {
   );
 }
 
-// Die Revanche-Frist beginnt beim Empfang, bevor die Animation fertig ist.
-async function beiEnde({ spielstand, ergebnis, revanche }) {
+// Ende und Abbruch liefern beide Spielstand und Ergebnis vom Server. Die
+// Revanche-Frist beginnt beim Empfang, bevor die Animation fertig ist.
+async function zeigeErgebnis({ spielstand, ergebnis, revanche }) {
   const meineNr = ablaufNr;
-
   const revancheSeit = Date.now();
   markierePartieVorbei();
 
@@ -124,24 +122,6 @@ async function beiEnde({ spielstand, ergebnis, revanche }) {
     ansicht: ANSICHT.ENDE,
     spielstand,
     ergebnis,
-    revanche: revancheStand(revanche),
-    revancheSeit,
-  });
-}
-
-async function beiAbbruch({ grund, ergebnis, spielstand, revanche }) {
-  const meineNr = ablaufNr;
-  markierePartieVorbei();
-  const revancheSeit = Date.now();
-  await warteAufAnimation();
-  if (meineNr !== ablaufNr) return;
-
-  store.setze({
-    ansicht: ANSICHT.ENDE,
-    spielstand: spielstand ?? store.lies().spielstand,
-    ergebnis: ergebnis ?? {
-      punkte: { unten: 0, oben: 0 }, sieger: REMIS, grund,
-    },
     revanche: revancheStand(revanche),
     revancheSeit,
   });
@@ -217,12 +197,17 @@ function markierePartieVorbei() {
   spielAnsicht.beende();
 }
 
-// Der Name bleibt erhalten; Partie, Einladung und Revanche werden
-// zurückgesetzt.
-function zurueckZurAnmeldung() {
+// Start, neue Suche und Rückkehr zur Anmeldung beginnen einen neuen Ablauf.
+function beginneNeuenAblauf() {
   ablaufNr += 1;
   partieVorbei = false;
   letzteAnimation = Promise.resolve();
+}
+
+// Der Name bleibt erhalten; Partie, Einladung und Revanche werden
+// zurückgesetzt.
+function zurueckZurAnmeldung() {
+  beginneNeuenAblauf();
   store.setze({
     ansicht: ANSICHT.ANMELDEN,
     spielstand: null,
@@ -275,8 +260,7 @@ const endeAnsicht = erzeugeEndeAnsicht({
   // Sofort warten: Verspätete Revanche-Nachrichten des alten Gegners dürfen
   // den Ergebnisdialog während der neuen Suche nicht erneut öffnen.
   beiNeuemSpiel() {
-    ablaufNr += 1;
-    partieVorbei = false;
+    beginneNeuenAblauf();
     store.setze({
       ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null,
     });
@@ -288,16 +272,15 @@ const endeAnsicht = erzeugeEndeAnsicht({
     store.setze({ revanche: 'gewuenscht' });
   },
 
-  beiAbmelden() {
-    aktionen.abbrechen();
-    zurueckZurAnmeldung();
-  },
-
-  beiSchliessen() {
-    aktionen.abbrechen();
-    zurueckZurAnmeldung();
-  },
+  beiAbmelden: verlasseErgebnis,
+  beiSchliessen: verlasseErgebnis,
 });
+
+// Abmelden und Esc nehmen die Revanche zurück und führen zur Anmeldung.
+function verlasseErgebnis() {
+  aktionen.abbrechen();
+  zurueckZurAnmeldung();
+}
 
 // == 4. Zeichnen und Start ================================================
 store.abonniere((zustand) => {
