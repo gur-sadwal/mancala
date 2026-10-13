@@ -134,6 +134,17 @@ describe('Neue Suche nach dem Ergebnis', () => {
 });
 
 describe('Zurück zur Anmeldung', () => {
+  test('Esc im Ergebnis nimmt die Revanche zurück und führt zur Anmeldung',
+    async () => {
+      starte();
+      await beende();
+      rueckrufe.ende.beiSchliessen();
+
+      expect(socket.emit)
+        .toHaveBeenLastCalledWith(protokoll.EREIGNIS.ABBRECHEN);
+      expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    });
+
   test('Abmelden beendet das Revanche-Angebot und behält die Verbindung', async () => {
     starte();
     await beende();
@@ -268,6 +279,15 @@ describe('Doppelt abgeschickter Beitritt', () => {
 
     expect(ansichten.warten.melde).not.toHaveBeenCalled();
     expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+  });
+
+  test('BEREITS_IN_PARTIE außerhalb des Spiels wird weiter angezeigt', () => {
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.BEREITS_IN_PARTIE,
+    });
+
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.BEREITS_IN_PARTIE]);
   });
 
   test('außerhalb des Wartens führt dieselbe Meldung ins Warten', () => {
