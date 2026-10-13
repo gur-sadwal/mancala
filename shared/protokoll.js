@@ -16,10 +16,8 @@
  */
 
 // == 1. Ereignisnamen ====================================================
-// spiel:zug mit { mulde } entspricht { type: "MOVE", pitIndex }:
-// Der Socket.io-Ereignisname trägt die Typangabe, nur die Nummer wird gesendet.
 export const EREIGNIS = Object.freeze({
-  // Vom Browser zum Server. Der Zug enthält nur { mulde: 0..5 }.
+  // Vom Browser zum Server. Der Zug enthält nur { type: ZUG_TYP, pitIndex }.
   BEITRETEN: 'spiel:beitreten',
   ABBRECHEN: 'spiel:abbrechen',
   ZUG: 'spiel:zug',
@@ -39,6 +37,11 @@ export const EREIGNIS = Object.freeze({
   REVANCHE_ABGELAUFEN: 'spiel:revanche-abgelaufen',
   FEHLER: 'spiel:fehler',
 });
+
+// SCHUTZ: Ein Zug meldet genau { type: "MOVE", pitIndex: 0..5 }, wie es die
+// Projektvorgabe verlangt. pitIndex ist die Nummer der eigenen Mulde; Brett
+// und Punkte rechnet nur der Server.
+export const ZUG_TYP = 'MOVE';
 
 // == 2. Fehler und sichtbare Texte =======================================
 export const FEHLER = Object.freeze({

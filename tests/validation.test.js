@@ -164,12 +164,16 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
 });
 
 describe('Schemaprüfung der Ereignisse', () => {
-  test('spiel:zug verlangt eine Muldennummer von 0 bis 5', () => {
-    expect(istGueltig(EREIGNIS.ZUG, { mulde: 0 })).toBe(true);
-    expect(istGueltig(EREIGNIS.ZUG, { mulde: 5 })).toBe(true);
+  test('spiel:zug verlangt { type: "MOVE", pitIndex } mit 0 bis 5', () => {
+    expect(istGueltig(EREIGNIS.ZUG, { type: 'MOVE', pitIndex: 0 })).toBe(true);
+    expect(istGueltig(EREIGNIS.ZUG, { type: 'MOVE', pitIndex: 5 })).toBe(true);
 
-    expect(istGueltig(EREIGNIS.ZUG, { mulde: 6 })).toBe(false);
-    expect(istGueltig(EREIGNIS.ZUG, { mulde: '3' })).toBe(false);
+    expect(istGueltig(EREIGNIS.ZUG, { type: 'MOVE', pitIndex: 6 })).toBe(false);
+    const alsText = { type: 'MOVE', pitIndex: '3' };
+    expect(istGueltig(EREIGNIS.ZUG, alsText)).toBe(false);
+    expect(istGueltig(EREIGNIS.ZUG, { pitIndex: 3 })).toBe(false);
+    expect(istGueltig(EREIGNIS.ZUG, { type: 'move', pitIndex: 3 })).toBe(false);
+    expect(istGueltig(EREIGNIS.ZUG, { mulde: 3 })).toBe(false);
     expect(istGueltig(EREIGNIS.ZUG, {})).toBe(false);
     expect(istGueltig(EREIGNIS.ZUG, null)).toBe(false);
     expect(istGueltig(EREIGNIS.ZUG, [1])).toBe(false);
@@ -212,9 +216,11 @@ describe('Schemaprüfung der Ereignisse', () => {
   });
 
   test('__proto__ in den Nutzdaten hat keine Wirkung', () => {
-    // Es findet keine Objekt-Verschmelzung statt; gelesen wird nur das
-    // benannte Feld `mulde`.
-    const boesartig = JSON.parse('{"mulde": 2, "__proto__": {"gehackt": true}}');
+    // Es findet keine Objekt-Verschmelzung statt; gelesen werden nur die
+    // benannten Felder `type` und `pitIndex`.
+    const boesartig = JSON.parse(
+      '{"type": "MOVE", "pitIndex": 2, "__proto__": {"gehackt": true}}',
+    );
 
     expect(istGueltig(EREIGNIS.ZUG, boesartig)).toBe(true);
     expect({}.gehackt).toBeUndefined();
@@ -222,7 +228,8 @@ describe('Schemaprüfung der Ereignisse', () => {
 
   test('ein werfender Getter bringt die Prüfung nicht zum Absturz', () => {
     const boesartig = {
-      get mulde() { throw new Error('boom'); },
+      type: 'MOVE',
+      get pitIndex() { throw new Error('boom'); },
     };
     expect(istGueltig(EREIGNIS.ZUG, boesartig)).toBe(false);
   });

@@ -13,7 +13,9 @@
  * Benutzt von: Handler. Benutzt shared/protokoll.js; braucht keinen Server.
  */
 
-import { EREIGNIS, GRENZEN, bereinigeName } from '../../shared/protokoll.js';
+import {
+  EREIGNIS, GRENZEN, ZUG_TYP, bereinigeName,
+} from '../../shared/protokoll.js';
 
 // == 1. Prüfhilfen =======================================================
 // EINSTELLBAR: Ersatzname, wenn keine sichtbaren Zeichen übrig bleiben.
@@ -47,7 +49,8 @@ const SCHEMA = Object.freeze({
     && (d.privat === undefined || typeof d.privat === 'boolean')
     && (d.code === undefined || typeof d.code === 'string'),
   [EREIGNIS.ZUG]: (d) => istObjekt(d)
-    && istGanzzahlZwischen(d.mulde, GRENZEN.MULDE_MIN, GRENZEN.MULDE_MAX),
+    && d.type === ZUG_TYP
+    && istGanzzahlZwischen(d.pitIndex, GRENZEN.MULDE_MIN, GRENZEN.MULDE_MAX),
   [EREIGNIS.ABBRECHEN]: () => true,
   [EREIGNIS.AUFGEBEN]: () => true,
 

@@ -125,11 +125,13 @@ describe('Store (Anzeigezustand)', () => {
 });
 
 describe('Netzverbindung: was der Client sendet', () => {
-  test('ein Zug schickt nur die Muldennummer', () => {
+  test('ein Zug schickt nur { type: "MOVE", pitIndex }', () => {
     const aktionen = verbinde({});
     aktionen.zug(3);
 
-    expect(socket.gesendet).toEqual([[EREIGNIS.ZUG, { mulde: 3 }]]);
+    expect(socket.gesendet).toEqual([
+      [EREIGNIS.ZUG, { type: 'MOVE', pitIndex: 3 }],
+    ]);
   });
 
   test('Beitreten: schnell, privat oder mit Code – ein Code gewinnt', () => {

@@ -6,7 +6,7 @@
  */
 
 import { io } from '/socket.io/socket.io.esm.min.js';
-import { EREIGNIS } from '/shared/protokoll.js';
+import { EREIGNIS, ZUG_TYP } from '/shared/protokoll.js';
 
 // == 1. Anzeigezustand ====================================================
 export const ANSICHT = Object.freeze({
@@ -125,8 +125,8 @@ export function verbinde(rueckrufe) {
     },
     abbrechen: () => sende(EREIGNIS.ABBRECHEN),
     // SCHUTZ: Nur die Muldennummer senden; Spielstand und Punkte bestimmt der
-    // Server.
-    zug: (mulde) => sende(EREIGNIS.ZUG, { mulde }),
+    // Server. Die Form { type, pitIndex } steht in shared/protokoll.js.
+    zug: (mulde) => sende(EREIGNIS.ZUG, { type: ZUG_TYP, pitIndex: mulde }),
     aufgeben: () => sende(EREIGNIS.AUFGEBEN),
     erneut: () => sende(EREIGNIS.ERNEUT, { name: letzterName }),
     revanche: () => sende(EREIGNIS.REVANCHE),

@@ -17,6 +17,9 @@ import { erzeugeManager } from '../server/spiel/manager.js';
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
 import { EREIGNIS, FEHLER, GRUND, GRENZEN, STATUS } from '../shared/protokoll.js';
 
+/** Ein Zug in der Form, die der Browser sendet: { type: "MOVE", pitIndex }. */
+const zug = (pitIndex) => ({ type: 'MOVE', pitIndex });
+
 /*
  * Die Protokollausgabe wird gesammelt, damit sie den Testlauf nicht
  * überlagert. Fehlerfälle prüfen zusätzlich, dass ein Eintrag entsteht.
@@ -185,7 +188,7 @@ describe('Handler: Revanche nach jedem Spiel', () => {
       [0, 0, 0, 0, 0, 1, 20],   // unten: eine Kugel in Mulde 5, Haus 20
     ];
 
-    unten.sende(EREIGNIS.ZUG, { mulde: 5 });
+    unten.sende(EREIGNIS.ZUG, zug(5));
 
     for (const spieler of [anna, ben]) {
       expect(spieler.letzte(EREIGNIS.ENDE).daten.revanche).toBe(true);
@@ -263,7 +266,11 @@ describe('Handler: gleiche Namen', () => {
 describe('Handler: Absturzsicherung', () => {
   test('Müll-Nutzdaten werden abgelehnt – nur beim Verursacher, ohne Absturz', () => {
     const { anna, ben, manager } = schnellesSpiel();
-    const muell = [undefined, null, 42, 'zug', [], { mulde: '3' }, { mulde: 99 }, { mulde: -1 }, { mulde: 2.5 }];
+    const muell = [
+      undefined, null, 42, 'zug', [], zug('3'), zug(99), zug(-1), zug(2.5),
+      // Die frühere Form ohne Typangabe gilt ebenfalls nicht mehr.
+      { mulde: 0 }, { type: 'move', pitIndex: 0 },
+    ];
 
     for (const daten of muell) {
       expect(() => anna.sende(EREIGNIS.ZUG, daten)).not.toThrow();
@@ -535,7 +542,7 @@ describe('Handler: Zug', () => {
   test('ein gültiger Zug geht als neuer Spielstand an beide', () => {
     const { amZug, wartet } = schnellesSpiel();
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
 
     for (const spieler of [amZug, wartet]) {
       const { spielstand, bericht } = spieler.letzte(EREIGNIS.STAND).daten;
@@ -547,7 +554,7 @@ describe('Handler: Zug', () => {
   test('wer nicht am Zug ist, wird abgelehnt – nur er erfährt es', () => {
     const { amZug, wartet } = schnellesSpiel();
 
-    wartet.sende(EREIGNIS.ZUG, { mulde: 0 });
+    wartet.sende(EREIGNIS.ZUG, zug(0));
 
     expect(wartet.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.NICHT_AM_ZUG);
     expect(amZug.alle(EREIGNIS.FEHLER)).toHaveLength(0);
@@ -561,7 +568,7 @@ describe('Handler: Zug', () => {
     brett[1][0] = 0;
     brett[1][6] = 4;
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
 
     expect(amZug.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.MULDE_LEER);
   });
@@ -570,7 +577,7 @@ describe('Handler: Zug', () => {
     const { verbinde } = erzeugeUmgebung();
     const anna = verbinde('a');
 
-    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    anna.sende(EREIGNIS.ZUG, zug(0));
 
     expect(anna.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.KEINE_PARTIE);
   });
@@ -579,7 +586,7 @@ describe('Handler: Zug', () => {
     const { amZug, wartet, manager } = schnellesSpiel();
     manager.holeNachSocket(amZug.id).brett[1][0] = 3;   // 47 statt 48 Kugeln
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
 
     for (const spieler of [amZug, wartet]) {
       const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
@@ -600,7 +607,7 @@ describe('Handler: Zug', () => {
       [0, 0, 0, 0, 0, 1, 20],
     ];
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 5 });
+    amZug.sende(EREIGNIS.ZUG, zug(5));
 
     expect(amZug.letzte(EREIGNIS.ENDE).daten.ergebnis.grund).toBe(GRUND.REGULAER);
     expect(manager.anzahl()).toBe(0);
@@ -773,7 +780,7 @@ describe('Handler: Ratenbegrenzung', () => {
     const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
     const anna = verbinde('a');
 
-    for (let i = 0; i < 4; i += 1) anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    for (let i = 0; i < 4; i += 1) anna.sende(EREIGNIS.ZUG, zug(0));
 
     const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
     // Die ersten drei werden bearbeitet (ohne Partie: KEINE_PARTIE).
@@ -790,7 +797,7 @@ describe('Handler: Ratenbegrenzung', () => {
     const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
     const anna = verbinde('a');
 
-    for (let i = 0; i < 25; i += 1) anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    for (let i = 0; i < 25; i += 1) anna.sende(EREIGNIS.ZUG, zug(0));
 
     const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
     expect(codes.filter((code) => code === FEHLER.ZU_VIELE_ANFRAGEN)).toHaveLength(1);
@@ -814,7 +821,7 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     // simulierter Programmierfehler
     manager.holeNachSocket(amZug.id).brett = null;
 
-    expect(() => amZug.sende(EREIGNIS.ZUG, { mulde: 0 })).not.toThrow();
+    expect(() => amZug.sende(EREIGNIS.ZUG, zug(0))).not.toThrow();
 
     expect(imProtokoll('Handler spiel:zug fehlgeschlagen')).toBe(true);
   });
@@ -836,7 +843,7 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
       throw new Error('absichtlicher Testfehler');
     };
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
 
     for (const spieler of [amZug, wartet]) {
       const abbruch = spieler.letzte(EREIGNIS.ABBRUCH).daten;
@@ -851,7 +858,7 @@ describe('Handler: Absturzsicherung bei Programmierfehlern', () => {
     const { spielId } = anna.letzte(EREIGNIS.START).daten;
     manager.holeNachSocket(amZug.id).brett = null;
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
 
     expect(imProtokoll('nach Fehler fehlgeschlagen')).toBe(true);
     expect(manager.anzahl()).toBe(0);
@@ -899,7 +906,7 @@ describe('Handler: Aufräumen nach Fristen', () => {
     const { amZug, wartet, handler, manager } = schnellesSpiel();
     manager.holeNachSocket(amZug.id).letzteAktivitaet = 0;   // Start 1970
 
-    amZug.sende(EREIGNIS.ZUG, { mulde: 0 });
+    amZug.sende(EREIGNIS.ZUG, zug(0));
     handler.raeumeAuf(Date.now() + MINUTE);
 
     expect(wartet.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
@@ -910,8 +917,8 @@ describe('Handler: Aufräumen nach Fristen', () => {
     const { amZug, wartet, handler, manager } = schnellesSpiel();
     manager.holeNachSocket(amZug.id).letzteAktivitaet = 0;
 
-    wartet.sende(EREIGNIS.ZUG, { mulde: 0 });     // nicht am Zug
-    amZug.sende(EREIGNIS.ZUG, { mulde: 99 });     // Schema verletzt
+    wartet.sende(EREIGNIS.ZUG, zug(0));     // nicht am Zug
+    amZug.sende(EREIGNIS.ZUG, zug(99));     // Schema verletzt
     handler.raeumeAuf();
 
     expect(amZug.letzte(EREIGNIS.ABBRUCH).daten.grund).toBe(GRUND.ZU_LANGE_KEIN_ZUG);
@@ -1155,10 +1162,10 @@ describe('Handler: Ratenbegrenzung – das nächste Fenster', () => {
     const { verbinde } = erzeugeUmgebung({ ratenbegrenzer });
     const anna = verbinde('a');
 
-    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
-    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    anna.sende(EREIGNIS.ZUG, zug(0));
+    anna.sende(EREIGNIS.ZUG, zug(0));
     jetzt = 1000;
-    anna.sende(EREIGNIS.ZUG, { mulde: 0 });
+    anna.sende(EREIGNIS.ZUG, zug(0));
 
     const codes = anna.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
     expect(codes).toEqual([

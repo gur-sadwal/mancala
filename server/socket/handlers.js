@@ -201,7 +201,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
-    const ergebnis = fuehreZugAus(partie, sitz, nutzdaten.mulde);
+    // pitIndex ist der Name in der Zugnachricht; die Engine sagt mulde.
+    const ergebnis = fuehreZugAus(partie, sitz, nutzdaten.pitIndex);
 
     if (!ergebnis.ok) {
       lehneZugAb(socket, partie, ergebnis);

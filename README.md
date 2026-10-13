@@ -148,9 +148,10 @@ entscheidet über die Spielregeln.
 | Prozess | unerwartete Fehler protokollieren; geordnetes Beenden wartet auf offene Ressourcen |
 | Client | Fehler in der aktiven Ansicht anzeigen; Animationsfehler abfangen |
 
-Der Browser sendet für einen Zug nur `{ mulde: 0 }` mit dem Ereignis
-`spiel:zug`: keine Punkte, kein Brett und keine Spiel-ID. Die Zahl 0–5
-bezieht sich auf die eigene Reihe. Die serverseitige Socket-Zuordnung
+Der Browser sendet für einen Zug nur `{ type: "MOVE", pitIndex: 0 }` mit
+dem Ereignis `spiel:zug`, wie es die Projektvorgabe verlangt: keine Punkte,
+kein Brett und keine Spiel-ID. `pitIndex` 0–5 bezieht sich auf die eigene
+Reihe. Die serverseitige Socket-Zuordnung
 bestimmt Partie und Sitz. Der Server prüft Zugrecht, ganze Zahl im Bereich,
 eigene Reihe und mindestens eine Kugel, bevor er rechnet.
 
@@ -163,7 +164,7 @@ im DOM; die Content-Security-Policy sperrt eingeschleuste Inline-Skripte.
 ## 6. Weg eines Zuges
 
 1. `spiel.js` ruft für die gewählte Mulde die übergebene Aktion `zug` auf.
-2. `kern.js` sendet `spiel:zug` mit der Muldennummer.
+2. `kern.js` sendet `spiel:zug` mit `{ type: "MOVE", pitIndex }`.
 3. Der Handler prüft Rate, Schema, Partie und Sitz.
 4. Die Engine sät, prüft Klauen und Spielende, dann den neuen Zustand.
 5. Der Handler sendet den Spielstand an die beiden zugehörigen Sockets.
