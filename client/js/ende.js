@@ -2,10 +2,11 @@
  * ende.js – Ergebnisdialog, lokale Bilanz und Revanche-Anzeige.
  * Die Wertung kommt vom Server; die Bilanz bleibt im Browser-Tab.
  * Inhalt: == 1. Bilanz · == 2. Texte · == 3. Dialog und Revanche
- * Benutzt von main.js; benutzt dom.js und shared/protokoll.js.
+ * Benutzt von main.js; benutzt dom.js, kern.js und shared/protokoll.js.
  */
 
 import { $, setzeText, zeige as zeigeElement, restSekunden } from './dom.js';
+import { REVANCHE_STAND } from './kern.js';
 import { GRUND, GRENZEN, REMIS } from '/shared/protokoll.js';
 
 // == 1. Bilanz ===========================================================
@@ -56,21 +57,23 @@ export function bilanzText(name, { siege, niederlagen, remis }) {
   return `${anrede} Ergebnis: ${siege}-${niederlagen} | ${remis} Remis`;
 }
 
-const OFFENE_STAENDE = ['moeglich', 'gewuenscht', 'angeboten'];
+const OFFENE_STAENDE = [
+  REVANCHE_STAND.MOEGLICH, REVANCHE_STAND.GEWUENSCHT, REVANCHE_STAND.ANGEBOTEN,
+];
 
 export function revancheText(stand, rest) {
   switch (stand) {
-    case 'moeglich':
+    case REVANCHE_STAND.MOEGLICH:
       return `Noch ${rest} s für eine Revanche.`;
-    case 'gewuenscht':
+    case REVANCHE_STAND.GEWUENSCHT:
       return (
         `Warte, ob dein Gegner auch eine Revanche möchte … (noch ${rest} s)`
       );
-    case 'angeboten':
+    case REVANCHE_STAND.ANGEBOTEN:
       return `Dein Gegner möchte eine Revanche! (noch ${rest} s)`;
-    case 'weg':
+    case REVANCHE_STAND.WEG:
       return 'Dein Gegner ist nicht mehr da – eine Revanche geht nicht mehr.';
-    case 'abgelaufen':
+    case REVANCHE_STAND.ABGELAUFEN:
       return 'Die Zeit für eine Revanche ist abgelaufen.';
     default:
       return '';
@@ -147,13 +150,13 @@ export function erzeugeEndeAnsicht({
     const offen = OFFENE_STAENDE.includes(aktuelleRevanche);
     const fristLaeuft = offen && rest > 0;
 
-    const stand = offen && rest === 0 ? 'abgelaufen' : aktuelleRevanche;
+    const stand = offen && rest === 0
+      ? REVANCHE_STAND.ABGELAUFEN : aktuelleRevanche;
+    const istAngebot = stand === REVANCHE_STAND.ANGEBOTEN;
 
     zeigeElement(knopfRevanche, stand !== null);
-    knopfRevanche.disabled = stand !== 'moeglich' && stand !== 'angeboten';
-    setzeText(
-      knopfRevanche, stand === 'angeboten' ? 'Revanche annehmen' : 'Revanche',
-    );
+    knopfRevanche.disabled = stand !== REVANCHE_STAND.MOEGLICH && !istAngebot;
+    setzeText(knopfRevanche, istAngebot ? 'Revanche annehmen' : 'Revanche');
 
     // Eine Fehlermeldung bleibt auch beim nächsten Sekundentakt sichtbar.
     const hinweis = fehlermeldung || revancheText(stand, rest);

@@ -24,6 +24,12 @@ import * as protokoll from '../shared/protokoll.js';
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 
+// ende.js holt die Revanche-Stände aus kern.js, und kern.js lädt Socket.io
+// über einen Browserpfad. Eine Verbindung braucht hier kein Test.
+jest.mock('/socket.io/socket.io.esm.min.js', () => ({}), { virtual: true });
+jest.unstable_mockModule('/socket.io/socket.io.esm.min.js',
+  () => ({ io: () => null }), { virtual: true });
+
 const {
   bilanzText, bilanzAusSpeichertext, revancheText, ohneWertung, grundText,
   erzeugeEndeAnsicht,

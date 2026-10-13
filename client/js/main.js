@@ -7,7 +7,7 @@
  */
 
 import { $, zeige } from './dom.js';
-import { erzeugeStore, ANSICHT, verbinde } from './kern.js';
+import { erzeugeStore, ANSICHT, REVANCHE_STAND, verbinde } from './kern.js';
 import { erzeugeAnmeldeAnsicht } from './anmelden.js';
 import { erzeugeWarteAnsicht } from './warten.js';
 import { erzeugeSpielAnsicht } from './spiel.js';
@@ -129,21 +129,21 @@ async function zeigeErgebnis({ spielstand, ergebnis, revanche }) {
 
 function beiRevancheAngebot() {
   if (!partieVorbei) return;
-  if (store.lies().revanche !== 'gewuenscht') {
-    store.setze({ revanche: 'angeboten' });
+  if (store.lies().revanche !== REVANCHE_STAND.GEWUENSCHT) {
+    store.setze({ revanche: REVANCHE_STAND.ANGEBOTEN });
   }
 }
 
 // Auch während der Schlussanimation merken, dass der Gegner weg ist.
 function beiRevancheWeg() {
   if (partieVorbei) {
-    store.setze({ revanche: 'weg' });
+    store.setze({ revanche: REVANCHE_STAND.WEG });
   }
 }
 
 function beiRevancheAbgelaufen() {
   if (partieVorbei) {
-    store.setze({ revanche: 'abgelaufen' });
+    store.setze({ revanche: REVANCHE_STAND.ABGELAUFEN });
   }
 }
 
@@ -253,7 +253,7 @@ async function warteAufAnimation(animation = letzteAnimation) {
 // Frühe Servernachrichten zur Revanche haben Vorrang vor „möglich“.
 function revancheStand(moeglich) {
   if (!moeglich) return null;
-  return store.lies().revanche ?? 'moeglich';
+  return store.lies().revanche ?? REVANCHE_STAND.MOEGLICH;
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
@@ -269,7 +269,7 @@ const endeAnsicht = erzeugeEndeAnsicht({
 
   beiRevanche() {
     aktionen.revanche();
-    store.setze({ revanche: 'gewuenscht' });
+    store.setze({ revanche: REVANCHE_STAND.GEWUENSCHT });
   },
 
   beiAbmelden: verlasseErgebnis,

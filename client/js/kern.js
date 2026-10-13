@@ -16,6 +16,16 @@ export const ANSICHT = Object.freeze({
   ENDE: 'ENDE',
 });
 
+// Was der Ergebnisdialog zur Revanche zeigt. Diese Werte kennt nur der
+// Browser; der Server meldet Angebot, Weggang und Ablauf als Ereignisse.
+export const REVANCHE_STAND = Object.freeze({
+  MOEGLICH: 'moeglich',
+  GEWUENSCHT: 'gewuenscht',
+  ANGEBOTEN: 'angeboten',
+  WEG: 'weg',
+  ABGELAUFEN: 'abgelaufen',
+});
+
 // Eine Fabrik kapselt Zustand und Abonnenten in einer gemeinsamen Umgebung.
 export function erzeugeStore() {
   let zustand = {
