@@ -172,6 +172,7 @@ function beiFehler({ code, text }) {
   const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
 
   if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
+  if (istNurBestaetigung(code)) return;
 
   if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
     FEHLER.CODE_UNBEKANNT].includes(code)) {
@@ -181,6 +182,17 @@ function beiFehler({ code, text }) {
     store.setze({ ansicht: ANSICHT.WARTEN });
   }
   meldeFehler(meldung, code);
+}
+
+// Ein doppelt abgeschickter Beitritt meldet nur, was die Ansicht schon zeigt.
+// Als Text würde sie „Du bist am Zug“ oder den Einladungslink verdecken.
+function istNurBestaetigung(code) {
+  const { ansicht } = store.lies();
+  const imSpiel = ansicht === ANSICHT.SPIEL;
+  const beimWarten = ansicht === ANSICHT.WARTEN;
+
+  return (code === FEHLER.BEREITS_IN_PARTIE && imSpiel)
+    || (code === FEHLER.BEREITS_IN_WARTESCHLANGE && beimWarten);
 }
 
 // == 3. Ansichten und gemeinsame Helfer ===================================

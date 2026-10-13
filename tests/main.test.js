@@ -213,6 +213,7 @@ describe('Sichtbare Serverfehler', () => {
   test.each(Object.values(protokoll.FEHLER).filter((code) => ![
     protokoll.FEHLER.KEINE_PARTIE, protokoll.FEHLER.CODE_UNBEKANNT,
     protokoll.FEHLER.WARTEZEIT_ABGELAUFEN, protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
+    protokoll.FEHLER.BEREITS_IN_PARTIE,
   ].includes(code)))('zeigt %s im Spiel als Text', (code) => {
     starte();
     sende(protokoll.EREIGNIS.FEHLER, { code });
@@ -230,5 +231,40 @@ describe('Sichtbare Serverfehler', () => {
     sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.ZU_VIELE_ANFRAGEN });
     expect(ansichten[name].melde).toHaveBeenLastCalledWith(
       protokoll.FEHLER_TEXT[protokoll.FEHLER.ZU_VIELE_ANFRAGEN]);
+  });
+});
+
+describe('Doppelt abgeschickter Beitritt', () => {
+  test('BEREITS_IN_PARTIE im Spiel ersetzt nicht die Zuganzeige', () => {
+    starte();
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.BEREITS_IN_PARTIE,
+    });
+
+    expect(ansichten.spiel.melde).not.toHaveBeenCalled();
+    expect(ansichten.spiel.zeige).toHaveBeenLastCalledWith(true);
+  });
+
+  test.each([
+    [protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 }],
+    [protokoll.EREIGNIS.PRIVAT, { code: 'K7M2QX' }],
+  ])('nach %s bleibt BEREITS_IN_WARTESCHLANGE still', (ereignis, daten) => {
+    sende(ereignis, daten);
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
+    });
+
+    expect(ansichten.warten.melde).not.toHaveBeenCalled();
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+  });
+
+  test('außerhalb des Wartens führt dieselbe Meldung ins Warten', () => {
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
+    });
+
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.warten.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE]);
   });
 });
