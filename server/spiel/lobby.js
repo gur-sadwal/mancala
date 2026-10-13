@@ -23,6 +23,7 @@ import { neuerEinladungsCode } from '../util/ids.js';
 // Diese Rückgaben kennt nur der Server; sie gehören nicht ins Protokoll.
 export const REVANCHE_STATUS = Object.freeze({
   KEINE: 'KEINE',
+  ABGELAUFEN: 'ABGELAUFEN',
   WARTET: 'WARTET',
   SCHON_GEWUENSCHT: 'SCHON_GEWUENSCHT',
   START: 'START',
@@ -176,9 +177,13 @@ export function erzeugeLobby() {
       return { status: REVANCHE_STATUS.KEINE };
     }
 
+    // Zwischen zwei Prüftakten abgelaufen: Beide sollen es erfahren.
     if (eintrag.bis <= jetzt) {
       vergissRevanche(socketId);
-      return { status: REVANCHE_STATUS.KEINE };
+      return {
+        status: REVANCHE_STATUS.ABGELAUFEN,
+        gegnerId: eintrag.gegner.socketId,
+      };
     }
 
     if (eintrag.gewuenscht) return { status: REVANCHE_STATUS.SCHON_GEWUENSCHT };

@@ -247,6 +247,25 @@ describe('Handler: Revanche-Frist', () => {
     expect(ben.letzte(EREIGNIS.REVANCHE_WEG)).toBeDefined();
     expect(ben.alle(EREIGNIS.START)).toHaveLength(1);
   });
+
+  test('ein später Wunsch vor dem Takt meldet beiden den Ablauf', () => {
+    const { anna, ben } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+
+    const nachDerFrist = Date.now() + REVANCHE_FRIST_MS;
+    const uhr = import.meta.jest.spyOn(Date, 'now')
+      .mockReturnValue(nachDerFrist);
+    try {
+      ben.sende(EREIGNIS.REVANCHE);
+    } finally {
+      uhr.mockRestore();
+    }
+
+    expect(ben.letzte(EREIGNIS.REVANCHE_ABGELAUFEN)).toBeDefined();
+    expect(anna.letzte(EREIGNIS.REVANCHE_ABGELAUFEN)).toBeDefined();
+    expect(ben.letzte(EREIGNIS.REVANCHE_WEG)).toBeUndefined();
+    expect(ben.alle(EREIGNIS.START)).toHaveLength(1);
+  });
 });
 
 describe('Handler: gleiche Namen', () => {

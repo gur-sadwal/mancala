@@ -264,9 +264,19 @@ describe('Revanche-Frist direkt beim Wunsch', () => {
     expect(lobby.wuenscheRevanche('a', 1000 + REVANCHE_FRIST_MS - 1).status)
       .toBe(REVANCHE_STATUS.WARTET);
     expect(lobby.wuenscheRevanche('b', 1000 + REVANCHE_FRIST_MS).status)
-      .toBe(REVANCHE_STATUS.KEINE);
+      .toBe(REVANCHE_STATUS.ABGELAUFEN);
     expect(lobby.wuenscheRevanche('a', 1000 + REVANCHE_FRIST_MS).status)
       .toBe(REVANCHE_STATUS.KEINE);
+  });
+
+  test('ein Wunsch nach Fristende nennt den Gegner', () => {
+    const lobby = erzeugeLobby();
+    lobby.merkeRevanche({ socketId: 'a' }, { socketId: 'b' }, 1000);
+
+    expect(lobby.wuenscheRevanche('a', 1000 + REVANCHE_FRIST_MS))
+      .toEqual({ status: REVANCHE_STATUS.ABGELAUFEN, gegnerId: 'b' });
+    // Beide Einträge sind weg; der Takt meldet nichts doppelt.
+    expect(lobby.abgelaufeneRevanchen(1000 + REVANCHE_FRIST_MS)).toEqual([]);
   });
 });
 

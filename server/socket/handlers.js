@@ -273,6 +273,12 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
+    if (ergebnis.status === REVANCHE_STATUS.ABGELAUFEN) {
+      socket.emit(EREIGNIS.REVANCHE_ABGELAUFEN);
+      socketVon(ergebnis.gegnerId)?.emit(EREIGNIS.REVANCHE_ABGELAUFEN);
+      return;
+    }
+
     if (ergebnis.status === REVANCHE_STATUS.WARTET) {
       socketVon(ergebnis.gegnerId)?.emit(EREIGNIS.REVANCHE_ANGEBOT);
       return;
