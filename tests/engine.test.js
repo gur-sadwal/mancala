@@ -21,8 +21,8 @@ import {
   pruefeZug,
   fuehreZugAus,
   ergebnisVon,
-  moeglicheZuege,
 } from '../server/spiel/engine.js';
+import { moeglicheZuege } from './zuege.js';
 
 import { neuesBrett, gesamtSumme, muldenSumme, OBEN, UNTEN } from '../server/spiel/brett.js';
 import { STATUS, FEHLER, GRUND, REMIS } from '../shared/protokoll.js';
@@ -348,7 +348,7 @@ describe('T-16: Endstand 24:24', () => {
       [24, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 24],
     ];
-    const ergebnis = ergebnisVon(brett);
+    const ergebnis = ergebnisVon(brett, GRUND.REGULAER);
 
     expect(ergebnis.punkte).toEqual({ unten: 24, oben: 24 });
     expect(ergebnis.sieger).toBe(REMIS);
@@ -356,10 +356,11 @@ describe('T-16: Endstand 24:24', () => {
   });
 
   test('ab 25 Punkten gewinnt der jeweilige Spieler', () => {
-    expect(ergebnisVon([[23, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 25]]).sieger)
-      .toBe('unten');
-    expect(ergebnisVon([[25, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 23]]).sieger)
-      .toBe('oben');
+    const untenVorn = [[23, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 25]];
+    const obenVorn = [[25, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 23]];
+
+    expect(ergebnisVon(untenVorn, GRUND.REGULAER).sieger).toBe('unten');
+    expect(ergebnisVon(obenVorn, GRUND.REGULAER).sieger).toBe('oben');
   });
 });
 

@@ -23,8 +23,8 @@ describe('Warteschlange', () => {
   test('nimmt Spieler in der Reihenfolge ihres Eintreffens auf', () => {
     const lobby = erzeugeLobby();
 
-    expect(lobby.beitreten('a', 'Anna')).toEqual({ ok: true, position: 1 });
-    expect(lobby.beitreten('b', 'Ben')).toEqual({ ok: true, position: 2 });
+    expect(lobby.beitreten('a', 'Anna')).toEqual({ ok: true });
+    expect(lobby.beitreten('b', 'Ben')).toEqual({ ok: true });
     expect(lobby.anzahl()).toBe(2);
   });
 

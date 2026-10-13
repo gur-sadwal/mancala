@@ -10,7 +10,7 @@
  *   == 3. Kugeln säen
  *   == 4. Kugeln klauen
  *   == 5. Spielende und Restkugeln
- *   == 6. Ergebnis und mögliche Züge
+ *   == 6. Ergebnis
  *
  * Benutzt von: Handler, Partie und Tests. Benutzt brett.js und
  * shared/protokoll.js.
@@ -198,9 +198,9 @@ function verteileRestkugeln(brett) {
   return abrechnung;
 }
 
-// == 6. Ergebnis und mögliche Züge =======================================
+// == 6. Ergebnis ==========================================================
 // REGEL 3.5: Vergleicht die Häuser. Bei Abbruch setzt partie.js den Sieger.
-export function ergebnisVon(brett, grund = GRUND.REGULAER) {
+export function ergebnisVon(brett, grund) {
   const punkte = {
     unten: punkteVon(brett, 'unten'),
     oben: punkteVon(brett, 'oben'),
@@ -211,13 +211,4 @@ export function ergebnisVon(brett, grund = GRUND.REGULAER) {
   if (punkte.oben > punkte.unten) sieger = 'oben';
 
   return { punkte, sieger, grund };
-}
-
-/** Liefert die besetzten eigenen Mulden für Regeltests. */
-export function moeglicheZuege(partie, sitz) {
-  const zuege = [];
-  for (let n = GRENZEN.MULDE_MIN; n <= GRENZEN.MULDE_MAX; n += 1) {
-    if (pruefeZug(partie, sitz, n).ok) zuege.push(n);
-  }
-  return zuege;
 }

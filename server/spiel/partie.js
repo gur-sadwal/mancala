@@ -68,13 +68,11 @@ export function beendeVorzeitig(partie, grund, sieger = null) {
     ? STATUS.BEENDET : STATUS.ABGEBROCHEN;
 
   partie.ergebnis = { ...ergebnisVon(partie.brett, grund), sieger };
-  beruehre(partie);
 
   return partie.ergebnis;
 }
 
 // In laufenden Partien verlängern nur gültige Züge die Frist.
-// Beim vorzeitigen Ende wird ebenfalls der letzte Zeitpunkt vermerkt.
 export function beruehre(partie) {
   partie.letzteAktivitaet = Date.now();
 }

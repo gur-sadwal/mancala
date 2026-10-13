@@ -61,10 +61,8 @@ export function erzeugeStore() {
     }
   }
 
-  // Die zurückgegebene Funktion meldet genau diesen Abonnenten wieder ab.
   function abonniere(abonnent) {
     abonnenten.add(abonnent);
-    return () => abonnenten.delete(abonnent);
   }
 
   return { lies, setze, abonniere };

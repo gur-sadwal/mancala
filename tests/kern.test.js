@@ -108,20 +108,6 @@ describe('Store (Anzeigezustand)', () => {
     expect(stumm).toHaveBeenCalled();
     stumm.mockRestore();
   });
-
-  test('nach dem Abmelden bekommt ein Abonnent nichts mehr', () => {
-    const store = erzeugeStore();
-    let aufrufe = 0;
-    const abmelden = store.abonniere(() => {
-      aufrufe += 1;
-    });
-
-    store.setze({ name: 'a' });
-    abmelden();
-    store.setze({ name: 'b' });
-
-    expect(aufrufe).toBe(1);
-  });
 });
 
 describe('Netzverbindung: was der Client sendet', () => {

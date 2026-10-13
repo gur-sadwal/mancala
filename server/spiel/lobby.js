@@ -68,7 +68,7 @@ export function erzeugeLobby() {
     }
 
     warteschlange.push({ socketId, name, seit: jetzt });
-    return { ok: true, position: warteschlange.length };
+    return { ok: true };
   }
 
   // == 4. Private Plätze =================================================

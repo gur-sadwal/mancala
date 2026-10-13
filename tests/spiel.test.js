@@ -14,7 +14,8 @@
 import { jest } from '@jest/globals';
 import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
   erzeugeSpielAnsicht, zuganzeigeText } from '../client/js/spiel.js';
-import { fuehreZugAus, moeglicheZuege } from '../server/spiel/engine.js';
+import { fuehreZugAus } from '../server/spiel/engine.js';
+import { moeglicheZuege } from './zuege.js';
 import { neuesBrett } from '../server/spiel/brett.js';
 import { STATUS } from '../shared/protokoll.js';
 
