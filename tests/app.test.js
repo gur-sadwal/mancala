@@ -57,6 +57,26 @@ describe('Schutz gegen Cross-Site-Scripting', () => {
     }
   });
 
+  // Geprüft wird die tatsächlich gesendete Kopfzeile, nicht die Konstante:
+  // Eine versehentlich abgeschwächte CSP fiele sonst nicht auf.
+  test('jede Antwort sperrt Einbettung und fremde Quellen einzeln (Review A6)', async () => {
+    const pfade = ['/', '/css/haupt.css', '/js/main.js', '/gesundheit',
+      '/gibt-es-nicht'];
+    for (const pfad of pfade) {
+      const antwort = await fetch(`${basis}${pfad}`);
+      const richtlinie = new Map(antwort.headers.get('content-security-policy')
+        .split(';')
+        .map((teil) => teil.trim().split(/\s+/))
+        .map(([name, ...werte]) => [name, werte.join(' ')]));
+
+      expect(richtlinie.get('frame-ancestors')).toBe("'none'");
+      expect(richtlinie.get('default-src')).toBe("'self'");
+      expect(richtlinie.get('object-src')).toBe("'none'");
+      expect(richtlinie.get('base-uri')).toBe("'none'");
+      expect(antwort.headers.get('x-frame-options')).toBe('DENY');
+    }
+  });
+
   test('die Server-Technik wird nicht verraten', async () => {
     const antwort = await fetch(`${basis}/`);
     expect(antwort.headers.get('x-powered-by')).toBeNull();

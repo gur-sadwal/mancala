@@ -61,10 +61,12 @@ function pfadZu(...teile) {
 }
 
 // SCHUTZ: nosniff sperrt Skripte und Styles mit unpassendem MIME-Typ
-// (dem Dateityp aus der HTTP-Antwort).
+// (dem Dateityp aus der HTTP-Antwort). X-Frame-Options sperrt Einbettung
+// auch in älteren Browsern, die frame-ancestors der CSP nicht kennen.
 function sichereAntwort(req, res, next) {
   res.setHeader('Content-Security-Policy', CSP);
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
   next();
 }
 
