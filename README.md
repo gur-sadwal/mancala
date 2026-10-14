@@ -165,6 +165,21 @@ nicht negative Kugelzahlen. Einzelne Fehler dürfen andere Partien nicht
 unterbrechen. Eine Ratenbegrenzung und ein Größenlimit verhindern, dass
 unbegrenzt Nachrichten verarbeitet werden. Namen landen über `textContent`
 im DOM; die Content-Security-Policy sperrt eingeschleuste Inline-Skripte.
+`X-Frame-Options` und `frame-ancestors` verhindern, dass eine fremde Seite
+das Spiel einbettet.
+
+Namen bereinigen Browser und Server mit derselben Regel aus
+`shared/protokoll.js`: höchstens 20 Codepunkte, kein `<` oder `>`, keine
+Steuer- oder unsichtbaren Formatzeichen und höchstens drei Akzente
+hintereinander. Zerlegte Umlaute werden zusammengesetzt (NFC). Bleibt nichts
+Sichtbares übrig, heißt der Spieler auf dem Server „Spieler“.
+
+Der Server nimmt höchstens 500 Verbindungen, 100 Wartende und 200 laufende
+Partien gleichzeitig an (`EINSTELLBAR:` in `gateway.js`, `lobby.js` und
+`manager.js`). Darüber antwortet er mit „Der Server ist gerade voll“; der
+Browser versucht eine abgelehnte Verbindung nach fünf Sekunden erneut.
+Wer sofort einen wartenden Gegner findet oder einen Link einlöst, braucht
+keinen zusätzlichen Warteplatz.
 
 ## 6. Weg eines Zuges
 
@@ -215,6 +230,22 @@ aus. Zusätzlich funktionieren die Tasten 1–6. Die rechteckige Zelle gehört
 zur Klickfläche der runden Mulde. Einstellungen erlauben größere Schrift
 und weniger Animation; die Systemeinstellung zur Bewegungsreduktion wird
 berücksichtigt. Dialoge verwenden die nativen Browserfunktionen.
+
+Auf Telefonen stehen Titel und Einstellungen in einer Zeile. Mulden und
+Häuser werden im Hochformat flach, damit Brett und „Partie aufgeben“
+möglichst ohne Scrollen sichtbar sind. Die Karten über dem Brett nennen
+feste Rollen („Gegner“, „Du“); Namen sind nur Anzeige. Die Zuganzeige nennt
+keinen Namen. Häuser beginnen mit ihrem Besitzer, eigene Mulden erklären
+Nummer und Kugelzahl im `title`. Zuganzeige, Warteposition und
+Kopierergebnis sind `output`-Elemente; Screenreader können ihre Änderungen
+vorlesen. Die Warteansicht zeigt die bisherige Wartezeit. Während einer
+Partie bittet das Spiel den Browser, vor Schließen, Neuladen oder Zurück
+nachzufragen. Browser zeigen das erst nach einer Bedienung der Seite und
+auf Telefonen nicht immer.
+
+Bekannte Grenze: Ohne zusätzliche ARIA-Attribute sind die drei Dialoge nicht
+mit ihrer Überschrift verknüpft und haben im Barrierefreiheitsbaum keinen
+eigenen Namen. Ihren Zweck nennt die sichtbare Überschrift.
 
 Der Client bleibt eine Seite mit einer Socket-Verbindung. Listener einer
 Ansicht werden beim Anzeigen angemeldet und beim Verstecken entfernt;
