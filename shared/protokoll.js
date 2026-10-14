@@ -101,6 +101,9 @@ export const REMIS = 'remis';
 export const GRENZEN = Object.freeze({
   // ACHTUNG: Zählt Unicode-Codepunkte. HTML maxlength zählt UTF-16-Einheiten.
   NAME_MAX: 20,
+  // Mehr Akzente auf einem Zeichen braucht kein Name; Zalgo-Text stapelt
+  // sonst Dutzende und überdeckt die Zeilen darüber und darunter.
+  AKZENTE_MAX: 3,
   MULDE_MIN: 0,
   MULDE_MAX: 5,
   CODE_LAENGE: 6,
@@ -114,23 +117,39 @@ export const GRENZEN = Object.freeze({
 // Cc sind Steuerzeichen, Cf unsichtbare Formatzeichen wie die Leserichtung.
 const UNSICHTBAR = /[\p{Cc}\p{Cf}]/u;
 
+// M sind Zeichen, die sich auf das vorige setzen, etwa Akzente.
+const AKZENT = /\p{M}/u;
+
 // SCHUTZ: Ohne spitze Klammern enthält ein Name kein vollständiges HTML-Tag.
 // Der Client setzt Namen zusätzlich nur über textContent.
 export const NAME_VERBOTEN = '<>';
 
 /**
- * Entfernt verbotene und unsichtbare Zeichen, kürzt auf Unicode-Codepunkte.
- * Kann leer liefern: Der Browser meldet es, der Server setzt einen Ersatz ein.
- * Familien-Emoji zerfallen, weil ihr unsichtbares Verbindungszeichen entfällt.
+ * Entfernt verbotene und unsichtbare Zeichen, begrenzt Akzente und kürzt auf
+ * Unicode-Codepunkte. Kann leer liefern: Der Browser meldet es, der Server
+ * setzt einen Ersatz ein. Familien-Emoji zerfallen, weil ihr unsichtbares
+ * Verbindungszeichen entfällt.
  * @param {string} text
  * @returns {string}
  */
 export function bereinigeName(text) {
   let erlaubt = '';
-  for (const zeichen of text) {
-    if (!UNSICHTBAR.test(zeichen) && !NAME_VERBOTEN.includes(zeichen)) {
-      erlaubt += zeichen;
+  let akzente = 0;
+
+  // NFC setzt zerlegte Umlaute wie o + ¨ zu einem einzigen ö zusammen.
+  for (const zeichen of text.normalize('NFC')) {
+    if (UNSICHTBAR.test(zeichen) || NAME_VERBOTEN.includes(zeichen)) continue;
+
+    if (AKZENT.test(zeichen)) {
+      akzente += 1;
+      // SCHUTZ: Ein Akzent ohne Buchstaben davor oder zu viele übereinander
+      // fallen weg; ein Name nur aus Akzenten wird so leer.
+      const ohneGrundzeichen = erlaubt === '' || /\s$/u.test(erlaubt);
+      if (ohneGrundzeichen || akzente > GRENZEN.AKZENTE_MAX) continue;
+    } else {
+      akzente = 0;
     }
+    erlaubt += zeichen;
   }
 
   // Array.from erhält Codepunkte; slice direkt auf Text kann Emoji halbieren.

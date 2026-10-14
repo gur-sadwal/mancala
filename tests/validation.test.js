@@ -128,7 +128,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
     expect(bereinigeName('Jörg-Ümit & Co.')).toBe('Jörg-Ümit & Co.');
   });
 
-  test('gekürzt wird nach Zeichen: ein Emoji an Stelle 20 bleibt ganz', () => {
+  test('gekürzt wird nach Codepunkten: ein Emoji an Stelle 20 bleibt ganz', () => {
     const name = 'A'.repeat(19) + '🎲';
 
     expect(bereinigeName(name)).toBe(name);
@@ -160,6 +160,44 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
 
   test('zusammengesetzte Emoji zerfallen in ihre Teile (Verbindungszeichen ist unsichtbar)', () => {
     expect(bereinigeName('👨\u200D👩')).toBe('👨👩');
+  });
+});
+
+describe('bereinigeName – Akzente, Normalform und Leserichtung (Review A1)', () => {
+  test('Zalgo: höchstens drei Akzente hintereinander bleiben stehen', () => {
+    const zalgo = `X${'\u0301'.repeat(19)}`;
+    expect(bereinigeName(zalgo)).toBe(`X${'\u0301'.repeat(3)}`);
+  });
+
+  test('ein unsichtbares Zeichen zwischen Akzenten hebt die Grenze nicht auf', () => {
+    // x statt a: Für a mit Akzent gibt es ein fertiges á, das NFC einsetzt.
+    const versteckt = 'x\u0301\u200B\u0301\u0301\u0301\u0301';
+    expect(bereinigeName(versteckt)).toBe(`x${'\u0301'.repeat(3)}`);
+  });
+
+  test('ein Name nur aus Akzenten bleibt leer; der Server setzt „Spieler“ ein', () => {
+    expect(bereinigeName('\u0301\u0302\u0303')).toBe('');
+    expect(bereinigeName(' \u0301 ')).toBe('');
+    expect(ermittleSpielername('\u0301\u0301')).toBe('Spieler');
+  });
+
+  test('ein zerlegtes ö wird zum gewöhnlichen ö zusammengesetzt (NFC)', () => {
+    expect(bereinigeName('Jo\u0308rg')).toBe('J\u00F6rg');
+  });
+
+  test('gewöhnliche Namen anderer Schriften behalten ihre Zeichen', () => {
+    // Arabisch mit Vokalzeichen, Vietnamesisch zerlegt, Hindi, Polnisch.
+    const namen = ['\u0639\u064E\u0644\u0650\u064A\u0651',
+      'Nguye\u0302\u0303n', '\u0939\u093F\u0928\u094D\u0926\u0940',
+      'Zo\u00EB', '\u0141ukasz'];
+    for (const name of namen) {
+      expect(bereinigeName(name)).toBe(name.normalize('NFC'));
+    }
+  });
+
+  test('Steuerzeichen der Leserichtung werden entfernt (U+2066 bis U+2069)', () => {
+    const name = '\u2066Anna\u2069 \u2067Ben\u2068';
+    expect(bereinigeName(name)).toBe('Anna Ben');
   });
 });
 
