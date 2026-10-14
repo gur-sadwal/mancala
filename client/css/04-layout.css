@@ -4,9 +4,9 @@
  *   == 1. Kopfzeile
  *   == 2. Laden und Ansichten
  *   == 3. Warten
- *   == 4. Punktestand
+ *   == 4. Punktestand und Zuganzeige
  *   == 5. Hilfe und Aktionen
- *   == 6. Niedrige Fenster
+ *   == 6. Kompakter Kopf
  *
  * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
@@ -27,6 +27,10 @@
   & .kopf__untertitel {
     margin-inline: auto;
     font-size: 1rem;
+  }
+
+  & .knopf--kopf {
+    margin-block-start: var(--abstand-klein);
   }
 
   /* WCAG: Auf Rot bleibt der weiße Fokusring besser erkennbar. */
@@ -95,19 +99,40 @@
   font-size: 1rem;
 }
 
-/* == 4. Punktestand ======================================================= */
-
-/* Die Karten stehen über dem Brett und umbrechen bei Platzmangel. */
-.stand {
-  inline-size: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--abstand-klein);
-  justify-content: space-between;
-  align-items: center;
+/* Gleich breite Ziffern: Die Uhr springt beim Weiterzählen nicht. */
+.warten__zeit {
+  font-variant-numeric: tabular-nums;
 }
 
+/* == 4. Punktestand und Zuganzeige ======================================== */
+
+/* Schmal stehen beide Karten nebeneinander und der Zugtext darunter. Ab
+ * 600px teilen sich Gegner, Zugtext und eigene Karte eine Zeile; das spart
+ * eine Zeile Höhe. minmax(0, …) lässt lange Namen die Spalten nicht
+ * verbreitern; 9rem lassen Rolle und Punkte jeder Karte immer Platz.
+ */
+.stand {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "gegner eigen"
+    "zug zug";
+  gap: var(--abstand-klein);
+  align-items: center;
+
+  @media (min-width: 600px) {
+    grid-template-columns:
+      minmax(9rem, 1fr) minmax(0, auto) minmax(9rem, 1fr);
+    grid-template-areas: "gegner zug eigen";
+  }
+}
+
+/* max-inline-size hält eine Karte in ihrer Spalte; dann wird der Name
+ * gekürzt statt die Seite zu verbreitern.
+ */
 .stand__spieler {
+  max-inline-size: 100%;
   display: flex;
   align-items: center;
   gap: var(--abstand-klein);
@@ -118,10 +143,26 @@
   background-color: var(--farbe-karte);
 }
 
+/* Die Karten bleiben so breit wie ihr Inhalt, außen am Brett. */
+.stand__spieler--gegner {
+  grid-area: gegner;
+  justify-self: start;
+}
+
+.stand__spieler--eigen {
+  grid-area: eigen;
+  justify-self: end;
+}
+
+.stand__rolle {
+  color: var(--farbe-text-leise);
+}
+
+/* Lange Namen werden gekürzt; Rolle und Punkte bleiben immer ganz sichtbar.
+ * overflow: hidden erlaubt dem Namen, in der Karte zu schrumpfen.
+ */
 .stand__name {
   font-weight: 600;
-
-  /* Lange Namen werden gekürzt, damit die Karte kompakt bleibt. */
   max-inline-size: 12ch;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,12 +177,9 @@
 }
 
 .zuganzeige {
-  inline-size: 100%;
-  max-inline-size: none;
+  grid-area: zug;
   text-align: center;
   font-weight: 600;
-  /* Reservierter Platz dämpft Sprünge beim Wechsel des Hinweistextes. */
-  min-block-size: 1.5lh;
 }
 
 /* == 5. Hilfe und Aktionen ================================================ */
@@ -158,24 +196,40 @@
   justify-content: center;
 }
 
-/* == 6. Niedrige Fenster ================================================== */
+/* == 6. Kompakter Kopf ==================================================== */
 
-/* Ein kompakter Kopf spart Höhe; bei Bedarf bleibt Scrollen möglich. */
-@media (max-height: 480px) {
+/* Schmale oder niedrige Fenster: Titel und Einstellungen stehen in einer
+ * Zeile; Untertitel und Autor zeigen nur größere Bildschirme. So bleibt
+ * Höhe für das Brett. Bei Bedarf bleibt Scrollen möglich.
+ */
+@media (max-height: 480px), (max-width: 599px) {
   .kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--abstand-klein);
     padding-block: var(--abstand-klein);
 
     & .kopf__titel {
-      font-size: 1.1rem;
+      font-size: 1.35rem;
     }
 
     & .kopf__untertitel,
     & .kopf__autor {
       display: none;
     }
+
+    & .knopf--kopf {
+      margin-block-start: 0;
+    }
   }
 
   .ansicht--spiel {
     gap: var(--abstand-klein);
+    padding-block: var(--abstand-klein);
+  }
+
+  .stand__spieler {
+    padding: 0.25rem var(--abstand-klein);
   }
 }

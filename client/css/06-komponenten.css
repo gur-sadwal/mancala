@@ -92,9 +92,10 @@
   }
 }
 
-/* Die Kopfzeile braucht einen hellen Knopf- und Fokuskontrast. */
+/* Die Kopfzeile braucht einen hellen Knopf- und Fokuskontrast.
+ * Den Abstand zum Titel regelt 04-layout.css.
+ */
 .knopf--kopf {
-  margin-block-start: var(--abstand-klein);
   background-color: transparent;
   border-color: var(--farbe-hessen-weiss);
   color: var(--farbe-hessen-weiss);

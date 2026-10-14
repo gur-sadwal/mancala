@@ -55,8 +55,10 @@
   /* WCAG: 2,75rem sind bei 16px Grundschrift die geforderten 44px. */
   --ziel-min: 2.75rem;
 
-  /* Mulden wachsen mit der Breite; die Mindestzielgröße bleibt erhalten. */
-  --mulde-min: clamp(var(--ziel-min), 11vw, 6.5rem);
+  /* Mulden wachsen mit der Breite, in niedrigen Fenstern aber nicht höher
+   * als nötig (dvh = sichtbare Fensterhöhe). 44px bleiben erhalten.
+   */
+  --mulde-min: clamp(var(--ziel-min), min(11vw, 18dvh), 6.5rem);
   --abstand-brett: clamp(0.35rem, 1.4vw, 0.9rem);
 
   /* Bei vielen Kugeln verringert 05-brett.css den Durchmesser. */
