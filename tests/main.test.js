@@ -320,6 +320,41 @@ describe('Ergebnis nach einem Abbruch', () => {
   });
 });
 
+describe('Rückfrage beim Verlassen (Review B7)', () => {
+  /** Ein abbrechbares beforeunload wie beim Schließen oder Neuladen. */
+  function verlasseSeite() {
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(ereignis);
+    return ereignis.defaultPrevented;
+  }
+
+  test('vor der Partie fragt der Browser nicht nach', () => {
+    sende('connect');
+    expect(verlasseSeite()).toBe(false);
+  });
+
+  test('während der Partie fragt der Browser nach', () => {
+    starte();
+    expect(verlasseSeite()).toBe(true);
+  });
+
+  test('nach dem Ergebnis und nach der Rückkehr zur Anmeldung nicht mehr', async () => {
+    starte();
+    await beende();
+    expect(verlasseSeite()).toBe(false);
+
+    rueckrufe.ende.beiAbmelden();
+    expect(verlasseSeite()).toBe(false);
+  });
+
+  test('eine Revanche schützt die neue Partie wieder', async () => {
+    starte();
+    await beende();
+    starte();
+    expect(verlasseSeite()).toBe(true);
+  });
+});
+
 describe('Voller Server (Review A7)', () => {
   test('SERVER_VOLL führt aus dem Warten mit Erklärung zur Anmeldung', async () => {
     starte();

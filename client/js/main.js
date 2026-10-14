@@ -291,6 +291,7 @@ function verlasseErgebnis() {
 store.abonniere((zustand) => {
   const { ansicht } = zustand;
 
+  schuetzeVorVerlassen(ansicht === ANSICHT.SPIEL);
   anmeldeAnsicht.zeige(ansicht === ANSICHT.ANMELDEN);
   warteAnsicht.zeige(ansicht === ANSICHT.WARTEN);
   spielAnsicht.zeige(ansicht === ANSICHT.SPIEL || ansicht === ANSICHT.ENDE);
@@ -315,6 +316,22 @@ store.abonniere((zustand) => {
     endeAnsicht.verstecke();
   }
 });
+
+// Während einer Partie fragt der Browser vor Schließen, Neuladen oder Zurück
+// nach. Den Text bestimmt der Browser; wer bleibt, spielt einfach weiter.
+// Erst das tatsächliche Verlassen trennt die Verbindung (pagehide in kern.js).
+function warneVorVerlassen(ereignis) {
+  ereignis.preventDefault();
+}
+
+// Gleiche Funktionsreferenz: Wiederholtes Anmelden bleibt ein Listener.
+function schuetzeVorVerlassen(aktiv) {
+  if (aktiv) {
+    window.addEventListener('beforeunload', warneVorVerlassen);
+  } else {
+    window.removeEventListener('beforeunload', warneVorVerlassen);
+  }
+}
 
 // Für die Bilanz gilt bevorzugt der vom Server bereinigte Name.
 function eigenerName(zustand) {
