@@ -162,6 +162,72 @@ function privatesSpiel() {
 
 // == 2. Testfälle ===========================================================
 
+describe('Handler: Obergrenzen (Review A7)', () => {
+  test('sind alle Partien belegt, lehnt der Server jeden neuen Beitritt ab', () => {
+    const { verbinde, lobby, manager } = schnellesSpiel({
+      manager: erzeugeManager({ partienMax: 1 }),
+    });
+    const cem = verbinde('c');
+
+    cem.sende(EREIGNIS.BEITRETEN, { name: 'Cem' });
+    cem.sende(EREIGNIS.BEITRETEN, { name: 'Cem', privat: true });
+
+    expect(cem.alle(EREIGNIS.FEHLER).map((n) => n.daten.code))
+      .toEqual([FEHLER.SERVER_VOLL, FEHLER.SERVER_VOLL]);
+    expect(lobby.enthaelt('c')).toBe(false);
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('ein Link bleibt gültig, wenn er bei vollem Server abgelehnt wurde', () => {
+    const manager = erzeugeManager({ partienMax: 1 });
+    const { verbinde } = erzeugeUmgebung({ manager });
+    const anna = verbinde('a');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna', privat: true });
+    const { code } = anna.letzte(EREIGNIS.PRIVAT).daten;
+    const voll = manager.starte({ socketId: 'x', name: 'X' },
+      { socketId: 'y', name: 'Y' });
+
+    const ben = verbinde('b');
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+    expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.SERVER_VOLL);
+
+    manager.entferne(voll.id);
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+    expect(ben.letzte(EREIGNIS.START)).toBeDefined();
+  });
+
+  test('eine Revanche bei vollem Server meldet beiden SERVER_VOLL', () => {
+    const manager = erzeugeManager({ partienMax: 1 });
+    const { anna, ben, verbinde } = schnellesSpiel({ manager });
+    anna.sende(EREIGNIS.AUFGEBEN);
+    const cem = verbinde('c');
+    const dora = verbinde('d');
+    cem.sende(EREIGNIS.BEITRETEN, { name: 'Cem' });
+    dora.sende(EREIGNIS.BEITRETEN, { name: 'Dora' });
+
+    anna.sende(EREIGNIS.REVANCHE);
+    ben.sende(EREIGNIS.REVANCHE);
+
+    for (const spieler of [anna, ben]) {
+      expect(spieler.letzte(EREIGNIS.FEHLER).daten.code)
+        .toBe(FEHLER.SERVER_VOLL);
+    }
+    expect(manager.anzahl()).toBe(1);
+  });
+
+  test('eine volle Lobby lehnt einen weiteren Warteplatz ab', () => {
+    const { verbinde } = erzeugeUmgebung({
+      lobby: erzeugeLobby({ wartendeMax: 1 }),
+    });
+    verbinde('a').sende(EREIGNIS.BEITRETEN, { name: 'Anna', privat: true });
+    const ben = verbinde('b');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben' });
+    expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.SERVER_VOLL);
+    expect(ben.letzte(EREIGNIS.WARTESCHLANGE)).toBeUndefined();
+  });
+});
+
 describe('Handler: Revanche nach jedem Spiel', () => {
   test('nach einer Aufgabe im schnellen Spiel wird beiden eine Revanche angeboten', () => {
     const { anna, ben } = schnellesSpiel();

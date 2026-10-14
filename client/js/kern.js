@@ -8,6 +8,9 @@
 import { io } from '/socket.io/socket.io.esm.min.js';
 import { EREIGNIS, ZUG_TYP } from '/shared/protokoll.js';
 
+// EINSTELLBAR: Pause, bevor ein abgelehnter Verbindungsaufbau neu beginnt.
+const NEUVERSUCH_MS = 5000;
+
 // == 1. Anzeigezustand ====================================================
 export const ANSICHT = Object.freeze({
   ANMELDEN: 'ANMELDEN',
@@ -89,8 +92,12 @@ export function verbinde(rueckrufe) {
     socket.sendBuffer = [];
     rueckrufe.beiTrennung?.(grund);
   });
-  socket.on('connect_error',
-    (fehler) => rueckrufe.beiTrennung?.(fehler.message));
+  // Lehnt der Server selbst ab (etwa SERVER_VOLL), ist der Socket nicht mehr
+  // aktiv und Socket.io versucht es nicht neu. Dann später selbst verbinden.
+  socket.on('connect_error', (fehler) => {
+    if (!socket.active) setTimeout(() => socket.connect(), NEUVERSUCH_MS);
+    rueckrufe.beiTrennung?.(fehler.message);
+  });
 
   socket.on(EREIGNIS.WARTESCHLANGE,
     (daten) => rueckrufe.beiWarteschlange?.(daten));

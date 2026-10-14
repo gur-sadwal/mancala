@@ -9,7 +9,7 @@
  *   == 2. Partie starten
  *   == 3. Partie eines Sockets
  *   == 4. Partie auflösen
- *   == 5. Fristen, Anzahl und Herunterfahren
+ *   == 5. Fristen, Anzahl, Grenze und Herunterfahren
  *
  * Benutzt von: Handler, Express und Gateway. Benutzt partie.js und util/ids.js.
  */
@@ -18,8 +18,12 @@ import { neueSpielId } from '../util/ids.js';
 import { neuePartie } from './partie.js';
 import { STATUS } from '../../shared/protokoll.js';
 
+// EINSTELLBAR: Höchstens so viele gleichzeitige Partien. Den Beitritt prüft
+// handlers.js vorher mit istVoll; Tests übergeben eine kleinere Grenze.
+const PARTIEN_MAX = 200;
+
 // == 1. Zustand und Schnittstelle ========================================
-export function erzeugeManager() {
+export function erzeugeManager({ partienMax = PARTIEN_MAX } = {}) {
   const partien = new Map();
   const zuordnung = new Map();
 
@@ -29,6 +33,7 @@ export function erzeugeManager() {
     entferne,
     findeRuhendePartien,
     anzahl,
+    istVoll,
     alle,
   };
 
@@ -73,7 +78,7 @@ export function erzeugeManager() {
     return partie;
   }
 
-  // == 5. Fristen, Anzahl und Herunterfahren =============================
+  // == 5. Fristen, Anzahl, Grenze und Herunterfahren =====================
   // Nur finden: handlers.js entscheidet über Benachrichtigung und Entfernen.
   function findeRuhendePartien(maxRuheMs, jetzt = Date.now()) {
     const grenze = jetzt - maxRuheMs;
@@ -91,6 +96,10 @@ export function erzeugeManager() {
 
   function anzahl() {
     return partien.size;
+  }
+
+  function istVoll() {
+    return partien.size >= partienMax;
   }
 
   function alle() {

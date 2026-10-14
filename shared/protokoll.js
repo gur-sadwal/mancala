@@ -58,6 +58,7 @@ export const FEHLER = Object.freeze({
   CODE_UNBEKANNT: 'CODE_UNBEKANNT',
   INTERNER_FEHLER: 'INTERNER_FEHLER',
   WARTEZEIT_ABGELAUFEN: 'WARTEZEIT_ABGELAUFEN',
+  SERVER_VOLL: 'SERVER_VOLL',
 });
 
 export const FEHLER_TEXT = Object.freeze({
@@ -75,6 +76,8 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.INTERNER_FEHLER]: 'Es ist ein interner Fehler aufgetreten.',
   [FEHLER.WARTEZEIT_ABGELAUFEN]:
     'Die Wartezeit ist abgelaufen. Bitte starte ein neues Spiel.',
+  [FEHLER.SERVER_VOLL]:
+    'Der Server ist gerade voll. Bitte versuche es in ein paar Minuten erneut.',
 });
 
 // == 3. Status, Endegründe und Grenzen ===================================

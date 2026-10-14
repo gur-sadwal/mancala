@@ -279,3 +279,36 @@ describe('Netzverbindung beim Zurück-Cache', () => {
     expect(socket.connect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
+  test('lehnt der Server ab, versucht der Client es nach einer Pause erneut', () => {
+    const jest = import.meta.jest;
+    jest.useFakeTimers();
+    try {
+      verbinde({});
+      socket.active = false;
+      socket.ereignisse.get('connect_error')(new Error(protokoll.FEHLER.SERVER_VOLL));
+
+      expect(socket.connect).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(5000);
+      expect(socket.connect).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('bei gewöhnlichen Netzfehlern übernimmt Socket.io das Neuverbinden', () => {
+    const jest = import.meta.jest;
+    jest.useFakeTimers();
+    try {
+      verbinde({});
+      socket.active = true;
+      socket.ereignisse.get('connect_error')(new Error('xhr poll error'));
+
+      jest.advanceTimersByTime(60_000);
+      expect(socket.connect).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});

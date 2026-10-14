@@ -19,11 +19,14 @@ import { REVANCHE_TAKT_MS } from '../spiel/lobby.js';
 import { erzeugeRatenbegrenzer } from './rateLimit.js';
 import { erzeugeHandler } from './handlers.js';
 import { logger } from '../util/logger.js';
-import { GRUND } from '../../shared/protokoll.js';
+import { FEHLER, GRUND } from '../../shared/protokoll.js';
 
 // == 1. Grenzen ==========================================================
 // EINSTELLBAR: Abstand zwischen den Prüfungen der Warte- und Zugfristen.
 const AUFRAEUM_TAKT_MS = 60 * 1000;
+// EINSTELLBAR: Höchstens so viele gleichzeitige Browserverbindungen; passt
+// zu 200 Partien und 100 Wartenden. Tests übergeben eine kleinere Grenze.
+const VERBINDUNGEN_MAX = 500;
 // EINSTELLBAR: Nachrichten höchstens 1 KB, Ping alle 20 s, 20 s Antwortfrist.
 // SCHUTZ: Größere Nachrichten trennen nur diese Verbindung vor dem Handler.
 const SOCKET_OPTIONEN = {
@@ -39,10 +42,13 @@ const SOCKET_OPTIONEN = {
 // == 2. Gateway und Herunterfahren =======================================
 // ACHTUNG: Der HTTP-Server muss Express bereits als Anfragebehandler haben.
 // Socket.io übernimmt vorhandene request-Listener für Nicht-Socket-Anfragen.
-export function erzeugeGateway(httpServer, { lobby, manager }) {
+export function erzeugeGateway(httpServer, {
+  lobby, manager, verbindungenMax = VERBINDUNGEN_MAX,
+}) {
   const io = new Server(httpServer, SOCKET_OPTIONEN);
   const ratenbegrenzer = erzeugeRatenbegrenzer();
   const handler = erzeugeHandler({ io, lobby, manager, ratenbegrenzer });
+  io.use((socket, weiter) => begrenzeVerbindungen(io, verbindungenMax, weiter));
   io.on('connection', (socket) => registriereVerbindung(socket, handler));
   const aufraeumer = starteTakt(
     handler.raeumeAuf, AUFRAEUM_TAKT_MS, 'Aufräumen fehlgeschlagen',
@@ -69,6 +75,16 @@ export function erzeugeGateway(httpServer, { lobby, manager }) {
 }
 
 // == 3. Neue Verbindung absichern ========================================
+// SCHUTZ: Socket.io fragt diese Middleware vor jeder neuen Verbindung. Der
+// neue Socket zählt hier noch nicht mit. Ein Fehler lehnt nur ihn ab.
+function begrenzeVerbindungen(io, verbindungenMax, weiter) {
+  if (io.of('/').sockets.size >= verbindungenMax) {
+    weiter(new Error(FEHLER.SERVER_VOLL));
+    return;
+  }
+  weiter();
+}
+
 function registriereVerbindung(socket, handler) {
   try {
     handler.registriere(socket);

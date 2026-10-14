@@ -588,3 +588,62 @@ describe('Manager: Speicher beim Auflösen freigeben', () => {
     expect(maps.every((map) => map.size === 0)).toBe(true);
   });
 });
+
+describe('Obergrenzen für Warteplätze und Partien (Review A7)', () => {
+  test('eine volle Lobby lehnt weitere Warteplätze mit SERVER_VOLL ab', () => {
+    const lobby = erzeugeLobby({ wartendeMax: 2 });
+    expect(lobby.erstellePrivat('a', 'Anna').ok).toBe(true);
+    expect(lobby.erstellePrivat('b', 'Ben').ok).toBe(true);
+
+    expect(lobby.erstellePrivat('c', 'Cem'))
+      .toEqual({ ok: false, code: FEHLER.SERVER_VOLL });
+    expect(lobby.beitreten('c', 'Cem'))
+      .toEqual({ ok: false, code: FEHLER.SERVER_VOLL });
+    expect(lobby.anzahl()).toBe(2);
+  });
+
+  test('wer sofort einen Gegner findet, braucht keinen neuen Platz', () => {
+    const lobby = erzeugeLobby({ wartendeMax: 2 });
+    lobby.beitreten('a', 'Anna');
+    lobby.erstellePrivat('b', 'Ben');
+
+    expect(lobby.beitreten('c', 'Cem')).toEqual({ ok: true });
+    expect(lobby.naechstesPaar().map((e) => e.socketId)).toEqual(['a', 'c']);
+  });
+
+  test('ein freigewordener Platz lässt sich wieder belegen', () => {
+    const lobby = erzeugeLobby({ wartendeMax: 1 });
+    lobby.erstellePrivat('a', 'Anna');
+    expect(lobby.beitreten('b', 'Ben').ok).toBe(false);
+
+    lobby.entferne('a');
+    expect(lobby.beitreten('b', 'Ben')).toEqual({ ok: true });
+  });
+
+  test('der Beitritt über einen Link braucht keinen freien Platz', () => {
+    const lobby = erzeugeLobby({ wartendeMax: 1 });
+    const { einladung } = lobby.erstellePrivat('a', 'Anna');
+
+    expect(lobby.nimmPrivat(einladung).socketId).toBe('a');
+  });
+
+  test('ohne Angabe gelten großzügige Standardgrenzen', () => {
+    const lobby = erzeugeLobby();
+    for (let i = 0; i < 99; i += 1) {
+      expect(lobby.erstellePrivat(`p${i}`, 'P').ok).toBe(true);
+    }
+    expect(lobby.anzahl()).toBe(99);
+  });
+
+  test('der Manager meldet, wann keine weitere Partie mehr passt', () => {
+    const manager = erzeugeManager({ partienMax: 1 });
+    expect(manager.istVoll()).toBe(false);
+
+    const partie = manager.starte({ socketId: 'a', name: 'A' },
+      { socketId: 'b', name: 'B' });
+    expect(manager.istVoll()).toBe(true);
+
+    manager.entferne(partie.id);
+    expect(manager.istVoll()).toBe(false);
+  });
+});

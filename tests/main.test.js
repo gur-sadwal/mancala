@@ -236,7 +236,7 @@ describe('Sichtbare Serverfehler', () => {
   test.each(Object.values(protokoll.FEHLER).filter((code) => ![
     protokoll.FEHLER.KEINE_PARTIE, protokoll.FEHLER.CODE_UNBEKANNT,
     protokoll.FEHLER.WARTEZEIT_ABGELAUFEN, protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
-    protokoll.FEHLER.BEREITS_IN_PARTIE,
+    protokoll.FEHLER.BEREITS_IN_PARTIE, protokoll.FEHLER.SERVER_VOLL,
   ].includes(code)))('zeigt %s im Spiel als Text', (code) => {
     starte();
     sende(protokoll.EREIGNIS.FEHLER, { code });
@@ -317,5 +317,19 @@ describe('Ergebnis nach einem Abbruch', () => {
     expect(ansichten.spiel.zeigeEnde).toHaveBeenCalledTimes(1);
     expect(ansichten.ende.zeige.mock.lastCall[0].ergebnis.sieger)
       .toBe('unten');
+  });
+});
+
+describe('Voller Server (Review A7)', () => {
+  test('SERVER_VOLL führt aus dem Warten mit Erklärung zur Anmeldung', async () => {
+    starte();
+    await beende();
+    rueckrufe.ende.beiNeuemSpiel();
+
+    sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.SERVER_VOLL });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.SERVER_VOLL]);
   });
 });

@@ -148,15 +148,19 @@ function beiRevancheAbgelaufen() {
   }
 }
 
-// Ein abgelaufener Warteplatz und eine fehlende Partie brauchen einen Neustart.
+// Diese Fehler beenden Suche oder Partie; die Anmeldung erklärt den Grund.
+const ZURUECK_ZUR_ANMELDUNG = [
+  FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN, FEHLER.CODE_UNBEKANNT,
+  FEHLER.SERVER_VOLL,
+];
+
 function beiFehler({ code, text }) {
   const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
 
   if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
   if (istNurBestaetigung(code)) return;
 
-  if ([FEHLER.KEINE_PARTIE, FEHLER.WARTEZEIT_ABGELAUFEN,
-    FEHLER.CODE_UNBEKANNT].includes(code)) {
+  if (ZURUECK_ZUR_ANMELDUNG.includes(code)) {
     if (code === FEHLER.CODE_UNBEKANNT) entferneEinladungAusAdresse();
     zurueckZurAnmeldung();
   } else if (code === FEHLER.BEREITS_IN_WARTESCHLANGE) {

@@ -112,6 +112,13 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     lasseRevancheVerfallen(socket.id);
 
+    // SCHUTZ: Jeder Beitritt kann eine Partie starten; der Platz dafür wird
+    // vorher geprüft. Ein abgelehnter Link bleibt so gültig.
+    if (manager.istVoll()) {
+      sendeFehler(socket, FEHLER.SERVER_VOLL);
+      return;
+    }
+
     const name = ermittleSpielername(nutzdaten.name);
     let angenommen;
     if (typeof nutzdaten.code === 'string') {
@@ -283,9 +290,21 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     // Doppelklicks erzeugen kein zweites Angebot an den Gegner.
     if (ergebnis.status === REVANCHE_STATUS.SCHON_GEWUENSCHT) return;
 
-    const [a, b] = ergebnis.paar;
+    starteRevanche(socket, ergebnis.paar);
+  }
+
+  // Beide haben zugestimmt; die neue Partie braucht beide Sockets und,
+  // wie jeder Beitritt, einen freien Partieplatz.
+  function starteRevanche(socket, [a, b]) {
     if (!socketVon(a.socketId) || !socketVon(b.socketId)) {
       socket.emit(EREIGNIS.REVANCHE_WEG);
+      return;
+    }
+
+    if (manager.istVoll()) {
+      for (const spieler of [a, b]) {
+        sendeFehler(socketVon(spieler.socketId), FEHLER.SERVER_VOLL);
+      }
       return;
     }
 

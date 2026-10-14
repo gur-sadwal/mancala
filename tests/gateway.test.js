@@ -16,7 +16,7 @@ import http from 'node:http';
 import { erzeugeGateway } from '../server/socket/gateway.js';
 import { erzeugeLobby } from '../server/spiel/lobby.js';
 import { erzeugeManager } from '../server/spiel/manager.js';
-import { EREIGNIS, GRUND } from '../shared/protokoll.js';
+import { EREIGNIS, FEHLER, GRUND } from '../shared/protokoll.js';
 
 /** Längste Wartezeit auf eine Nachricht, bevor der Test scheitert. */
 const WARTEN_MAX_MS = 2000;
@@ -66,12 +66,16 @@ async function warteBis(bedingung) {
 /** Ein nachgebauter Browser; `bereit` erfüllt sich, sobald er dabei ist. */
 function verbindeRoh() {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/socket.io/?EIO=4&transport=websocket`);
-  const zustand = { empfangen: [], dabei: false, getrennt: false };
+  const zustand = {
+    empfangen: [], dabei: false, getrennt: false, abgelehnt: null,
+  };
 
   ws.addEventListener('message', ({ data }) => {
     if (data === '2') ws.send('3');
     else if (data.startsWith('0')) ws.send('40');
     else if (data.startsWith('40')) zustand.dabei = true;
+    // 44 ist die Ablehnung durch eine Middleware, mit Grund als message.
+    else if (data.startsWith('44')) zustand.abgelehnt = JSON.parse(data.slice(2)).message;
     else if (data.startsWith('42')) zustand.empfangen.push(JSON.parse(data.slice(2)));
   });
   ws.addEventListener('close', () => { zustand.getrennt = true; });
@@ -134,6 +138,34 @@ describe('Gateway: Verbindungen', () => {
     ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben' });
     expect(await ben.erhalte(EREIGNIS.WARTESCHLANGE)).toEqual({ position: 1 });
     expect(ben.zustand.getrennt).toBe(false);
+  });
+});
+
+describe('Gateway: Obergrenze für Verbindungen (Review A7)', () => {
+  test('über der Grenze lehnt der Server ab; ein freier Platz wird wieder vergeben', async () => {
+    await gateway.herunterfahren();
+    httpServer = http.createServer();
+    gateway = erzeugeGateway(httpServer, {
+      lobby: erzeugeLobby(), manager, verbindungenMax: 1,
+    });
+    await new Promise((fertig) => httpServer.listen(0, '127.0.0.1', fertig));
+    port = httpServer.address().port;
+
+    const anna = verbindeRoh();
+    await anna.bereit;
+    const ben = verbindeRoh();
+    await warteBis(() => ben.zustand.abgelehnt !== null);
+    expect(ben.zustand.abgelehnt).toBe(FEHLER.SERVER_VOLL);
+
+    // Anna merkt davon nichts.
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+    expect(await anna.erhalte(EREIGNIS.WARTESCHLANGE)).toEqual({ position: 1 });
+
+    anna.schliesse();
+    await warteBis(() => anna.zustand.getrennt);
+    const cem = verbindeRoh();
+    await cem.bereit;
+    expect(cem.zustand.abgelehnt).toBeNull();
   });
 });
 

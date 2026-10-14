@@ -11,7 +11,7 @@
  *   == 4. Private Plätze
  *   == 5. Wartende verwalten
  *   == 6. Revanchen
- *   == 7. Anzahl für die Gesundheit
+ *   == 7. Anzahl und Grenze
  *
  * Benutzt von: Handler und Gateway. Benutzt das Protokoll und util/ids.js.
  */
@@ -37,9 +37,14 @@ export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
 // EINSTELLBAR: So oft sucht gateway.js nach abgelaufenen Revanchen.
 export const REVANCHE_TAKT_MS = 1000;
 
+// EINSTELLBAR: Höchstens so viele Wartende (öffentlich und privat).
+// SCHUTZ: Ohne Grenze könnten wenige Verbindungen beliebig viele private
+// Plätze anlegen. Tests übergeben eine kleinere Grenze.
+const WARTENDE_MAX = 100;
+
 // == 2. Zustand und Schnittstelle ========================================
 // Jede neue Lobby hat eigenen Zustand; ihre inneren Funktionen teilen ihn.
-export function erzeugeLobby() {
+export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
   const warteschlange = [];
   const privat = new Map();
   const revanchen = new Map();
@@ -67,6 +72,11 @@ export function erzeugeLobby() {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
 
+    // Wartet schon jemand, entsteht sofort eine Partie: kein neuer Platz.
+    if (istVoll() && warteschlange.length === 0) {
+      return { ok: false, code: FEHLER.SERVER_VOLL };
+    }
+
     warteschlange.push({ socketId, name, seit: jetzt });
     return { ok: true };
   }
@@ -76,6 +86,7 @@ export function erzeugeLobby() {
     if (enthaelt(socketId)) {
       return { ok: false, code: FEHLER.BEREITS_IN_WARTESCHLANGE };
     }
+    if (istVoll()) return { ok: false, code: FEHLER.SERVER_VOLL };
 
     // SCHUTZ: Ein schon vergebener Zufallscode darf keinen Platz überschreiben.
     let einladung = neuerEinladungsCode();
@@ -232,8 +243,12 @@ export function erzeugeLobby() {
     return abgelaufen;
   }
 
-  // == 7. Anzahl für die Gesundheit ======================================
+  // == 7. Anzahl und Grenze ==============================================
   function anzahl() {
     return warteschlange.length + privat.size;
+  }
+
+  function istVoll() {
+    return anzahl() >= wartendeMax;
   }
 }
