@@ -1,11 +1,22 @@
 /**
- * warten.js – Warteposition oder privater Einladungslink.
+ * warten.js – Warteposition, privater Einladungslink und Wartezeit.
  * Die Suche und ihre Position kommen vom Server; Abbrechen ist sofort sichtbar.
- * Inhalt: == 1. Einrichtung · == 2. Aktionen · == 3. Ansicht
+ * Die Wartezeit ist nur Anzeige; die Frist prüft der Server.
+ * Inhalt: == 1. Einrichtung · == 2. Aktionen · == 3. Wartezeit
+ *         == 4. Ansicht
  * Benutzt von main.js; benutzt dom.js.
  */
 
 import { $, zeige, setzeText } from './dom.js';
+
+// EINSTELLBAR: So oft wird die angezeigte Wartezeit erneuert.
+const UHR_TAKT_MS = 1000;
+
+export function wartezeitText(sekunden) {
+  const minuten = Math.floor(sekunden / 60);
+  const rest = String(sekunden % 60).padStart(2, '0');
+  return `${minuten}:${rest}`;
+}
 
 // == 1. Einrichtung ======================================================
 export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
@@ -18,6 +29,10 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const feldLink = $('#feld-link');
   const knopfKopieren = $('#knopf-kopieren');
   const kopierStatus = $('#kopier-status');
+  const zeitAnzeige = $('#warten-zeit');
+
+  let warteBeginn = 0;
+  let uhr = null;
 
   // == 2. Aktionen =========================================================
   function beiAbbrechenKlick() {
@@ -44,7 +59,30 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
     }
   }
 
-  // == 3. Ansicht ==========================================================
+  // == 3. Wartezeit =======================================================
+  // Aus der vergangenen Zeit rechnen statt mitzählen: Hintergrund-Tabs
+  // bremsen den Takt, die Anzeige stimmt beim Zurückkehren trotzdem.
+  function zeichneWartezeit() {
+    const vergangen = Math.floor((Date.now() - warteBeginn) / 1000);
+    // Eine zurückgestellte Systemuhr ergibt keine negative Wartezeit.
+    const sekunden = Math.max(0, vergangen);
+    setzeText(zeitAnzeige, wartezeitText(sekunden));
+    zeitAnzeige.setAttribute('datetime', `PT${sekunden}S`);
+  }
+
+  function starteUhr() {
+    stoppeUhr();
+    warteBeginn = Date.now();
+    zeichneWartezeit();
+    uhr = setInterval(zeichneWartezeit, UHR_TAKT_MS);
+  }
+
+  function stoppeUhr() {
+    clearInterval(uhr);
+    uhr = null;
+  }
+
+  // == 4. Ansicht ==========================================================
   function meldeListenerAn() {
     knopfAbbrechen.addEventListener('click', beiAbbrechenKlick);
     knopfKopieren.addEventListener('click', beiKopieren);
@@ -65,10 +103,13 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
         meldeListenerAn();
       } else {
         meldeListenerAb();
+        stoppeUhr();
       }
 
+      // Nur ein neues Warten startet die Uhr; Positionsupdates nicht.
       if (wirdEingeblendet) {
         setzeText(kopierStatus, '');
+        starteUhr();
         titel.focus();
       }
     },
