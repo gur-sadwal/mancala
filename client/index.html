@@ -155,9 +155,14 @@
         <span class="lader__kugel"></span>
       </div>
 
+      <!--
+        bdi hält einen Namen in fremder Schreibrichtung von den Wörtern
+        daneben getrennt. output: Screenreader können neue Texte vorlesen,
+        ohne dass der Fokus wandert.
+      -->
       <p>
-        Du spielst als <strong id="warten-name">…</strong>.
-        <span id="warten-position"></span>
+        Du spielst als <strong><bdi id="warten-name">…</bdi></strong>.
+        <output id="warten-position"></output>
       </p>
 
       <div id="warten-privat" class="einladungslink" hidden>
@@ -168,7 +173,7 @@
         <button type="button" id="knopf-kopieren" class="knopf knopf--haupt">
           Link kopieren
         </button>
-        <p id="kopier-status" class="feld__hinweis"></p>
+        <output id="kopier-status" class="feld__hinweis"></output>
       </div>
 
       <p class="warten__hinweis">
@@ -184,19 +189,25 @@
     <!-- == 3. Spiel == -->
     <section id="ansicht-spiel" class="ansicht ansicht--spiel" hidden>
 
+      <!--
+        Die Rollen stehen fest; Namen sind nur Anzeige und dürfen auch „Du“
+        heißen. Die Zuganzeige ist ein output wie in der Warteansicht.
+      -->
       <div class="stand">
-        <p class="stand__spieler" id="stand-gegner">
-          <span class="stand__name" id="name-gegner">Gegner</span>
+        <p class="stand__spieler stand__spieler--gegner" id="stand-gegner">
+          <span class="stand__rolle">Gegner</span>
+          <bdi class="stand__name" id="name-gegner">…</bdi>
           <span class="stand__punkte" id="punkte-gegner">0</span>
         </p>
 
-        <p class="stand__spieler" id="stand-eigen">
-          <span class="stand__name" id="name-eigen">Du</span>
+        <output id="zuganzeige" class="zuganzeige">Die Partie beginnt…</output>
+
+        <p class="stand__spieler stand__spieler--eigen" id="stand-eigen">
+          <span class="stand__rolle">Du</span>
+          <bdi class="stand__name" id="name-eigen">…</bdi>
           <span class="stand__punkte" id="punkte-eigen">0</span>
         </p>
       </div>
-
-      <p id="zuganzeige" class="zuganzeige">Die Partie beginnt…</p>
 
       <!--
         spiel.js baut und aktualisiert die Zellen; der Server liefert den

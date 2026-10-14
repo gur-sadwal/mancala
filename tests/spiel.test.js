@@ -17,7 +17,74 @@ import { hinweisText, schritteDesZuges, muldeAusTaste, hausVon,
 import { fuehreZugAus } from '../server/spiel/engine.js';
 import { moeglicheZuege } from './zuege.js';
 import { neuesBrett } from '../server/spiel/brett.js';
+import { neuePartie, spielstandVon } from '../server/spiel/partie.js';
 import { STATUS } from '../shared/protokoll.js';
+
+/**
+ * Kleine DOM-Attrappe für die echte Spielansicht: Elemente mit Klassen,
+ * Kindern und Text. querySelector kennt nur „.klasse“ und „#id“; andere
+ * Selektoren liefern null, wie ein Fund ohne Treffer.
+ */
+function falschesElement(tag) {
+  const klassen = new Set();
+  const element = {
+    tag, kinder: [], eltern: null, textContent: '', title: '',
+    disabled: false, hidden: false, open: false,
+    classList: {
+      add: (...namen) => namen.forEach((name) => klassen.add(name)),
+      remove: (...namen) => namen.forEach((name) => klassen.delete(name)),
+      toggle: (name, an) => (an ? klassen.add(name) : klassen.delete(name)),
+      contains: (name) => klassen.has(name),
+    },
+    setAttribute: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    focus: () => {},
+    append: (...neu) => neu.forEach((kind) => {
+      kind.eltern = element;
+      element.kinder.push(kind);
+    }),
+    replaceChildren: () => { element.kinder = []; },
+    remove: () => {
+      const geschwister = element.eltern.kinder;
+      geschwister.splice(geschwister.indexOf(element), 1);
+    },
+    get childElementCount() { return element.kinder.length; },
+    get lastElementChild() { return element.kinder.at(-1) ?? null; },
+    querySelector: (auswahl) => alleUnter(element)
+      .find((kind) => auswahl.startsWith('.')
+        && kind.classList.contains(auswahl.slice(1))) ?? null,
+    querySelectorAll: (auswahl) => alleUnter(element)
+      .filter((kind) => kind.classList.contains(auswahl.slice(1))),
+  };
+  return element;
+}
+
+function alleUnter(element) {
+  return element.kinder.flatMap((kind) => [kind, ...alleUnter(kind)]);
+}
+
+/** Echte Spielansicht mit Attrappen; ids liefert ein fester Satz Elemente. */
+function baueEchteAnsicht() {
+  const nachId = new Map();
+  global.document = {
+    activeElement: null,
+    createElement: falschesElement,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelector: (auswahl) => {
+      if (!nachId.has(auswahl)) nachId.set(auswahl, falschesElement('div'));
+      return nachId.get(auswahl);
+    },
+  };
+  return { ansicht: erzeugeSpielAnsicht({ aktionen: {} }), nachId };
+}
+
+function startstand(nameUnten, nameOben) {
+  const partie = neuePartie('T', { socketId: 'a', name: nameUnten },
+    { socketId: 'b', name: nameOben });
+  return spielstandVon(partie);
+}
 
 // == 2. Testfälle ===========================================================
 
@@ -123,6 +190,66 @@ describe('Lebensdauer der echten Spielansicht', () => {
     } finally {
       delete global.document;
     }
+  });
+});
+
+describe('Rollen, Zugtext und Feldbeschreibungen (Review A2, D3, C1)', () => {
+  afterEach(() => {
+    delete global.document;
+  });
+
+  test('der Gegner darf „Du“ heißen: die Karten zeigen nur die Namen', () => {
+    const { ansicht, nachId } = baueEchteAnsicht();
+    ansicht.starte(startstand('Anna', 'Du'), 'unten');
+
+    expect(nachId.get('#name-eigen').textContent).toBe('Anna');
+    expect(nachId.get('#name-gegner').textContent).toBe('Du');
+  });
+
+  test('gleiche Namen werden nicht mehr durch „Du“ ersetzt', () => {
+    const { ansicht, nachId } = baueEchteAnsicht();
+    ansicht.starte(startstand('Anna', 'Anna'), 'oben');
+
+    expect(nachId.get('#name-eigen').textContent).toBe('Anna');
+    expect(nachId.get('#name-gegner').textContent).toBe('Anna');
+  });
+
+  test('der Zugtext enthält keinen Namen, auch keinen langen', () => {
+    const lang = 'W'.repeat(20);
+    const { ansicht, nachId } = baueEchteAnsicht();
+
+    ansicht.starte(startstand(lang, 'Du'), 'oben');
+    expect(nachId.get('#zuganzeige').textContent).toBe('Der Gegner ist am Zug');
+
+    ansicht.starte(startstand(lang, 'Du'), 'unten');
+    expect(nachId.get('#zuganzeige').textContent).toBe('Du bist am Zug');
+  });
+
+  test('Häuser nennen zuerst, wem sie gehören', () => {
+    const { ansicht, nachId } = baueEchteAnsicht();
+    ansicht.starte(startstand('Anna', 'Ben'), 'unten');
+
+    const haeuser = nachId.get('#brett').querySelectorAll('.haus');
+    const texte = haeuser.map((haus) => haus.kinder[0].textContent).sort();
+    expect(texte).toEqual(['Dein Haus', 'Haus des Gegners']);
+    for (const haus of haeuser) {
+      expect(haus.kinder[0].classList.contains('haus__beschriftung')).toBe(true);
+    }
+  });
+
+  test('eigene Mulden beschreiben Nummer und Kugelzahl im title', () => {
+    const { ansicht, nachId } = baueEchteAnsicht();
+    const stand = startstand('Anna', 'Ben');
+    stand.brett[1][0] = 1;
+    stand.brett[1][1] = 0;
+    ansicht.starte(stand, 'unten');
+
+    const titel = nachId.get('#brett').querySelectorAll('.mulde--eigen')
+      .map((mulde) => mulde.title);
+    expect(titel).toEqual([
+      'Mulde 1: 1 Kugel', 'Mulde 2: 0 Kugeln', 'Mulde 3: 4 Kugeln',
+      'Mulde 4: 4 Kugeln', 'Mulde 5: 4 Kugeln', 'Mulde 6: 4 Kugeln',
+    ]);
   });
 });
 

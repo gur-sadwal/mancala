@@ -116,16 +116,18 @@ function erzeugeZelle(zelle, rolle) {
   return li;
 }
 
+// WCAG: Die Beschriftung steht vorn; vorgelesen wird erst, wessen Haus es
+// ist, dann die Punktzahl.
 function erzeugeHaus(rolle) {
   const eigen = rolle.seite === 'eigen';
 
   return erzeuge('div', { klassen: ['haus'] }, [
-    erzeuge('span', { klassen: ['haus__zahl'], text: '0' }),
-    erzeuge('span', { klassen: ['kugeln'] }),
     erzeuge('span', {
       klassen: ['haus__beschriftung'],
-      text: eigen ? 'Dein Haus' : 'Gegner',
+      text: eigen ? 'Dein Haus' : 'Haus des Gegners',
     }),
+    erzeuge('span', { klassen: ['haus__zahl'], text: '0' }),
+    erzeuge('span', { klassen: ['kugeln'] }),
   ]);
 }
 
@@ -195,6 +197,10 @@ function zeichneMulde(element, anzahl, rolle, ichBinDran) {
 
   if (rolle.seite !== 'eigen') return;
 
+  // WCAG: Der title nennt Nummer und Kugelzahl beim Zeigen mit der Maus;
+  // Screenreader lesen ihn als Beschreibung des Knopfs vor.
+  mulde.title = beschreibeMulde(rolle.pos, anzahl);
+
   const spielbar = ichBinDran && anzahl > 0;
 
   schalte(mulde, 'mulde--spielbar', spielbar);
@@ -204,6 +210,13 @@ function zeichneMulde(element, anzahl, rolle, ichBinDran) {
   mulde.disabled = !spielbar;
 }
 
+function beschreibeMulde(pos, anzahl) {
+  const einheit = anzahl === 1 ? 'Kugel' : 'Kugeln';
+  return `Mulde ${pos + 1}: ${anzahl} ${einheit}`;
+}
+
+// Die Rollen „Du“ und „Gegner“ stehen fest im HTML. Namen sind nur Anzeige
+// und dürfen deshalb auch „Du“ lauten oder gleich sein.
 function zeichneStand(elemente, spielstand, sitz) {
   const gegnerSitz = sitz === 'unten' ? 'oben' : 'unten';
   const ichBinDran = spielstand.amZug === sitz;
@@ -213,19 +226,17 @@ function zeichneStand(elemente, spielstand, sitz) {
   setzeText(elemente.punkteEigen, spielstand.brett[eigenReihe][eigenSpalte]);
   setzeText(elemente.punkteGegner, spielstand.brett[gegnerReihe][gegnerSpalte]);
 
-  const eigenerName = spielstand.spieler[sitz].name;
-  const gegnerName = spielstand.spieler[gegnerSitz].name;
-  setzeText(
-    elemente.nameEigen, eigenerName === gegnerName ? 'Du' : eigenerName,
-  );
-  setzeText(elemente.nameGegner, gegnerName);
+  setzeText(elemente.nameEigen, spielstand.spieler[sitz].name);
+  setzeText(elemente.nameGegner, spielstand.spieler[gegnerSitz].name);
 
   schalte(elemente.standEigen, 'stand__spieler--dran', ichBinDran);
   schalte(elemente.standGegner, 'stand__spieler--dran', !ichBinDran);
 
+  // Ohne Namen bleibt der Zugtext kurz und eindeutig, wie lang der Name
+  // auch ist.
   setzeText(
     elemente.zuganzeige,
-    ichBinDran ? 'Du bist am Zug' : `${gegnerName} überlegt…`,
+    ichBinDran ? 'Du bist am Zug' : 'Der Gegner ist am Zug',
   );
   schalte(elemente.zuganzeige, 'zuganzeige--ich', ichBinDran);
   schalte(elemente.zuganzeige, 'zuganzeige--gegner', !ichBinDran);
