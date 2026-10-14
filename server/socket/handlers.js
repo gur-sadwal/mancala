@@ -324,12 +324,13 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     const partie = manager.holeNachSocket(socket.id);
     if (partie) {
-      const sitz = sitzVon(partie, socket.id);
-      if (!sitz) {
+      const sitzDesGetrennten = sitzVon(partie, socket.id);
+      if (!sitzDesGetrennten) {
         beendeKontrolliert(partie, GRUND.INTERNER_FEHLER);
         return;
       }
-      beendeKontrolliert(partie, GRUND.GEGNER_WEG, SITZE[sitz].gegner);
+      const sieger = SITZE[sitzDesGetrennten].gegner;
+      beendeKontrolliert(partie, GRUND.GEGNER_WEG, sieger);
     }
   }
 
