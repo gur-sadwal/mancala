@@ -1,7 +1,7 @@
-# Abhaengigkeiten
+# Abhängigkeiten
 node_modules/
 
-# Archiv bleibt lokal: fremde PDFs und eine gespiegelte Webseite (Konzept 12.4)
+# Archiv bleibt lokal: fremde PDFs und eine gespiegelte Webseite
 Archiv/
 
 # macOS
