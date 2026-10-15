@@ -27,6 +27,8 @@ function neuerSocket() {
     emit: (name, daten) => gesendet.push(daten === undefined ? [name] : [name, daten]),
     disconnect: jest.fn(),
     connect: jest.fn(),
+    // Wie ein echter Socket nach io(): aktiv, Socket.io verbindet selbst neu.
+    active: true,
   };
   return socket;
 }
@@ -282,7 +284,6 @@ describe('Netzverbindung beim Zurück-Cache', () => {
 
 describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
   test('lehnt der Server ab, versucht der Client es nach einer Pause erneut', () => {
-    const jest = import.meta.jest;
     jest.useFakeTimers();
     try {
       verbinde({});
@@ -298,11 +299,9 @@ describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
   });
 
   test('bei gewöhnlichen Netzfehlern übernimmt Socket.io das Neuverbinden', () => {
-    const jest = import.meta.jest;
     jest.useFakeTimers();
     try {
       verbinde({});
-      socket.active = true;
       socket.ereignisse.get('connect_error')(new Error('xhr poll error'));
 
       jest.advanceTimersByTime(60_000);

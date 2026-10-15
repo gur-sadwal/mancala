@@ -63,7 +63,10 @@ async function warteBis(bedingung) {
   }
 }
 
-/** Ein nachgebauter Browser; `bereit` erfüllt sich, sobald er dabei ist. */
+/**
+ * Ein nachgebauter Browser; `bereit` erfüllt sich, sobald der Server ihn
+ * angenommen oder abgelehnt hat (dann steht der Grund in `abgelehnt`).
+ */
 function verbindeRoh() {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/socket.io/?EIO=4&transport=websocket`);
   const zustand = {
@@ -82,7 +85,7 @@ function verbindeRoh() {
 
   const b = {
     zustand,
-    bereit: warteBis(() => zustand.dabei),
+    bereit: warteBis(() => zustand.dabei || zustand.abgelehnt !== null),
     sende(ereignis, daten) {
       ws.send(`42${JSON.stringify([ereignis, daten])}`);
     },
@@ -154,8 +157,9 @@ describe('Gateway: Obergrenze für Verbindungen (Review A7)', () => {
     const anna = verbindeRoh();
     await anna.bereit;
     const ben = verbindeRoh();
-    await warteBis(() => ben.zustand.abgelehnt !== null);
+    await ben.bereit;
     expect(ben.zustand.abgelehnt).toBe(FEHLER.SERVER_VOLL);
+    expect(ben.zustand.dabei).toBe(false);
 
     // Anna merkt davon nichts.
     anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
