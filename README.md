@@ -176,8 +176,9 @@ Sichtbares übrig, heißt der Spieler auf dem Server „Spieler“.
 
 Der Server nimmt höchstens 500 Verbindungen, 100 Wartende und 200 laufende
 Partien gleichzeitig an (`EINSTELLBAR:` in `gateway.js`, `lobby.js` und
-`manager.js`). Darüber antwortet er mit „Der Server ist gerade voll“; der
-Browser versucht eine abgelehnte Verbindung nach fünf Sekunden erneut.
+`manager.js`). Darüber lehnt er ab: Beitritt und Revanche melden „Der Server
+ist gerade voll“. Eine abgelehnte Verbindung zeigt den Verbindungshinweis;
+der Browser versucht es nach fünf Sekunden erneut.
 Wer sofort einen wartenden Gegner findet oder einen Link einlöst, braucht
 keinen zusätzlichen Warteplatz.
 
