@@ -195,6 +195,13 @@ describe('bereinigeName – Akzente, Normalform und Leserichtung (Review A1)', (
     }
   });
 
+  test('die Grenze gilt je Buchstabe, nicht für den ganzen Namen', () => {
+    // Muhammad mit Vokalzeichen: vier Zeichen insgesamt, höchstens zwei je
+    // Buchstabe. Alle müssen bleiben.
+    const name = 'مُحَمَّد';
+    expect(bereinigeName(name)).toBe(name.normalize('NFC'));
+  });
+
   test('Steuerzeichen der Leserichtung werden entfernt (U+2066 bis U+2069)', () => {
     const name = '\u2066Anna\u2069 \u2067Ben\u2068';
     expect(bereinigeName(name)).toBe('Anna Ben');

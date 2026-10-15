@@ -106,4 +106,13 @@ describe('Uhr der Warteansicht', () => {
     jest.advanceTimersByTime(1_000);
     expect(elemente.get('#warten-zeit').textContent).toBe('1:36');
   });
+
+  test('eine zurückgestellte Systemuhr ergibt keine negative Wartezeit', () => {
+    const ansicht = neueAnsicht();
+    ansicht.zeige(true);
+
+    jest.setSystemTime(Date.now() - 60_000);
+    jest.advanceTimersByTime(1_000);
+    expect(elemente.get('#warten-zeit').textContent).toBe('0:00');
+  });
 });
