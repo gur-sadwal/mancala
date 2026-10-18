@@ -428,3 +428,48 @@ describe('Verspätete Nachrichten nach „Suche abbrechen“ (Selbst-Review)', (
     expect(ansichten.warten.aktualisiere.mock.lastCall[0].position).toBe(2);
   });
 });
+
+describe('Ergebnisdialog ohne Verbindung (Selbst-Review)', () => {
+  test('„Neues Spiel suchen“ täuscht ohne Verbindung keine Suche vor', async () => {
+    starte();
+    await beende();
+    socket.connected = false;
+    ansichten.ende.verstecke.mockClear();
+
+    rueckrufe.ende.beiNeuemSpiel();
+
+    expect(socket.emit).not.toHaveBeenCalledWith(
+      protokoll.EREIGNIS.ERNEUT, expect.anything());
+    expect(ansichten.warten.zeige).not.toHaveBeenCalledWith(true);
+    expect(ansichten.ende.verstecke).not.toHaveBeenCalled();
+    expect(ansichten.ende.melde)
+      .toHaveBeenLastCalledWith(expect.stringContaining('Ohne Verbindung'));
+  });
+
+  test('„Revanche“ ohne Verbindung wartet nicht auf den Gegner', async () => {
+    starte();
+    await beende();
+    socket.connected = false;
+
+    rueckrufe.ende.beiRevanche();
+
+    expect(ansichten.ende.zeige.mock.lastCall[0].revanche).toBe('moeglich');
+    expect(ansichten.ende.melde)
+      .toHaveBeenLastCalledWith(expect.stringContaining('Ohne Verbindung'));
+  });
+
+  test('mit Verbindung schließt erst der Dialog, dann beginnt das Warten', async () => {
+    starte();
+    await beende();
+    ansichten.ende.verstecke.mockClear();
+    ansichten.warten.zeige.mockClear();
+
+    rueckrufe.ende.beiNeuemSpiel();
+
+    // Ein offener modaler Dialog ließe die Warteansicht nicht fokussieren.
+    const [geschlossen] = ansichten.ende.verstecke.mock.invocationCallOrder;
+    const [wartet] = ansichten.warten.zeige.mock.invocationCallOrder;
+    expect(geschlossen).toBeLessThan(wartet);
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+  });
+});

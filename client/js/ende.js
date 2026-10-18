@@ -180,11 +180,6 @@ export function erzeugeEndeAnsicht({
     if (dialog.open) dialog.close();
   }
 
-  function beiErneut() {
-    schliesse();
-    beiNeuemSpiel();
-  }
-
   function beiAbmeldenKlick() {
     schliesse();
     beiAbmelden();
@@ -192,15 +187,17 @@ export function erzeugeEndeAnsicht({
 
   // cancel meldet Esc an main.js. close() löst kein cancel aus; das Schließen
   // vor einer neuen Suche darf nicht zusätzlich zur Anmeldung zurückführen.
+  // Ob der Dialog für die neue Suche schließt, entscheidet main.js: Ohne
+  // Verbindung bleibt er offen.
   function meldeListenerAn() {
-    knopfErneut.addEventListener('click', beiErneut);
+    knopfErneut.addEventListener('click', beiNeuemSpiel);
     knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
     knopfRevanche.addEventListener('click', beiRevanche);
     dialog.addEventListener('cancel', beiSchliessen);
   }
 
   function meldeListenerAb() {
-    knopfErneut.removeEventListener('click', beiErneut);
+    knopfErneut.removeEventListener('click', beiNeuemSpiel);
     knopfAbmelden.removeEventListener('click', beiAbmeldenKlick);
     knopfRevanche.removeEventListener('click', beiRevanche);
     dialog.removeEventListener('cancel', beiSchliessen);

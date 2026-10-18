@@ -40,6 +40,10 @@ let ablaufNr = 0;
 // nicht zurückholen. Erst eine neue eigene Suche zählt wieder.
 let sucheBeendet = false;
 
+// Nach der Wiederverbindung führt beiVerbindung ohnehin zur Anmeldung.
+const OHNE_VERBINDUNG = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
+  + 'wieder steht, geht es bei der Anmeldung weiter.';
+
 // Socket-Nachrichten treffen erst nach Einrichtung aller Ansichten ein.
 const aktionen = verbinde({
   beiVerbindung,
@@ -272,19 +276,32 @@ function revancheStand(moeglich) {
 }
 
 const endeAnsicht = erzeugeEndeAnsicht({
-  // Sofort warten: Verspätete Revanche-Nachrichten des alten Gegners dürfen
-  // den Ergebnisdialog während der neuen Suche nicht erneut öffnen.
+  // Ohne Verbindung bleibt der Dialog offen; das Warten würde sonst eine
+  // Suche vortäuschen, die nie gesendet wurde.
   beiNeuemSpiel() {
+    if (!aktionen.erneut()) {
+      endeAnsicht.melde(OHNE_VERBINDUNG);
+      return;
+    }
+
+    // Erst schließen: Solange der modale Dialog offen ist, kann die
+    // Warteansicht den Fokus nicht übernehmen.
+    endeAnsicht.verstecke();
     sucheBeendet = false;
+
+    // Sofort warten: Verspätete Revanche-Nachrichten des alten Gegners dürfen
+    // den Ergebnisdialog während der neuen Suche nicht erneut öffnen.
     beginneNeuenAblauf();
     store.setze({
       ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null,
     });
-    aktionen.erneut();
   },
 
   beiRevanche() {
-    aktionen.revanche();
+    if (!aktionen.revanche()) {
+      endeAnsicht.melde(OHNE_VERBINDUNG);
+      return;
+    }
     store.setze({ revanche: REVANCHE_STAND.GEWUENSCHT });
   },
 
