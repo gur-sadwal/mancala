@@ -368,3 +368,63 @@ describe('Voller Server (Review A7)', () => {
       protokoll.FEHLER_TEXT[protokoll.FEHLER.SERVER_VOLL]);
   });
 });
+
+describe('Verspätete Nachrichten nach „Suche abbrechen“ (Selbst-Review)', () => {
+  /** Die Anmeldung schickt den Beitritt; main.js erfährt davon so. */
+  function sucheGegner() {
+    sende('connect');
+    rueckrufe.anmelden.beiAnmeldung('Anna');
+  }
+
+  test.each([
+    [protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 }],
+    [protokoll.EREIGNIS.PRIVAT, { code: 'K7M2QX' }],
+  ])('ein spätes %s holt die Warteansicht nicht zurück', (ereignis, daten) => {
+    sucheGegner();
+    sende(ereignis, daten);
+    rueckrufe.warten.beiAbbrechen();
+
+    sende(ereignis, daten);
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(false);
+  });
+
+  test('aus dem Ergebnis: neue Suche, sofort abbrechen, dann späte Position', async () => {
+    starte();
+    await beende();
+    rueckrufe.ende.beiNeuemSpiel();
+    rueckrufe.warten.beiAbbrechen();
+
+    sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(false);
+  });
+
+  test('ein spätes BEREITS_IN_WARTESCHLANGE nach dem Abbrechen bleibt still', () => {
+    sucheGegner();
+    sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
+    rueckrufe.warten.beiAbbrechen();
+
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
+    });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(false);
+    expect(ansichten.anmelden.melde).not.toHaveBeenCalled();
+  });
+
+  test('eine neue Suche nach dem Abbrechen zeigt ihre Position wieder', () => {
+    sucheGegner();
+    sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
+    rueckrufe.warten.beiAbbrechen();
+    rueckrufe.anmelden.beiAnmeldung('Anna');
+
+    sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 2 });
+
+    expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.warten.aktualisiere.mock.lastCall[0].position).toBe(2);
+  });
+});

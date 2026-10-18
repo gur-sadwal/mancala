@@ -35,6 +35,11 @@ let warSchonVerbunden = false;
 // Nach einem await dürfen alte Endabläufe dann keinen Dialog mehr öffnen.
 let ablaufNr = 0;
 
+// SCHUTZ: Wer zur Anmeldung zurückkehrt, sucht nicht mehr. Eine Meldung zur
+// Warteschlange, die beim Abbrechen noch unterwegs war, darf die Warteansicht
+// nicht zurückholen. Erst eine neue eigene Suche zählt wieder.
+let sucheBeendet = false;
+
 // Socket-Nachrichten treffen erst nach Einrichtung aller Ansichten ein.
 const aktionen = verbinde({
   beiVerbindung,
@@ -75,10 +80,12 @@ function beiTrennung() {
 }
 
 function beiWarteschlange({ position }) {
+  if (sucheBeendet) return;
   store.setze({ ansicht: ANSICHT.WARTEN, position, einladung: null });
 }
 
 function beiPrivat({ code }) {
+  if (sucheBeendet) return;
   store.setze({ ansicht: ANSICHT.WARTEN, einladung: code, position: null });
 }
 
@@ -158,6 +165,7 @@ function beiFehler({ code, text }) {
   const meldung = text ?? FEHLER_TEXT[code] ?? 'Unbekannter Fehler.';
 
   if (code === FEHLER.KEINE_PARTIE && partieVorbei) return;
+  if (code === FEHLER.BEREITS_IN_WARTESCHLANGE && sucheBeendet) return;
   if (istNurBestaetigung(code)) return;
 
   if (ZURUECK_ZUR_ANMELDUNG.includes(code)) {
@@ -185,6 +193,7 @@ const anmeldeAnsicht = erzeugeAnmeldeAnsicht({
   aktionen,
 
   beiAnmeldung(name) {
+    sucheBeendet = false;
     store.setze({ name });
   },
 });
@@ -212,6 +221,7 @@ function beginneNeuenAblauf() {
 // Der Name bleibt erhalten; Partie, Einladung und Revanche werden
 // zurückgesetzt.
 function zurueckZurAnmeldung() {
+  sucheBeendet = true;
   beginneNeuenAblauf();
   store.setze({
     ansicht: ANSICHT.ANMELDEN,
@@ -265,6 +275,7 @@ const endeAnsicht = erzeugeEndeAnsicht({
   // Sofort warten: Verspätete Revanche-Nachrichten des alten Gegners dürfen
   // den Ergebnisdialog während der neuen Suche nicht erneut öffnen.
   beiNeuemSpiel() {
+    sucheBeendet = false;
     beginneNeuenAblauf();
     store.setze({
       ansicht: ANSICHT.WARTEN, position: null, einladung: null, revanche: null,
