@@ -264,6 +264,8 @@ export function hinweisText(bericht, sitz) {
 }
 
 // == 5. Animation ========================================================
+// ACHTUNG: Dieselben Zellen stehen als SITZE[sitz].haus in
+// server/spiel/brett.js; tests/sicht.test.js vergleicht beide.
 export function hausVon(sitz) {
   return sitz === 'unten' ? [1, 6] : [0, 0];
 }
