@@ -220,4 +220,33 @@ describe('Ergebnisdialog und Bilanz', () => {
     zeigeErgebnis(ergebnis, 'unten', 'angeboten');
     expect(elemente.get('#revanche-hinweis').textContent).toContain('Dein Gegner möchte');
   });
+
+  const regulaer = {
+    grund: GRUND.REGULAER,
+    sieger: 'unten',
+    punkte: { unten: 25, oben: 23 },
+  };
+
+  test('„Revanche“ per Tastatur: die Überschrift fängt den Fokus auf (WCAG)', () => {
+    zeigeErgebnis(regulaer);
+    const knopfErneut = elemente.get('#knopf-erneut');
+    knopfErneut.focus.mockClear();
+    global.document.activeElement = elemente.get('#knopf-revanche');
+
+    zeigeErgebnis(regulaer, 'unten', 'gewuenscht');
+
+    expect(elemente.get('#knopf-revanche').disabled).toBe(true);
+    expect(elemente.get('#t-ende').focus).toHaveBeenCalledTimes(1);
+    // Ein zweites Enter darf nicht „Neues Spiel suchen“ treffen.
+    expect(knopfErneut.focus).not.toHaveBeenCalled();
+  });
+
+  test('liegt der Fokus woanders, bleibt er beim Sperren der Revanche dort', () => {
+    zeigeErgebnis(regulaer);
+    global.document.activeElement = elemente.get('#knopf-abmelden');
+
+    zeigeErgebnis(regulaer, 'unten', 'gewuenscht');
+
+    expect(elemente.get('#t-ende').focus).not.toHaveBeenCalled();
+  });
 });

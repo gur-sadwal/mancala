@@ -153,10 +153,15 @@ export function erzeugeEndeAnsicht({
     const stand = offen && rest === 0
       ? REVANCHE_STAND.ABGELAUFEN : aktuelleRevanche;
     const istAngebot = stand === REVANCHE_STAND.ANGEBOTEN;
+    const hatteFokus = document.activeElement === knopfRevanche;
 
     zeigeElement(knopfRevanche, stand !== null);
     knopfRevanche.disabled = stand !== REVANCHE_STAND.MOEGLICH && !istAngebot;
     setzeText(knopfRevanche, istAngebot ? 'Revanche annehmen' : 'Revanche');
+
+    // WCAG: Ein gesperrter Knopf verliert den Tastaturfokus. Die Überschrift
+    // fängt ihn auf; ein zweites Enter löst dort nichts aus.
+    if (hatteFokus && knopfRevanche.disabled) titel.focus();
 
     // Eine Fehlermeldung bleibt auch beim nächsten Sekundentakt sichtbar.
     const hinweis = fehlermeldung || revancheText(stand, rest);
