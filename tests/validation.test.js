@@ -158,7 +158,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
     expect(bereinigeName('\u3164')).toBe('');
     expect(bereinigeName('\u115F\u1160\uFFA0\u2800')).toBe('');
     expect(ermittleSpielername('\u3164\u3164')).toBe('Spieler');
-    // Zeilen- und Absatztrenner brechen den Namen sonst um.
+    // Zeilen- und Absatztrenner: WebKit bricht den Namen daran um.
     expect(bereinigeName('An\u2028na\u2029Ben')).toBe('AnnaBen');
   });
 
