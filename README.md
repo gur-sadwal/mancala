@@ -170,9 +170,10 @@ das Spiel einbettet.
 
 Namen bereinigen Browser und Server mit derselben Regel aus
 `shared/protokoll.js`: höchstens 20 Codepunkte, kein `<` oder `>`, keine
-Steuer- oder unsichtbaren Formatzeichen und höchstens drei Akzente
-hintereinander. Zerlegte Umlaute werden zusammengesetzt (NFC). Bleibt nichts
-Sichtbares übrig, heißt der Spieler auf dem Server „Spieler“.
+Steuer- oder unsichtbaren Formatzeichen, keine Zeilentrenner und keine leer
+aussehenden Füllzeichen, höchstens drei Akzente hintereinander. Zerlegte
+Umlaute werden zusammengesetzt (NFC). Bleibt nichts Sichtbares übrig, heißt
+der Spieler auf dem Server „Spieler“.
 
 Der Server nimmt höchstens 500 Verbindungen, 100 Wartende und 200 laufende
 Partien gleichzeitig an (`EINSTELLBAR:` in `gateway.js`, `lobby.js` und

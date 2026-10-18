@@ -117,8 +117,10 @@ export const GRENZEN = Object.freeze({
 });
 
 // == 4. Gemeinsame Namensregel ===========================================
-// Cc sind Steuerzeichen, Cf unsichtbare Formatzeichen wie die Leserichtung.
-const UNSICHTBAR = /[\p{Cc}\p{Cf}]/u;
+// Cc sind Steuerzeichen, Cf unsichtbare Formatzeichen wie die Leserichtung,
+// Zl und Zp Zeilen- und Absatztrenner. Die Füllzeichen danach (Hangul,
+// Braille-Leerzeichen) zählen als Schriftzeichen, sehen aber leer aus.
+const UNSICHTBAR = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\u115F\u1160\u3164\uFFA0\u2800]/u;
 
 // M sind Zeichen, die sich auf das vorige setzen, etwa Akzente.
 const AKZENT = /\p{M}/u;

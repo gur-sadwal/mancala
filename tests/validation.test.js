@@ -153,6 +153,15 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
     expect(ermittleSpielername('\u200B\u202E')).toBe('Spieler');
   });
 
+  test('Füllzeichen ohne Bild und Zeilentrenner werden entfernt (Selbst-Review)', () => {
+    // Hangul-Füllzeichen und Braille-Leerzeichen sehen leer aus.
+    expect(bereinigeName('\u3164')).toBe('');
+    expect(bereinigeName('\u115F\u1160\uFFA0\u2800')).toBe('');
+    expect(ermittleSpielername('\u3164\u3164')).toBe('Spieler');
+    // Zeilen- und Absatztrenner brechen den Namen sonst um.
+    expect(bereinigeName('An\u2028na\u2029Ben')).toBe('AnnaBen');
+  });
+
   test('sichtbare Sonderzeichen und Emoji-Varianten bleiben', () => {
     expect(bereinigeName('Jörg 🎲')).toBe('Jörg 🎲');
     expect(bereinigeName('Herz ❤\uFE0F')).toBe('Herz ❤\uFE0F');
