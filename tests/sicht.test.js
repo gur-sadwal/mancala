@@ -11,7 +11,9 @@
 
 // == 1. Testaufbau ==========================================================
 
-import { ausSicht, rolleVon, schluessel, alleZellen } from '../client/js/spiel.js';
+import {
+  ausSicht, rolleVon, schluessel, alleZellen, hausVon,
+} from '../client/js/spiel.js';
 import { SITZE } from '../server/spiel/brett.js';
 
 // == 2. Testfälle ===========================================================
@@ -139,6 +141,14 @@ describe('Client und Server sind sich einig (die eigentliche Probe)', () => {
 
       expect(rolleVon(sitz, [...SITZE[sitz].gegnerHaus]).seite).toBe('gegner');
       expect(rolleVon(sitz, [...SITZE[sitz].gegnerHaus]).art).toBe('haus');
+    }
+  });
+});
+
+describe('Häuser im Browser und auf dem Server', () => {
+  test('hausVon nennt dieselben Zellen wie SITZE[sitz].haus (Selbst-Review)', () => {
+    for (const sitz of ['unten', 'oben']) {
+      expect(hausVon(sitz)).toEqual(SITZE[sitz].haus);
     }
   });
 });
