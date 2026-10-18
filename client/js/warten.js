@@ -24,6 +24,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const titel = $('#t-warten');
   const nameAnzeige = $('#warten-name');
   const positionAnzeige = $('#warten-position');
+  const fehlerAnzeige = $('#warten-fehler');
   const knopfAbbrechen = $('#knopf-abbrechen');
   const privatBlock = $('#warten-privat');
   const feldLink = $('#feld-link');
@@ -35,6 +36,13 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   let uhr = null;
 
   // == 2. Aktionen =========================================================
+  // Eigenes Feld: aktualisiere schreibt die Position bei jeder Änderung neu
+  // und würde eine Meldung im selben Feld sofort überschreiben.
+  function zeigeFehler(text) {
+    setzeText(fehlerAnzeige, text);
+    zeige(fehlerAnzeige, text !== '');
+  }
+
   function beiAbbrechenKlick() {
     aktionen.abbrechen();
     // Der Server schickt keine Bestätigung; main.js wechselt selbst zurück.
@@ -109,6 +117,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       // Nur ein neues Warten startet die Uhr; Positionsupdates nicht.
       if (wirdEingeblendet) {
         setzeText(kopierStatus, '');
+        zeigeFehler('');
         starteUhr();
         titel.focus();
       }
@@ -139,7 +148,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
     },
 
     melde(text) {
-      setzeText(positionAnzeige, text);
+      zeigeFehler(text);
     },
   };
 }

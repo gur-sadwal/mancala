@@ -116,3 +116,29 @@ describe('Uhr der Warteansicht', () => {
     expect(elemente.get('#warten-zeit').textContent).toBe('0:00');
   });
 });
+
+describe('Fehlermeldung in der Warteansicht (Selbst-Review)', () => {
+  test('ein Positionsupdate überschreibt die Fehlermeldung nicht', () => {
+    const ansicht = neueAnsicht();
+    ansicht.zeige(true);
+    ansicht.melde('Zu viele Anfragen.');
+    ansicht.aktualisiere({ name: 'Anna', position: 2, einladung: null });
+
+    const fehler = elemente.get('#warten-fehler');
+    expect(fehler.textContent).toBe('Zu viele Anfragen.');
+    expect(fehler.hidden).toBe(false);
+    expect(elemente.get('#warten-position').textContent)
+      .toBe('Du bist auf Platz 2 der Warteschlange.');
+  });
+
+  test('ein neues Warten beginnt ohne die alte Fehlermeldung', () => {
+    const ansicht = neueAnsicht();
+    ansicht.zeige(true);
+    ansicht.melde('Zu viele Anfragen.');
+    ansicht.zeige(false);
+    ansicht.zeige(true);
+
+    expect(elemente.get('#warten-fehler').hidden).toBe(true);
+    expect(elemente.get('#warten-fehler').textContent).toBe('');
+  });
+});

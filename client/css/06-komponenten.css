@@ -144,7 +144,9 @@
   color: var(--farbe-text-leise);
 }
 
+/* output steht von Haus aus in der Textzeile; eine Meldung ist ein Block. */
 .meldung {
+  display: block;
   padding: var(--abstand-klein) var(--abstand);
   border-radius: var(--radius);
   font-size: 1rem;
