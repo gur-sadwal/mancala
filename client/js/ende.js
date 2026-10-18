@@ -159,8 +159,8 @@ export function erzeugeEndeAnsicht({
     knopfRevanche.disabled = stand !== REVANCHE_STAND.MOEGLICH && !istAngebot;
     setzeText(knopfRevanche, istAngebot ? 'Revanche annehmen' : 'Revanche');
 
-    // WCAG: Ein gesperrter Knopf verliert den Tastaturfokus. Die Überschrift
-    // fängt ihn auf; ein zweites Enter löst dort nichts aus.
+    // WCAG: Firefox und WebKit setzen den Fokus eines gesperrten Knopfs auf
+    // die Seite. Die Überschrift fängt ihn auf; Enter löst dort nichts aus.
     if (hatteFokus && knopfRevanche.disabled) titel.focus();
 
     // Eine Fehlermeldung bleibt auch beim nächsten Sekundentakt sichtbar.
