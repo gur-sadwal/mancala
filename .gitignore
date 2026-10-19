@@ -1,9 +1,6 @@
 # Abhängigkeiten
 node_modules/
 
-# Archiv bleibt lokal: fremde PDFs und eine gespiegelte Webseite
-Archiv/
-
 # macOS
 .DS_Store
 
