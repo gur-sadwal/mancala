@@ -54,14 +54,14 @@ Schleife. Scheitert eine Prüfung, endet der Build mit Fehlercode.
 Die Tests prüfen unter anderem Säen, Extrazüge, Klauen, Restabrechnung,
 Zufallspartien, beide Brettsichten, Lobby, private Spiele, Revanche,
 Nutzdatenprüfung, Ratenbegrenzung, Handlerfehler und Clientzustände.
-Ein grüner Jest-Lauf allein belegt keine fehlerfreie Browserbedienung.
 
-Zum vollständigen Prüfverfahren gehören zusätzlich ein frischer Klon ohne
-`node_modules`, die Ubuntu-Befehle oben, echte Browserpartien, private Links,
-Revanche, Tastatur, Verbindungsabbruch, Müll-Nachrichten, XSS-Versuche,
-15 gleichzeitige Partien und ein Server-Neustart. Die Playwright-Werkzeuge
-liegen im vollständigen Studienarbeitsordner außerhalb dieses Repositories;
-Playwright ist keine Abhängigkeit des abgegebenen Spiels.
+Jest ersetzt keinen Test im Browser. Deshalb lief das Spiel zusätzlich mit
+Playwright in vier Browsern (siehe [Abschnitt 8](#8-browser-und-bedienung)):
+ganze Partien, private Links, Revanche, Tastatur, Verbindungsabbruch,
+kaputte Nachrichten, XSS-Versuche, 15 Partien gleichzeitig und ein
+Server-Neustart. Außerdem wurde ein frischer Klon ohne `node_modules` mit den
+Befehlen aus Abschnitt 1 gebaut und gestartet. Die Playwright-Skripte gehören
+nicht zum Spiel und liegen deshalb nicht in diesem Repository.
 
 `GET /gesundheit` liefert Status, Anzahl laufender Partien, Wartende und
 Laufzeit. Nach Tests müssen Partien und Wartende wieder 0 sein.
@@ -222,10 +222,9 @@ Abschnitte sind mit `Cmd+F` auffindbar, zum Beispiel `== 3.`.
 ## 8. Browser und Bedienung
 
 Vanilla-JavaScript als ES-Module und moderne CSS-Funktionen (`@layer`,
-Nesting, `:has()`, Logical Properties, `color-mix()`, `oklch()`) verlangen
-aktuelle Browser. Die vollständige Browserprüfung umfasst Chromium,
-Firefox, WebKit und Vivaldi; WebKit ist eine Safari-Engine und kein Beleg
-für einen Lauf im vollständigen Safari-Programm.
+Nesting, `:has()`, Logical Properties, `color-mix()`, `oklch()`) brauchen
+einen aktuellen Browser. Getestet wurde mit Chromium, Firefox, WebKit (der
+Engine von Safari) und Vivaldi.
 
 Mulden sind echte Buttons: Tab erreicht sie, Enter und Leertaste lösen sie
 aus. Zusätzlich funktionieren die Tasten 1–6. Die rechteckige Zelle gehört
@@ -249,6 +248,7 @@ Bekannte Grenze: Ohne zusätzliche ARIA-Attribute sind die drei Dialoge nicht
 mit ihrer Überschrift verknüpft und haben im Barrierefreiheitsbaum keinen
 eigenen Namen. Ihren Zweck nennt die sichtbare Überschrift.
 
-Der Client bleibt eine Seite mit einer Socket-Verbindung. Listener einer
-Ansicht werden beim Anzeigen angemeldet und beim Verstecken entfernt;
-seitenweite Listener bleiben mit begründetem Zweck aktiv.
+Der Client ist eine einzige Seite mit einer Socket-Verbindung. Jede Ansicht
+meldet ihre Listener beim Anzeigen an und beim Verstecken wieder ab.
+Dauerhaft aktiv bleiben nur die Listener des Einstellungsdialogs und die
+für das Verlassen und Zurückkehren auf die Seite.
