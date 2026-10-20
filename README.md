@@ -38,14 +38,15 @@ braucht zwei Personen.
 
 Es gibt keinen Bundler: Der Browser lädt die JavaScript-Module direkt.
 `npm run build` prüft jede Quelldatei einzeln mit `node --check` und führt
-anschließend Jest aus. Eine Syntaxprüfung mehrerer Dateinamen in einem
-Aufruf würde nur die erste Datei prüfen; deshalb verwendet der Build eine
-Schleife. Scheitert eine Prüfung, endet der Build mit Fehlercode.
+anschließend Jest aus. `node --check` prüft bei mehreren Dateinamen nur die
+erste Datei, deshalb läuft der Build mit einer Schleife. Scheitert eine
+Prüfung, endet der Build mit Fehlercode.
 
-Zwei Meldungen sind dabei normal: `npm install` warnt vor Schwachstellen, die
-nur Jest betreffen (`npm audit --omit=dev` findet im Spiel selbst keine), und
-Jest schreibt beim Build `ExperimentalWarning: VM Modules`, weil es die
-ES-Module über diesen Node-Schalter lädt.
+Beim Installieren und Bauen erscheinen Warnungen, die nur von Jest kommen.
+`npm install` meldet veraltete Pakete und Schwachstellen; im Spiel selbst
+findet `npm audit --omit=dev` keine. Beim Build gibt Node außerdem
+`ExperimentalWarning: VM Modules` aus, weil die Tests mit dem Node-Schalter
+`--experimental-vm-modules` laufen.
 
 ## 2. Testen
 
@@ -54,13 +55,14 @@ ES-Module über diesen Node-Schalter lädt.
 | `npm test` | alle Jest-Tests |
 | `npm run abdeckung` | Tests mit gemessener Code-Abdeckung |
 | `npm run dev` | Server auf 3000, Neustart bei Dateiänderung |
-| `LOG_LEVEL=debug npm run start 3000` | zusätzlich abgelehnte Nachrichten und Züge im Log |
+| `LOG_LEVEL=debug npm run start 3000` | zusätzlich ungültige Nachrichten, abgelehnte Züge und ignoriertes Abbrechen im Log |
 | `npm audit --omit=dev` | Sicherheitsprüfung der Laufzeitabhängigkeiten |
 
 Die Tests decken vor allem die Spielregeln ab: Säen, Extrazug, Klauen,
 Restabrechnung und zufällige ganze Partien. Dazu kommen Lobby, private
-Spiele, Revanche, die Prüfung eingehender Nachrichten, die Ratenbegrenzung
-und die Logik der Browseransichten.
+Spiele, Revanche, die Prüfung eingehender Nachrichten, die Ratenbegrenzung,
+Fehler in den Handlern (der Server läuft weiter) und die Logik der
+Browseransichten.
 
 Zusätzlich wurde das Spiel mit Playwright in vier Browsern getestet (siehe
 [Abschnitt 8](#8-browser-und-bedienung)): ganze Partien, private Links,
@@ -169,14 +171,14 @@ in dieser Zeit beitreten oder aus dem Ergebnis heraus weiterspielen will,
 bekommt den Hinweis, dass nichts gesendet wurde. Steht die Verbindung wieder,
 geht es bei der Anmeldung weiter.
 
-Nach einem Zug werden die Brettregeln geprüft, etwa die Summe 48 und gültige
-nicht negative Kugelzahlen. Einzelne Fehler dürfen andere Partien nicht
-unterbrechen. Eine Ratenbegrenzung (20 Nachrichten pro Sekunde und
-Verbindung) und ein Größenlimit (1 KB je Nachricht) schützen den Server vor
-zu vielen und zu großen Nachrichten. Namen landen über `textContent`
-im DOM; die Content-Security-Policy sperrt eingeschleuste Inline-Skripte.
-`X-Frame-Options` und `frame-ancestors` verhindern, dass eine fremde Seite
-das Spiel einbettet.
+Nach jedem Zug prüft der Server das Brett, zum Beispiel ob noch genau
+48 Kugeln im Spiel sind und keine Mulde eine negative Zahl enthält. Einzelne
+Fehler dürfen andere Partien nicht unterbrechen. Eine Ratenbegrenzung
+(20 Nachrichten pro Sekunde und Verbindung) und ein Größenlimit (1 KB je
+Nachricht) schützen den Server vor zu vielen und zu großen Nachrichten.
+Namen landen über `textContent` im DOM; die Content-Security-Policy sperrt
+eingeschleuste Inline-Skripte. `X-Frame-Options` und `frame-ancestors`
+verhindern, dass eine fremde Seite das Spiel einbettet.
 
 Namen bereinigen Browser und Server mit derselben Regel aus
 `shared/protokoll.js`: höchstens 20 Codepunkte, kein `<` oder `>`, keine
@@ -231,15 +233,16 @@ Abschnitte findet man mit der Suche im Editor, zum Beispiel `== 3.`.
 
 Vanilla-JavaScript als ES-Module und moderne CSS-Funktionen (`@layer`,
 Nesting, `:has()`, Logical Properties, `color-mix()`, `oklch()`) brauchen
-einen aktuellen Browser. Getestet wurde mit Chromium, Firefox, WebKit (der
-Engine von Safari) und Vivaldi.
+einen aktuellen Browser. Getestet wurde mit Chromium, Firefox, Vivaldi und
+WebKit, der Engine von Safari (nicht mit der Safari-App selbst).
 
 Die eigenen Mulden sind echte Buttons. Tab erreicht sie, solange man am Zug
-ist und Kugeln darin liegen; Enter und Leertaste lösen den Zug aus.
-Zusätzlich funktionieren die Tasten 1–6. Die rechteckige Zelle gehört
-zur Klickfläche der runden Mulde. Einstellungen erlauben größere Schrift
-und weniger Animation; die Systemeinstellung zur Bewegungsreduktion wird
-berücksichtigt. Dialoge verwenden die nativen Browserfunktionen.
+ist und Kugeln darin liegen; Enter und Leertaste lösen den Zug aus. In
+Safari braucht man je nach Einstellung Option+Tab. Zusätzlich funktionieren
+die Tasten 1–6. Auch ein Klick neben die runde Mulde zählt, solange er in
+ihrer Zelle liegt. Einstellungen erlauben größere Schrift und weniger
+Animation; die Systemeinstellung zur Bewegungsreduktion wird berücksichtigt.
+Die Dialoge sind normale `<dialog>`-Elemente.
 
 Auf dem Handy stehen Titel und Einstellungen in einer Zeile. Im Hochformat
 werden Mulden und Häuser flacher, damit Brett und „Partie aufgeben“ meist
