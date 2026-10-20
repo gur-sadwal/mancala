@@ -1,8 +1,9 @@
 /**
  * logger.js – einheitliche Protokollausgabe.
  *
- * Schreibt Uhrzeit, Ebene und Nachricht. Standard ist info; abgelehnte
- * Züge und ignoriertes Abbrechen erscheinen erst mit LOG_LEVEL=debug.
+ * Schreibt Uhrzeit, Ebene und Nachricht. Standard ist info; ungültige
+ * Nachrichten, abgelehnte Züge und ignoriertes Abbrechen erscheinen erst
+ * mit LOG_LEVEL=debug.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Ebenen und Schwelle
