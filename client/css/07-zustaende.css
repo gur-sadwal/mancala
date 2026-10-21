@@ -21,6 +21,15 @@
   display: none;
 }
 
+/* „Partie aufgeben“ steht oben in der Leiste und gilt nur in der Partie.
+ * :has leitet das aus hidden der Spielansicht ab. display: none nimmt den
+ * Knopf auch aus der Tab-Folge. ACHTUNG: Diese Regel muss in dieser späten
+ * Ebene stehen, weil .knopf in „komponenten“ display setzt.
+ */
+body:not(:has(#ansicht-spiel:not([hidden]))) #knopf-aufgeben {
+  display: none;
+}
+
 /* == 2. Tastaturhilfe ===================================================== */
 
 /* Nur schmale oder niedrige Touchfenster blenden die Hilfe aus.

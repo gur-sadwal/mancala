@@ -36,13 +36,16 @@
   <!-- WCAG: Die erste Tabstation führt direkt zum Spielbereich. -->
   <a class="sprungmarke" href="#ansichten">Zum Spielbereich springen</a>
 
-  <header class="kopf">
-    <h1 class="kopf__titel">Mancala</h1>
-    <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>
-    <p class="kopf__autor">von Gursharan S. Sadwal</p>
+  <!--
+    Oben stehen Titel und – nur in der Partie – „Partie aufgeben“. Der Knopf
+    behält seine id; spiel.js findet ihn weiter über #knopf-aufgeben.
+  -->
+  <header class="leiste">
+    <h1 class="leiste__titel">Mancala</h1>
 
-    <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf">
-      Einstellungen
+    <button type="button" id="knopf-aufgeben"
+      class="knopf knopf--kopf knopf--gross knopf--zurueck">
+      Partie aufgeben
     </button>
   </header>
 
@@ -233,15 +236,22 @@
         <kbd>Enter</kbd> oder <kbd>Leertaste</kbd> spielt sie
       </p>
 
-      <div class="spiel__aktionen">
-
-        <button type="button" id="knopf-aufgeben" class="knopf knopf--still">
-          Partie aufgeben
-        </button>
-      </div>
     </section>
 
   </main>
+
+  <!--
+    Der rote Streifen steht unten auf der Seite. Er steht auch im HTML nach
+    dem Inhalt, damit Tab-Reihenfolge und Bildschirmreihenfolge übereinstimmen.
+  -->
+  <footer class="kopf">
+    <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>
+    <p class="kopf__autor">von Gursharan S. Sadwal</p>
+
+    <button type="button" id="knopf-einstellungen" class="knopf knopf--kopf">
+      Einstellungen
+    </button>
+  </footer>
 
   <!-- == 4. Ergebnis == -->
   <dialog id="dialog-ende" class="dialog">

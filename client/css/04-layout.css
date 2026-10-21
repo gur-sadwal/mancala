@@ -1,20 +1,49 @@
 /* 04-layout.css – Seitenrahmen und Anordnung der Ansichten.
  *
  * Inhalt:
- *   == 1. Kopfzeile
+ *   == 1. Leiste oben und Fußleiste
  *   == 2. Laden und Ansichten
  *   == 3. Warten
  *   == 4. Punktestand und Zuganzeige
- *   == 5. Hilfe und Aktionen
+ *   == 5. Hilfe
  *   == 6. Kompakter Kopf
- *   == 7. Anmeldung mit rotem Seitenstreifen
  *
  * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
 
 /* == 1. Kopfzeile ========================================================= */
 
-/* Rand und innerer Schatten bilden die Streifen ohne weitere Elemente. */
+/* Die Leiste oben trägt den Titel und „Partie aufgeben“. Rand und innerer
+ * Schatten bilden die Streifen ohne weitere Elemente: Rot, Weiß, Blau.
+ */
+.leiste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand);
+
+  padding-block: var(--abstand-klein);
+  padding-inline: var(--abstand-gross);
+
+  background-color: var(--farbe-hessen-rot);
+  color: var(--farbe-hessen-weiss);
+  border-block-end: 0.4rem solid var(--farbe-hessen-blau);
+  box-shadow: inset 0 -0.4rem 0 var(--farbe-hessen-weiss);
+
+  /* WCAG: Auf Rot bleibt der weiße Fokusring besser erkennbar. */
+  & :focus-visible {
+    outline-color: var(--farbe-hessen-weiss);
+  }
+}
+
+.leiste__titel {
+  font-size: 1.75rem;
+}
+
+/* Der Kopf steht unten auf der Seite (footer im HTML). Rand und innerer
+ * Schatten bilden die Streifen ohne weitere Elemente: oben Blau, darunter
+ * Weiß, dann Rot.
+ */
 .kopf {
   padding-block: var(--abstand);
   padding-inline: var(--abstand);
@@ -22,8 +51,8 @@
 
   background-color: var(--farbe-hessen-rot);
   color: var(--farbe-hessen-weiss);
-  border-block-end: 0.4rem solid var(--farbe-hessen-blau);
-  box-shadow: inset 0 -0.4rem 0 var(--farbe-hessen-weiss);
+  border-block-start: 0.4rem solid var(--farbe-hessen-blau);
+  box-shadow: inset 0 0.4rem 0 var(--farbe-hessen-weiss);
 
   & .kopf__untertitel {
     margin-inline: auto;
@@ -191,7 +220,7 @@
   font-weight: 600;
 }
 
-/* == 5. Hilfe und Aktionen ================================================ */
+/* == 5. Hilfe ============================================================ */
 
 .tastaturhinweis {
   margin-inline: auto;
@@ -199,29 +228,20 @@
   color: var(--farbe-text-leise);
 }
 
-.spiel__aktionen {
-  display: flex;
-  gap: var(--abstand-klein);
-  justify-content: center;
-}
-
 /* == 6. Kompakter Kopf ==================================================== */
 
-/* Schmale oder niedrige Fenster: Titel und Einstellungen stehen in einer
- * Zeile; Untertitel und Autor zeigen nur größere Bildschirme. So bleibt
- * Höhe für das Brett. Bei Bedarf bleibt Scrollen möglich.
+/* Schmale oder niedrige Fenster: Die Fußleiste zeigt nur den Knopf
+ * „Einstellungen“; Untertitel und Autor zeigen nur größere Bildschirme. Die
+ * Leiste oben wird flacher. So bleibt Höhe für das Brett. Bei Bedarf bleibt
+ * Scrollen möglich.
  */
 @media (max-height: 480px), (max-width: 599px) {
   .kopf {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: var(--abstand-klein);
     padding-block: var(--abstand-klein);
-
-    & .kopf__titel {
-      font-size: 1.35rem;
-    }
 
     & .kopf__untertitel,
     & .kopf__autor {
@@ -233,6 +253,14 @@
     }
   }
 
+  .leiste {
+    padding-inline: var(--abstand);
+
+    & .leiste__titel {
+      font-size: 1.35rem;
+    }
+  }
+
   .ansicht--spiel {
     gap: var(--abstand-klein);
     padding-block: var(--abstand-klein);
@@ -240,49 +268,5 @@
 
   .stand__spieler {
     padding: 0.25rem var(--abstand-klein);
-  }
-}
-
-/* == 7. Anmeldung mit rotem Seitenstreifen ================================ */
-
-/* EINSTELLBAR: Ab dieser Fenstergröße steht der Kopf in der Anmeldung links
- * als roter Streifen. :has leitet die Ansicht aus hidden ab; so braucht es
- * keine zusätzliche Klasse und kein Skript. Niedrige Fenster behalten den
- * kompakten Kopf aus Abschnitt 6.
- */
-@media (min-width: 900px) and (min-height: 560px) {
-  body:has(#ansicht-anmelden:not([hidden])) {
-    display: grid;
-    grid-template-columns: minmax(20rem, 1fr) minmax(0, 1fr);
-  }
-
-  body:has(#ansicht-anmelden:not([hidden])) .kopf {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: var(--abstand);
-
-    padding-inline: var(--abstand-gross);
-    text-align: start;
-
-    /* Die Streifen der Kopfzeile stehen hier an der rechten Kante. */
-    border-block-end: none;
-    border-inline-end: 0.4rem solid var(--farbe-hessen-blau);
-    box-shadow: inset -0.4rem 0 0 var(--farbe-hessen-weiss);
-
-    & .kopf__titel {
-      font-size: 4.5rem;
-    }
-
-    & .kopf__untertitel,
-    & .kopf__autor {
-      margin-inline: 0;
-      font-size: 1.25rem;
-    }
-
-    & .knopf--kopf {
-      margin-block-start: var(--abstand);
-    }
   }
 }

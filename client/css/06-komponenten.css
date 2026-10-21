@@ -79,19 +79,6 @@
   }
 }
 
-.knopf--still {
-  background-color: transparent;
-  color: var(--farbe-text-leise);
-  padding-inline: var(--abstand);
-  font-weight: 500;
-
-  @media (hover: hover) {
-    &:hover:not(:disabled) {
-      color: var(--farbe-warnung);
-    }
-  }
-}
-
 /* Die Kopfzeile braucht einen hellen Knopf- und Fokuskontrast.
  * Den Abstand zum Titel regelt 04-layout.css.
  */
@@ -99,6 +86,20 @@
   background-color: transparent;
   border-color: var(--farbe-hessen-weiss);
   color: var(--farbe-hessen-weiss);
+}
+
+/* Ein größerer Knopf ist leichter zu treffen; 18px und mehr Innenabstand. */
+.knopf--gross {
+  min-block-size: 3.25rem;
+  padding-inline: var(--abstand-gross);
+  font-size: 1.125rem;
+}
+
+/* Der Pfeil steht als Inhalt davor, damit er nicht im HTML-Text steht. */
+.knopf--zurueck::before {
+  content: "←";
+  font-size: 1.35em;
+  line-height: 1;
 }
 
 /* == 2. Formular ========================================================== */
