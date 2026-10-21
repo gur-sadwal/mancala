@@ -357,6 +357,9 @@ store.abonniere((zustand) => {
 // Erst das tatsächliche Verlassen trennt die Verbindung (pagehide in kern.js).
 function warneVorVerlassen(ereignis) {
   ereignis.preventDefault();
+  // Ältere Browser wie Chrome und Edge vor Version 119 fragen nur nach, wenn
+  // returnValue gesetzt ist; preventDefault allein genügt ihnen nicht.
+  ereignis.returnValue = true;
 }
 
 // Gleiche Funktionsreferenz: Wiederholtes Anmelden bleibt ein Listener.
