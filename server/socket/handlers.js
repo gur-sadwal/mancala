@@ -297,10 +297,13 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   // wie jeder Beitritt, einen freien Partieplatz.
   function starteRevanche(socket, [a, b]) {
     if (!socketVon(a.socketId) || !socketVon(b.socketId)) {
+      lobby.vergissRevanche(a.socketId);
       socket.emit(EREIGNIS.REVANCHE_WEG);
       return;
     }
 
+    // ACHTUNG: Bei vollem Server die Wünsche behalten (bis zum Fristende),
+    // sonst wäre die Revanche nach einer kurzen Platznot für immer verloren.
     if (manager.istVoll()) {
       for (const spieler of [a, b]) {
         sendeFehler(socketVon(spieler.socketId), FEHLER.SERVER_VOLL);
@@ -308,6 +311,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
       return;
     }
 
+    lobby.vergissRevanche(a.socketId);
     starteMitPaar(a, b);
   }
 
@@ -375,7 +379,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
         let uebrig = null;
         if (socketA) uebrig = a;
         if (socketB) uebrig = b;
-        if (uebrig) lobby.beitreten(uebrig.socketId, uebrig.name);
+        if (uebrig) reiheSpielerEin(uebrig);
         logger.warn('Zusammenführung abgebrochen, ein Socket war weg');
         paar = lobby.naechstesPaar();
         continue;
@@ -387,6 +391,16 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     }
 
     sendePositionen();
+  }
+
+  // SCHUTZ: Scheitert das erneute Einreihen (z. B. volle Lobby), erfährt der
+  // Spieler es; sonst würde er still aus der Warteschlange verschwinden.
+  function reiheSpielerEin(spieler) {
+    const ergebnis = lobby.beitreten(spieler.socketId, spieler.name);
+    if (ergebnis.ok) return;
+
+    const socket = socketVon(spieler.socketId);
+    if (socket) sendeFehler(socket, ergebnis.code);
   }
 
   // REGEL 3.5: Die Engine hat die Restkugeln bereits abgerechnet.

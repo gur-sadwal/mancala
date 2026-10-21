@@ -226,6 +226,16 @@ describe('Invarianten des Bretts', () => {
     expect(ergebnis.verletzungen.join(' ')).toContain('I-2');
   });
 
+  test('I-2 schlägt schon bei einem Feld mit -1 an', () => {
+    const brett = neuesBrett();
+    brett[UNTEN][0] = -1;
+    brett[UNTEN][1] = 9;   // Summe bleibt 48, nur I-2 ist verletzt
+
+    const ergebnis = pruefeInvarianten(brett);
+    expect(ergebnis.ok).toBe(false);
+    expect(ergebnis.verletzungen.join(' ')).toContain('I-2');
+  });
+
   test('I-3 schlägt bei falscher Form an', () => {
     expect(pruefeInvarianten([[1, 2, 3]]).ok).toBe(false);
     expect(pruefeInvarianten(null).ok).toBe(false);

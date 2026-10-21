@@ -37,6 +37,20 @@ describe('Ratenbegrenzung', () => {
     expect(begrenzer.erlaubt('a')).toBe(true);
   });
 
+  test('springt die Uhr zurück, beginnt ein neues Fenster', () => {
+    let jetzt = 10000;
+    const begrenzer = erzeugeRatenbegrenzer(2, 1000, () => jetzt);
+    begrenzer.erlaubt('a');
+    begrenzer.erlaubt('a');
+    expect(begrenzer.erlaubt('a')).toBe(false);
+
+    jetzt = 5000;   // die Systemuhr wurde um 5 s zurückgestellt
+
+    expect(begrenzer.erlaubt('a')).toBe(true);
+    expect(begrenzer.erlaubt('a')).toBe(true);
+    expect(begrenzer.erlaubt('a')).toBe(false);
+  });
+
   test('jede Verbindung zählt für sich', () => {
     const begrenzer = erzeugeRatenbegrenzer(1, 1000, () => 0);
 

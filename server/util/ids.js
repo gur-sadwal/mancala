@@ -16,7 +16,8 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { CODE_ZEICHEN, GRENZEN } from '../../shared/protokoll.js';
 
 // == 1. Spiel-ID =========================================================
-// Eine Spiel-ID ist kein Zugangsschlüssel; handlers.js benutzt die Socket-Map.
+// Eine Spiel-ID ist kein Zugangsschlüssel; die Zuordnung Socket zu Partie
+// liegt im Manager (zuordnung), handlers.js fragt dort holeNachSocket.
 export function neueSpielId() {
   return `g-${randomUUID().slice(0, 8)}`;
 }

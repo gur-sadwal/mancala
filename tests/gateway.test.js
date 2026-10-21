@@ -144,7 +144,7 @@ describe('Gateway: Verbindungen', () => {
   });
 });
 
-describe('Gateway: Obergrenze für Verbindungen (Review A7)', () => {
+describe('Gateway: Obergrenze für Verbindungen', () => {
   test('über der Grenze lehnt der Server ab; ein freier Platz wird wieder vergeben', async () => {
     await gateway.herunterfahren();
     httpServer = http.createServer();

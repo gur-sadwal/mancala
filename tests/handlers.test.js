@@ -162,7 +162,7 @@ function privatesSpiel() {
 
 // == 2. Testfälle ===========================================================
 
-describe('Handler: Obergrenzen (Review A7)', () => {
+describe('Handler: Obergrenzen für Partien und Warteplätze', () => {
   test('sind alle Partien belegt, lehnt der Server jeden neuen Beitritt ab', () => {
     const { verbinde, lobby, manager } = schnellesSpiel({
       manager: erzeugeManager({ partienMax: 1 }),
@@ -213,6 +213,53 @@ describe('Handler: Obergrenzen (Review A7)', () => {
         .toBe(FEHLER.SERVER_VOLL);
     }
     expect(manager.anzahl()).toBe(1);
+  });
+
+  test('bei vollem Server bleibt der Revanchewunsch bestehen und gilt später', () => {
+    const manager = erzeugeManager({ partienMax: 1 });
+    const { anna, ben, verbinde } = schnellesSpiel({ manager });
+    anna.sende(EREIGNIS.AUFGEBEN);
+    const cem = verbinde('c');
+    const dora = verbinde('d');
+    cem.sende(EREIGNIS.BEITRETEN, { name: 'Cem' });
+    dora.sende(EREIGNIS.BEITRETEN, { name: 'Dora' });
+    anna.sende(EREIGNIS.REVANCHE);
+    ben.sende(EREIGNIS.REVANCHE);
+
+    // Cem und Dora enden: der einzige Platz ist wieder frei.
+    manager.entferne(manager.holeNachSocket('c').id);
+    anna.sende(EREIGNIS.REVANCHE);
+
+    expect(anna.alle(EREIGNIS.REVANCHE_WEG)).toHaveLength(0);
+    for (const spieler of [anna, ben]) {
+      expect(spieler.alle(EREIGNIS.START)).toHaveLength(2);
+    }
+    expect(manager.holeNachSocket('a')).toBe(manager.holeNachSocket('b'));
+  });
+
+  test('nach dem Start der Revanche bleibt kein Wunsch in der Lobby zurück', () => {
+    const { anna, ben, lobby } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    ben.sende(EREIGNIS.REVANCHE);
+
+    // Weit nach der Frist dürfte nichts mehr ablaufen: sonst bekäme jemand in
+    // der laufenden Folgepartie ein REVANCHE_ABGELAUFEN.
+    const spaeter = Date.now() + 10 * REVANCHE_FRIST_MS;
+    expect(lobby.abgelaufeneRevanchen(spaeter)).toEqual([]);
+  });
+
+  test('ist ein Socket der Revanche schon weg, bleibt kein Wunsch zurück', () => {
+    const { anna, ben, io, lobby } = schnellesSpiel();
+    anna.sende(EREIGNIS.AUFGEBEN);
+    anna.sende(EREIGNIS.REVANCHE);
+    io.sockets.sockets.delete('a');
+
+    ben.sende(EREIGNIS.REVANCHE);
+
+    expect(ben.letzte(EREIGNIS.REVANCHE_WEG)).toBeDefined();
+    const spaeter = Date.now() + 10 * REVANCHE_FRIST_MS;
+    expect(lobby.abgelaufeneRevanchen(spaeter)).toEqual([]);
   });
 
   test('eine volle Lobby lehnt einen weiteren Warteplatz ab', () => {
@@ -1237,6 +1284,33 @@ describe('Handler: Verbindung weg, disconnect noch nicht verarbeitet', () => {
 
     expect(anna.letzte(EREIGNIS.ABBRUCH).daten.revanche).toBe(false);
     expect(ben.letzte(EREIGNIS.ABBRUCH)).toBeUndefined();
+  });
+});
+
+describe('Handler: Zusammenführung mit fehlendem Socket', () => {
+  test('scheitert das erneute Einreihen, bekommt der Übrige eine Fehlermeldung', () => {
+    const echteLobby = erzeugeLobby();
+    let beitritteVonBen = 0;
+    const lobby = {
+      ...echteLobby,
+      // Erster Beitritt klappt; das erneute Einreihen scheitert an der vollen Lobby.
+      beitreten(socketId, name) {
+        if (socketId !== 'b') return echteLobby.beitreten(socketId, name);
+        beitritteVonBen += 1;
+        if (beitritteVonBen === 1) return echteLobby.beitreten(socketId, name);
+        return { ok: false, code: FEHLER.SERVER_VOLL };
+      },
+    };
+    const { io, verbinde } = erzeugeUmgebung({ lobby });
+    const anna = verbinde('a');
+    const ben = verbinde('b');
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna' });
+    io.sockets.sockets.delete('a');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben' });
+
+    expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.SERVER_VOLL);
+    expect(ben.letzte(EREIGNIS.START)).toBeUndefined();
   });
 });
 

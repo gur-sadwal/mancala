@@ -59,7 +59,7 @@ describe('Schutz gegen Cross-Site-Scripting', () => {
 
   // Geprüft wird die tatsächlich gesendete Kopfzeile, nicht die Konstante:
   // Eine versehentlich abgeschwächte CSP fiele sonst nicht auf.
-  test('jede Antwort sperrt Einbettung und fremde Quellen einzeln (Review A6)', async () => {
+  test('jede Antwort sperrt Einbettung und fremde Quellen einzeln', async () => {
     const pfade = ['/', '/css/haupt.css', '/js/main.js', '/gesundheit',
       '/gibt-es-nicht'];
     for (const pfad of pfade) {

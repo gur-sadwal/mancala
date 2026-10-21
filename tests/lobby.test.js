@@ -209,8 +209,19 @@ describe('Revanche nach einer Partie', () => {
     expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.WARTET, gegnerId: 'b' });
     expect(lobby.wuenscheRevanche('b')).toEqual({ status: REVANCHE_STATUS.START, paar: [anna, ben] });
 
-    // Danach ist das Revanche-Buch für beide leer.
+    // Erst der Handler vergisst das Paar, wenn die Partie wirklich startet.
+    lobby.vergissRevanche('a');
     expect(lobby.wuenscheRevanche('a')).toEqual({ status: REVANCHE_STATUS.KEINE });
+  });
+
+  test('ein weiterer Klick nach START liefert START erneut, bis das Paar vergessen ist', () => {
+    const lobby = erzeugeLobby();
+    lobby.merkeRevanche(anna, ben);
+    lobby.wuenscheRevanche('a');
+    lobby.wuenscheRevanche('b');
+
+    expect(lobby.wuenscheRevanche('a'))
+      .toEqual({ status: REVANCHE_STATUS.START, paar: [ben, anna] });
   });
 
   test('zweimal drücken startet nichts – es braucht den Gegner', () => {
@@ -335,7 +346,8 @@ describe('Revanche-Frist', () => {
     const lobby = erzeugeLobby();
     lobby.merkeRevanche(anna, ben, ENDE);
     lobby.wuenscheRevanche('a', ENDE);
-    lobby.wuenscheRevanche('b', ENDE);   // START – das Revanche-Buch ist leer
+    lobby.wuenscheRevanche('b', ENDE);   // START
+    lobby.vergissRevanche('a');          // der Handler vergisst das Paar nach dem Start
 
     expect(lobby.abgelaufeneRevanchen(ENDE + REVANCHE_FRIST_MS)).toEqual([]);
   });
@@ -589,7 +601,7 @@ describe('Manager: Speicher beim Auflösen freigeben', () => {
   });
 });
 
-describe('Obergrenzen für Warteplätze und Partien (Review A7)', () => {
+describe('Obergrenzen für Warteplätze und Partien', () => {
   test('eine volle Lobby lehnt weitere Warteplätze mit SERVER_VOLL ab', () => {
     const lobby = erzeugeLobby({ wartendeMax: 2 });
     expect(lobby.erstellePrivat('a', 'Anna').ok).toBe(true);

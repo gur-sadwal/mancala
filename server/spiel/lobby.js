@@ -197,7 +197,10 @@ export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
       };
     }
 
-    if (eintrag.gewuenscht) return { status: REVANCHE_STATUS.SCHON_GEWUENSCHT };
+    // Nur ein Doppelklick ohne Zustimmung des Gegners ist "schon gewünscht".
+    if (eintrag.gewuenscht && !gegenueber.gewuenscht) {
+      return { status: REVANCHE_STATUS.SCHON_GEWUENSCHT };
+    }
 
     eintrag.gewuenscht = true;
     if (!gegenueber.gewuenscht) {
@@ -207,8 +210,10 @@ export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
       };
     }
 
-    revanchen.delete(socketId);
-    revanchen.delete(eintrag.gegner.socketId);
+    // ACHTUNG: Das Paar bleibt gemerkt, bis handlers.js die Partie wirklich
+    // gestartet und vergissRevanche aufgerufen hat. Ist der Server voll,
+    // bleiben die Wünsche so bis zum Ende der Frist erhalten; ein weiterer
+    // Klick liefert dann erneut START.
     return {
       status: REVANCHE_STATUS.START,
       paar: [gegenueber.ich, eintrag.ich],

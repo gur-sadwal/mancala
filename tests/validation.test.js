@@ -153,7 +153,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
     expect(ermittleSpielername('\u200B\u202E')).toBe('Spieler');
   });
 
-  test('Füllzeichen ohne Bild und Zeilentrenner werden entfernt (Selbst-Review)', () => {
+  test('Füllzeichen ohne Bild und Zeilentrenner werden entfernt', () => {
     // Hangul-Füllzeichen und Braille-Leerzeichen sehen leer aus.
     expect(bereinigeName('\u3164')).toBe('');
     expect(bereinigeName('\u115F\u1160\uFFA0\u2800')).toBe('');
@@ -172,7 +172,7 @@ describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () =>
   });
 });
 
-describe('bereinigeName – Akzente, Normalform und Leserichtung (Review A1)', () => {
+describe('bereinigeName – Akzente, Normalform und Leserichtung', () => {
   test('Zalgo: höchstens drei Akzente hintereinander bleiben stehen', () => {
     const zalgo = `X${'\u0301'.repeat(19)}`;
     expect(bereinigeName(zalgo)).toBe(`X${'\u0301'.repeat(3)}`);

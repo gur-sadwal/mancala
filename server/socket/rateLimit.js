@@ -19,9 +19,9 @@ const GRENZE_JE_FENSTER = 20;
 const FENSTER_MS = 1000;
 
 // == 2. Nachrichten zählen ===============================================
-/** @param {Function} uhr Zeitquelle, damit Tests keine Sekunde warten. */
 // An der Fenstergrenze sind zwei schnelle Nachrichtengruppen möglich:
 // Der Zähler beginnt dort wieder bei eins.
+/** @param {Function} uhr Zeitquelle, damit Tests keine Sekunde warten. */
 export function erzeugeRatenbegrenzer(
   grenze = GRENZE_JE_FENSTER,
   fensterMs = FENSTER_MS,
@@ -33,7 +33,13 @@ export function erzeugeRatenbegrenzer(
     const jetzt = uhr();
     const eintrag = zaehler.get(socketId);
 
-    if (!eintrag || jetzt - eintrag.fensterStart >= fensterMs) {
+    // ACHTUNG: Springt die Uhr zurück (jetzt < fensterStart), wäre die
+    // Differenz negativ und das Fenster würde nie enden: neu beginnen.
+    const neuesFenster = !eintrag
+      || jetzt < eintrag.fensterStart
+      || jetzt - eintrag.fensterStart >= fensterMs;
+
+    if (neuesFenster) {
       zaehler.set(socketId, { fensterStart: jetzt, anzahl: 1 });
       return true;
     }
