@@ -331,6 +331,8 @@
    */
   &::backdrop {
     background-color: oklch(20% 0.02 85 / 0.55);
+    /* Safari vor Version 18 kennt nur die Schreibweise mit -webkit-. */
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
   }
 }
