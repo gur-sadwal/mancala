@@ -66,9 +66,13 @@ Browseransichten.
 
 Zusätzlich wurde das Spiel mit Playwright in vier Browsern getestet (siehe
 [Abschnitt 8](#8-browser-und-bedienung)): ganze Partien, private Links,
-Revanche, Tastatur, Verbindungsabbruch, kaputte Nachrichten, XSS-Versuche,
-15 Partien gleichzeitig und ein Server-Neustart. Die Playwright-Skripte
-gehören nicht zum Spiel und sind deshalb nicht dabei.
+Revanche, Tastatur, Verbindungsabbruch, kaputte Nachrichten, XSS-Versuche und
+ein Server-Neustart. Der Server lief dabei mit 30, 60 und 200 gleichzeitigen
+Partien (jeweils zwei Verbindungen) bis zum Ende durch; sechs Browserpaare
+spielten parallel dazu. Auch mit Störungen (harte Trennungen, Müllnachrichten,
+Neustart mitten in 30 Partien) blieben die anderen Partien unberührt und der
+Prozess am Leben. Die Playwright-Skripte gehören nicht zum Spiel und sind
+deshalb nicht dabei.
 
 `GET /gesundheit` liefert Status, Anzahl laufender Partien, Wartende und
 Laufzeit. Sind alle Spieler weg, stehen Partien und Wartende wieder auf 0.
@@ -113,6 +117,12 @@ ist. Interne Fehler, ein Serverende und 15 Minuten ohne Zug beenden die
 Partie ohne Wertung. Warteschlange und private Einladungen laufen nach
 7,5 Minuten ab, der Server prüft diese Fristen einmal pro Minute. Das sind
 Regeln für den Onlinebetrieb, keine zusätzlichen Kalaha-Regeln.
+
+Nach dem Ende können beide Personen eine Revanche wünschen. Sie startet, wenn
+beide innerhalb von 15 Sekunden zustimmen; die Sitze werden neu ausgelost. Ist
+der Server in diesem Moment voll, meldet er das beiden, und der Browser führt
+zur Anmeldung zurück. Der Server behält die Wünsche bis zum Ablauf der Frist,
+damit auch ein anderer Client erneut anfragen kann.
 
 ## 4. Aufbau
 
@@ -165,7 +175,10 @@ Der Server prüft Zugrecht, ganze Zahl im Bereich, eigene Reihe und
 mindestens eine Kugel, bevor er rechnet.
 
 Ist die Verbindung unterbrochen, sendet der Browser nichts und zeigt einen
-Verbindungshinweis. Socket.io würde Nachrichten sonst zwischenspeichern und
+Verbindungshinweis. Meldet der Browser selbst „offline“, erscheint der Hinweis
+sofort; der Ping-Timeout des Servers würde ein Funkloch erst nach etwa 40
+Sekunden erkennen. Trennt der Server die Verbindung von sich aus, verbindet
+sich der Browser nach fünf Sekunden neu. Socket.io würde Nachrichten sonst zwischenspeichern und
 nach dem Wiederverbinden unter einer neuen Socket-Kennung nachschicken. Wer
 in dieser Zeit beitreten oder aus dem Ergebnis heraus weiterspielen will,
 bekommt den Hinweis, dass nichts gesendet wurde. Steht die Verbindung wieder,
@@ -244,9 +257,14 @@ ihrer Zelle liegt. Einstellungen erlauben größere Schrift und weniger
 Animation; die Systemeinstellung zur Bewegungsreduktion wird berücksichtigt.
 Die Dialoge sind normale `<dialog>`-Elemente.
 
-Auf dem Handy stehen Titel und Einstellungen in einer Zeile. Im Hochformat
-werden Mulden und Häuser flacher, damit Brett und „Partie aufgeben“ meist
-ohne Scrollen zu sehen sind.
+Oben steht eine rote Leiste mit dem Titel und, nur während einer Partie, dem
+Knopf „Partie aufgeben“. „Einstellungen“ steht unten im Fußbereich, daneben
+Untertitel und Autor; auf schmalen oder niedrigen Fenstern blendet das Layout
+die beiden Texte aus. Im Hochformat werden Mulden und Häuser flacher, damit das
+Brett auf einem Handy möglichst ohne Scrollen zu sehen ist; bei 320 Pixeln
+Breite muss man dennoch etwas scrollen. Nach dem Schließen der Rückfrage zum Aufgeben
+ignoriert das Brett Maus- und Touchklicks für 400 Millisekunden, damit ein
+doppelter Tipp auf „Weiterspielen“ nicht die Mulde darunter spielt.
 
 Über dem Brett stehen feste Rollen („Gegner“, „Du“), die Namen sind nur
 zusätzliche Anzeige. Auch die Zuganzeige nennt keine Namen. Jedes Haus nennt
@@ -264,4 +282,4 @@ Screenreader keinen eigenen Namen. Ihren Zweck nennt die sichtbare
 Der Client ist eine einzige Seite mit einer Socket-Verbindung. Jede Ansicht
 meldet ihre Listener beim Anzeigen an und beim Verstecken wieder ab.
 Dauerhaft angemeldet bleiben nur die Socket.io-Handler in `kern.js`, der
-Einstellungsdialog sowie `pagehide` und `pageshow`.
+Einstellungsdialog sowie `pagehide`, `pageshow`, `offline` und `online`.
