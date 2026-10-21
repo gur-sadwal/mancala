@@ -29,7 +29,8 @@ export const REVANCHE_STAND = Object.freeze({
   ABGELAUFEN: 'abgelaufen',
 });
 
-// Eine Fabrik kapselt Zustand und Abonnenten in einer gemeinsamen Umgebung.
+// Fabrik statt Klasse: Zustand und Abonnenten bleiben in der Closure; von
+// außen erreichbar sind nur lies, setze und abonniere.
 export function erzeugeStore() {
   let zustand = {
     ansicht: ANSICHT.ANMELDEN,

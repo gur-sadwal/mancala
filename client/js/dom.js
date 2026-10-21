@@ -60,7 +60,8 @@ export function restSekunden(startMs, jetztMs, dauerSek) {
   return Math.min(dauerSek, Math.max(0, rest));
 }
 
-// WCAG: App- oder Systemwunsch genügt; bei jedem Zug erneut auslesen.
+// WCAG: Spieleinstellung oder Systemwunsch genügt. Bei jedem Zug neu lesen,
+// damit eine geänderte Einstellung sofort wirkt.
 export function wenigerBewegung() {
   return document.documentElement.dataset.bewegung === 'wenig'
     || window.matchMedia('(prefers-reduced-motion: reduce)').matches;

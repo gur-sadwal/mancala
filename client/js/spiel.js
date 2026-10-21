@@ -378,11 +378,10 @@ export function muldeAusTaste(taste) {
   return ['1', '2', '3', '4', '5', '6'].indexOf(taste);
 }
 
-// Die Aktionen melden false, wenn die Nachricht wegen fehlender Verbindung
-// nicht hinausging (kern.js, sende). Der Text hat in dieser Datei keine
-// Entsprechung im Protokoll, da nur der Browser die Trennung kennt. Er sagt
-// dasselbe wie main.js: Nach der Wiederverbindung ist die Partie weg, es geht
-// bei der Anmeldung weiter.
+// Die Aktionen liefern false, wenn ohne Verbindung nichts hinausging
+// (kern.js, sende). Der Text steht nicht in shared/protokoll.js, weil nur der
+// Browser die Trennung kennt; er lautet wie in main.js. Nach der
+// Wiederverbindung ist die Partie weg, es geht bei der Anmeldung weiter.
 const OHNE_VERBINDUNG = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
   + 'wieder steht, geht es bei der Anmeldung weiter.';
 
@@ -614,8 +613,8 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
     zeichneStand(elemente, spielstand, sitz);
 
-    // Ohne Pause wäre der Hinweis vor dem nächsten Browserbild bereits
-    // überschrieben.
+    // Ohne Animation hat zeichneStand den Hinweis schon überschrieben, bevor
+    // der Browser ihn zeigen konnte; deshalb hier noch einmal setzen.
     if (wenigerBewegung()) zeigeSonderregel(bericht);
     wartetAufAntwort = false;
     stelleFokusWiederHer();

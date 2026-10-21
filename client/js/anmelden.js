@@ -20,10 +20,10 @@ const OHNE_VERBINDUNG = 'Ohne Verbindung wurde dein Beitritt nicht gesendet. '
   + 'Versuche es erneut, sobald die Verbindung wieder steht.';
 
 // SCHUTZ: Der Code kommt aus der Adresse und ist frei veränderbar. Nur Codes
-// in Länge und Zeichensatz der Server-Codes werden verwendet; ein 3000-Zeichen-
-// Link würde sonst die Verbindung trennen (Puffergrenze des Servers). Der
-// Server prüft den Code trotzdem selbst. Kleinschreibung nimmt er an, daher
-// wird hier zuerst vergrößert.
+// mit Länge und Zeichensatz der Server-Codes gehen hinaus; ein Link mit 3000
+// Zeichen würde sonst die Verbindung trennen (1 KB Puffergrenze des Servers).
+// Der Server prüft den Code trotzdem selbst. Er nimmt auch Kleinbuchstaben
+// an, deshalb hier zuerst in Großbuchstaben umwandeln.
 export function leseEinladung(suchtext) {
   const roh = new URLSearchParams(suchtext).get('spiel');
   if (!roh) return null;
@@ -77,8 +77,9 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   }
 
   // SCHUTZ: Ein vorhandener, aber ungültiger Link darf nicht stumm zur
-  // öffentlichen Suche werden. Die Meldung sagt es; die Adresse wird wie bei
-  // main.js (entferneEinladungAusAdresse) bereinigt, damit sie nicht bleibt.
+  // öffentlichen Suche werden. Die Adresse wird wie in main.js
+  // (entferneEinladungAusAdresse) bereinigt; sonst käme die Meldung bei jedem
+  // Anzeigen der Anmeldung wieder.
   function meldeUngueltigenLink() {
     zeigeFehler(UNGUELTIGER_LINK);
     window.history.replaceState(null, '', window.location.pathname);
@@ -128,7 +129,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
       // Der Name gilt trotzdem für diese Anmeldung; nur das Merken entfällt.
     }
 
-    // Nur dieser Absende-Listener reicht den fertig bereinigten Namen weiter.
+    // main.js merkt sich den bereinigten Namen und gibt die Suche wieder frei.
     beiAnmeldung(name);
     const gesendet = aktionen.beitreten(
       name, { privat: istPrivatGewaehlt(), code: einladung },

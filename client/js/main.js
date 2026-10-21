@@ -44,7 +44,8 @@ let sucheBeendet = false;
 const OHNE_VERBINDUNG = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
   + 'wieder steht, geht es bei der Anmeldung weiter.';
 
-// Socket-Nachrichten treffen erst nach Einrichtung aller Ansichten ein.
+// Die Rückrufe benutzen Ansichten, die erst weiter unten entstehen. Das geht,
+// weil Socket-Nachrichten frühestens nach dem Ende dieses Moduls eintreffen.
 const aktionen = verbinde({
   beiVerbindung,
   beiTrennung,
