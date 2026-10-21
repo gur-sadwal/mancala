@@ -282,7 +282,7 @@ describe('Netzverbindung beim Zurück-Cache', () => {
   });
 });
 
-describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
+describe('Netzverbindung: Ablehnung durch den Server', () => {
   test('lehnt der Server ab, versucht der Client es nach einer Pause erneut', () => {
     jest.useFakeTimers();
     try {
@@ -291,7 +291,9 @@ describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
       socket.ereignisse.get('connect_error')(new Error(protokoll.FEHLER.SERVER_VOLL));
 
       expect(socket.connect).not.toHaveBeenCalled();
-      jest.advanceTimersByTime(5000);
+      jest.advanceTimersByTime(4999);
+      expect(socket.connect).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1);
       expect(socket.connect).toHaveBeenCalledTimes(1);
     } finally {
       jest.useRealTimers();
@@ -309,5 +311,78 @@ describe('Netzverbindung: Ablehnung durch den Server (Review A7)', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('Netzverbindung: Trennung durch den Server', () => {
+  test('nach „io server disconnect“ verbindet der Client nach einer Pause selbst neu', () => {
+    // Socket.io versucht diesen Grund nicht von allein erneut (Beispiel:
+    // socket.disconnect(true) im Gateway). Die Pause verhindert eine enge
+    // Schleife, falls der Server immer wieder trennt.
+    jest.useFakeTimers();
+    try {
+      const beiTrennung = jest.fn();
+      verbinde({ beiTrennung });
+
+      socket.ereignisse.get('disconnect')('io server disconnect');
+
+      expect(beiTrennung).toHaveBeenCalledWith('io server disconnect');
+      expect(socket.connect).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(5000);
+      expect(socket.connect).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('bei anderen Gründen übernimmt Socket.io das Neuverbinden', () => {
+    verbinde({});
+
+    socket.ereignisse.get('disconnect')('transport close');
+    socket.ereignisse.get('disconnect')('io client disconnect');
+
+    expect(socket.connect).not.toHaveBeenCalled();
+  });
+});
+
+describe('Netzverbindung: Funkloch vor dem Ping-Timeout', () => {
+  test('„offline“ meldet sofort eine Trennung, ohne auf den Ping-Timeout zu warten', () => {
+    const beiTrennung = jest.fn();
+    verbinde({ beiTrennung });
+
+    window.dispatchEvent(new Event('offline'));
+
+    expect(beiTrennung).toHaveBeenCalledTimes(1);
+    expect(beiTrennung).toHaveBeenCalledWith('offline');
+  });
+
+  test('„online“ blendet den Hinweis aus, solange der Socket noch verbunden ist', () => {
+    const beiOnline = jest.fn();
+    verbinde({ beiOnline });
+    socket.connected = true;
+
+    window.dispatchEvent(new Event('online'));
+
+    expect(beiOnline).toHaveBeenCalledTimes(1);
+  });
+
+  test('„online“ lässt den Hinweis stehen, solange der Socket getrennt ist', () => {
+    const beiOnline = jest.fn();
+    verbinde({ beiOnline });
+    socket.connected = false;
+
+    window.dispatchEvent(new Event('online'));
+
+    expect(beiOnline).not.toHaveBeenCalled();
+  });
+
+  test('fehlende Rückrufe stören die Ereignisse nicht', () => {
+    verbinde({});
+    socket.connected = true;
+
+    expect(() => {
+      window.dispatchEvent(new Event('offline'));
+      window.dispatchEvent(new Event('online'));
+    }).not.toThrow();
   });
 });

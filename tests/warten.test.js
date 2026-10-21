@@ -1,5 +1,5 @@
 /**
- * warten.test.js – Wartezeit in der Warteansicht (Review B3).
+ * warten.test.js – Wartezeit in der Warteansicht.
  *
  * Die Uhr ist nur Anzeige: Sie startet beim Einblenden, läuft bei
  * Positionsänderungen weiter und steht still, sobald die Ansicht weg ist.
@@ -117,7 +117,7 @@ describe('Uhr der Warteansicht', () => {
   });
 });
 
-describe('Fehlermeldung in der Warteansicht (Selbst-Review)', () => {
+describe('Fehlermeldung in der Warteansicht', () => {
   test('ein Positionsupdate überschreibt die Fehlermeldung nicht', () => {
     const ansicht = neueAnsicht();
     ansicht.zeige(true);

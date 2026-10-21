@@ -107,6 +107,29 @@ export function grundText(grund, gewonnen) {
   }
 }
 
+// Der Titel folgt dem Sieger, den der Server gemeldet hat.
+export function titelText(ergebnis, sitz) {
+  if (ohneWertung(ergebnis.grund)) return 'Partie abgebrochen';
+  if (ergebnis.sieger === REMIS) return 'Unentschieden';
+  if (ergebnis.sieger === sitz) return 'Du hast gewonnen!';
+  return 'Du hast verloren';
+}
+
+// ACHTUNG: Bei Aufgabe und Weggang entscheidet der Server den Sieger ohne
+// Endabrechnung. ergebnis.punkte ist dann nur der Hausstand; ein Vergleich
+// der Zahlen könnte dem Titel widersprechen (Extrazug, dann Aufgabe).
+export function zahlenText(ergebnis, sitz, meine, seine) {
+  const stand = `${meine} zu ${seine}`;
+  if (ohneWertung(ergebnis.grund)) return `Stand beim Abbruch: ${stand}.`;
+  if (ergebnis.grund === GRUND.AUFGEGEBEN
+    || ergebnis.grund === GRUND.GEGNER_WEG) {
+    return `Stand beim Ende: ${stand}.`;
+  }
+  if (ergebnis.sieger === REMIS) return `${stand} – ein Remis.`;
+  if (ergebnis.sieger === sitz) return `${stand} – Glückwunsch.`;
+  return `${stand} – viel Glück beim nächsten Mal.`;
+}
+
 // == 3. Dialog und Revanche ===============================================
 export function erzeugeEndeAnsicht({
   beiNeuemSpiel, beiAbmelden, beiRevanche, beiSchliessen,
@@ -129,6 +152,9 @@ export function erzeugeEndeAnsicht({
   let angezeigtesErgebnis = null;
 
   let zaehler = null;
+
+  // Esc wurde gedrückt; das close-Ereignis des Dialogs steht noch aus.
+  let escGedrueckt = false;
 
   const bilanz = leseBilanz();
 
@@ -185,22 +211,40 @@ export function erzeugeEndeAnsicht({
     beiAbmelden();
   }
 
-  // cancel meldet Esc an main.js. close() löst kein cancel aus; das Schließen
-  // vor einer neuen Suche darf nicht zusätzlich zur Anmeldung zurückführen.
-  // Ob der Dialog für die neue Suche schließt, entscheidet main.js: Ohne
-  // Verbindung bleibt er offen.
+  // ACHTUNG: Esc meldet erst, wenn der Dialog wirklich zu ist (close-Ereignis).
+  // Ein offener modaler Dialog macht die Seite dahinter inert; der Fokus der
+  // Anmeldung ginge sonst verloren. WebKit schließt einen Dialog, der noch im
+  // cancel-Ereignis steckt, erst danach und überschreibt den Fokus wieder.
+  function beiAbbruchEsc() {
+    escGedrueckt = true;
+  }
+
+  function beiDialogZu() {
+    if (!escGedrueckt) return;
+    escGedrueckt = false;
+    stoppeZaehler();
+    beiSchliessen();
+  }
+
+  // cancel merkt sich Esc, close meldet es an main.js. Ein Schließen per
+  // dialog.close() löst kein cancel aus und führt deshalb nicht zur Anmeldung;
+  // das gilt für die neue Suche. Ob der Dialog dafür schließt, entscheidet
+  // main.js: Ohne Verbindung bleibt er offen.
   function meldeListenerAn() {
     knopfErneut.addEventListener('click', beiNeuemSpiel);
     knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
     knopfRevanche.addEventListener('click', beiRevanche);
-    dialog.addEventListener('cancel', beiSchliessen);
+    dialog.addEventListener('cancel', beiAbbruchEsc);
+    dialog.addEventListener('close', beiDialogZu);
   }
 
   function meldeListenerAb() {
     knopfErneut.removeEventListener('click', beiNeuemSpiel);
     knopfAbmelden.removeEventListener('click', beiAbmeldenKlick);
     knopfRevanche.removeEventListener('click', beiRevanche);
-    dialog.removeEventListener('cancel', beiSchliessen);
+    dialog.removeEventListener('cancel', beiAbbruchEsc);
+    dialog.removeEventListener('close', beiDialogZu);
+    escGedrueckt = false;
   }
 
   // Ein Abbruch ohne Wertung verändert auch bei ungleichem Stand keine Bilanz.
@@ -223,19 +267,8 @@ export function erzeugeEndeAnsicht({
     setzeText(
       grundAnzeige, grundText(ergebnis.grund, ergebnis.sieger === sitz),
     );
-    if (ohneWertung(ergebnis.grund)) {
-      setzeText(titel, 'Partie abgebrochen');
-      setzeText(text, `Stand beim Abbruch: ${meine} zu ${seine}.`);
-    } else if (ergebnis.sieger === REMIS) {
-      setzeText(titel, 'Unentschieden');
-      setzeText(text, `${meine} zu ${seine} – ein Remis.`);
-    } else if (ergebnis.sieger === sitz) {
-      setzeText(titel, 'Du hast gewonnen!');
-      setzeText(text, `${meine} zu ${seine} – Glückwunsch.`);
-    } else {
-      setzeText(titel, 'Du hast verloren');
-      setzeText(text, `${meine} zu ${seine} – viel Glück beim nächsten Mal.`);
-    }
+    setzeText(titel, titelText(ergebnis, sitz));
+    setzeText(text, zahlenText(ergebnis, sitz, meine, seine));
   }
 
   // WCAG: showModal übernimmt die Fokusbegrenzung. Fokus nur beim Öffnen

@@ -378,6 +378,19 @@ export function muldeAusTaste(taste) {
   return ['1', '2', '3', '4', '5', '6'].indexOf(taste);
 }
 
+// Die Aktionen melden false, wenn die Nachricht wegen fehlender Verbindung
+// nicht hinausging (kern.js, sende). Der Text hat in dieser Datei keine
+// Entsprechung im Protokoll, da nur der Browser die Trennung kennt. Er sagt
+// dasselbe wie main.js: Nach der Wiederverbindung ist die Partie weg, es geht
+// bei der Anmeldung weiter.
+const OHNE_VERBINDUNG = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
+  + 'wieder steht, geht es bei der Anmeldung weiter.';
+
+// EINSTELLBAR: So lange nach dem Schließen des Aufgeben-Dialogs bleiben
+// Maus- und Touchklicks auf dem Brett wirkungslos. Ein Doppeltap auf
+// „Weiterspielen“ trifft mit dem zweiten Tap sonst die Mulde darunter.
+const SCHONFRIST_NACH_DIALOG_MS = 400;
+
 export function erzeugeSpielAnsicht({ aktionen }) {
   const abschnitt = $('#ansicht-spiel');
   const brettElement = $('#brett');
@@ -403,6 +416,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   let wartetAufAntwort = false;
 
   let letzteMulde = null;
+
+  // Zeitpunkt, an dem der Aufgeben-Dialog zuletzt geschlossen wurde.
+  let dialogGeschlossenUm = 0;
 
   // WCAG: Nur verlorenen Fokus zurückgeben; bewusst gewählter Fokus bleibt
   // stehen.
@@ -435,6 +451,13 @@ export function erzeugeSpielAnsicht({ aktionen }) {
 
     if (wartetAufAntwort) return;
 
+    // SCHUTZ: detail ist 0, wenn die Tasten 1 bis 6 (knopf.click()) den Klick
+    // auslösen. Nur echte Zeigerklicks warten die Schonfrist ab.
+    // Springt die Systemuhr zurück, wird frist negativ; dann gilt keine Frist.
+    const frist = Date.now() - dialogGeschlossenUm;
+    const inSchonfrist = frist >= 0 && frist < SCHONFRIST_NACH_DIALOG_MS;
+    if (ereignis.detail > 0 && inSchonfrist) return;
+
     const mulde = Number.parseInt(knopf.dataset.mulde, 10);
     if (!Number.isInteger(mulde)) return;
 
@@ -442,7 +465,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     letzteMulde = mulde;
     schalte(brettElement, 'brett--gesperrt', true);
 
-    aktionen.zug(mulde);
+    // SCHUTZ: Ging der Zug nicht hinaus, gäbe es nie eine Antwort, die die
+    // Sperre löst. melde() nimmt die Sperre zurück und sagt den Grund.
+    if (!aktionen.zug(mulde)) melde(OHNE_VERBINDUNG);
   }
 
   // Offene Dialoge und Browserkürzel haben Vorrang vor den Tasten 1 bis 6.
@@ -472,7 +497,9 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   }
 
   function beiAufgebenGeschlossen() {
-    if (dialogAufgeben.returnValue === 'aufgeben') aktionen.aufgeben();
+    dialogGeschlossenUm = Date.now();
+    if (dialogAufgeben.returnValue !== 'aufgeben') return;
+    if (!aktionen.aufgeben()) melde(OHNE_VERBINDUNG);
   }
 
   // Listener nur in der sichtbaren Spielansicht; unter dem Ergebnis bleibt sie

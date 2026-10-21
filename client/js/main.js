@@ -48,6 +48,7 @@ const OHNE_VERBINDUNG = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
 const aktionen = verbinde({
   beiVerbindung,
   beiTrennung,
+  beiOnline,
   beiWarteschlange,
   beiPrivat,
   beiStart,
@@ -81,6 +82,11 @@ function beiVerbindung() {
 
 function beiTrennung() {
   zeige(verbindungshinweis, true);
+}
+
+// Das Netz ist zurück und der Socket hat die Pause überstanden.
+function beiOnline() {
+  zeige(verbindungshinweis, false);
 }
 
 function beiWarteschlange({ position }) {

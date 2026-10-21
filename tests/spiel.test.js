@@ -65,7 +65,7 @@ function alleUnter(element) {
 }
 
 /** Echte Spielansicht mit Attrappen; ids liefert ein fester Satz Elemente. */
-function baueEchteAnsicht() {
+function baueEchteAnsicht(aktionen = {}) {
   const nachId = new Map();
   global.document = {
     activeElement: null,
@@ -77,7 +77,7 @@ function baueEchteAnsicht() {
       return nachId.get(auswahl);
     },
   };
-  return { ansicht: erzeugeSpielAnsicht({ aktionen: {} }), nachId };
+  return { ansicht: erzeugeSpielAnsicht({ aktionen }), nachId };
 }
 
 function startstand(nameUnten, nameOben) {
@@ -193,7 +193,7 @@ describe('Lebensdauer der echten Spielansicht', () => {
   });
 });
 
-describe('Rollen, Zugtext und Feldbeschreibungen (Review A2, D3, C1)', () => {
+describe('Rollen, Zugtext und Feldbeschreibungen', () => {
   afterEach(() => {
     delete global.document;
   });
@@ -250,6 +250,157 @@ describe('Rollen, Zugtext und Feldbeschreibungen (Review A2, D3, C1)', () => {
       'Mulde 1: 1 Kugel', 'Mulde 2: 0 Kugeln', 'Mulde 3: 4 Kugeln',
       'Mulde 4: 4 Kugeln', 'Mulde 5: 4 Kugeln', 'Mulde 6: 4 Kugeln',
     ]);
+  });
+});
+
+// Gleicher Satz wie in main.js: Nach der Wiederverbindung geht es bei der
+// Anmeldung weiter, die Partie ist dann weg.
+const OHNE_VERBINDUNG_TEXT = 'Ohne Verbindung wurde nichts gesendet. Sobald sie '
+  + 'wieder steht, geht es bei der Anmeldung weiter.';
+
+describe('Zug und Aufgeben ohne Verbindung', () => {
+  afterEach(() => {
+    delete global.document;
+  });
+
+  /** Fängt die Listener ab, die die Ansicht am Brett und am Dialog anmeldet. */
+  function bereiteVor(aktionen) {
+    const { ansicht, nachId } = baueEchteAnsicht(aktionen);
+    const listener = new Map();
+    for (const id of ['#brett', '#dialog-aufgeben']) {
+      nachId.get(id).addEventListener = (art, rueckruf) => listener.set(`${id} ${art}`, rueckruf);
+    }
+    ansicht.zeige(true);
+    ansicht.starte(startstand('Anna', 'Ben'), 'unten');
+    return { nachId, listener };
+  }
+
+  function klickAufMulde(nummer) {
+    const knopf = { disabled: false, dataset: { mulde: String(nummer) } };
+    const zelle = { querySelector: () => knopf };
+    return { target: { closest: () => zelle } };
+  }
+
+  test('ein nicht gesendeter Zug meldet es und sperrt das Brett nicht', () => {
+    const aktionen = { zug: jest.fn(() => false) };
+    const { nachId, listener } = bereiteVor(aktionen);
+
+    listener.get('#brett click')(klickAufMulde(2));
+
+    const anzeige = nachId.get('#zuganzeige');
+    expect(anzeige.textContent).toBe(OHNE_VERBINDUNG_TEXT);
+    expect(anzeige.classList.contains('zuganzeige--hinweis')).toBe(true);
+    expect(nachId.get('#brett').classList.contains('brett--gesperrt')).toBe(false);
+
+    // Kein hängender Wartezustand: ein zweiter Klick geht wieder bis zum Senden.
+    listener.get('#brett click')(klickAufMulde(2));
+    expect(aktionen.zug).toHaveBeenCalledTimes(2);
+  });
+
+  test('ein gesendeter Zug sperrt das Brett weiter bis zur Antwort', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { nachId, listener } = bereiteVor(aktionen);
+
+    listener.get('#brett click')(klickAufMulde(2));
+    listener.get('#brett click')(klickAufMulde(2));
+
+    expect(aktionen.zug).toHaveBeenCalledTimes(1);
+    expect(nachId.get('#brett').classList.contains('brett--gesperrt')).toBe(true);
+  });
+
+  test('ein nicht gesendetes Aufgeben meldet es ebenfalls', () => {
+    const aktionen = { aufgeben: jest.fn(() => false) };
+    const { nachId, listener } = bereiteVor(aktionen);
+    nachId.get('#dialog-aufgeben').returnValue = 'aufgeben';
+
+    listener.get('#dialog-aufgeben close')();
+
+    expect(aktionen.aufgeben).toHaveBeenCalledTimes(1);
+    expect(nachId.get('#zuganzeige').textContent).toBe(OHNE_VERBINDUNG_TEXT);
+  });
+});
+
+describe('Schonfrist nach dem Aufgeben-Dialog', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    delete global.document;
+  });
+
+  function bereiteVor(aktionen) {
+    const { ansicht, nachId } = baueEchteAnsicht(aktionen);
+    const listener = new Map();
+    for (const id of ['#brett', '#dialog-aufgeben']) {
+      nachId.get(id).addEventListener = (art, rueckruf) => listener.set(`${id} ${art}`, rueckruf);
+    }
+    ansicht.zeige(true);
+    ansicht.starte(startstand('Anna', 'Ben'), 'unten');
+    return { nachId, listener };
+  }
+
+  /** detail: 1 = Maus oder Touch, 0 = Tastatur (auch knopf.click()). */
+  function klick(detail) {
+    const knopf = { disabled: false, dataset: { mulde: '1' } };
+    const zelle = { querySelector: () => knopf };
+    return { detail, target: { closest: () => zelle } };
+  }
+
+  function schliesseDialogUm(nachId, listener, uhrzeit, wahl = 'weiter') {
+    jest.spyOn(Date, 'now').mockReturnValue(uhrzeit);
+    nachId.get('#dialog-aufgeben').returnValue = wahl;
+    listener.get('#dialog-aufgeben close')();
+  }
+
+  test('ein zweiter Tap 120 ms nach „Weiterspielen“ sendet keinen Zug', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { nachId, listener } = bereiteVor(aktionen);
+    schliesseDialogUm(nachId, listener, 10_000);
+
+    Date.now.mockReturnValue(10_120);
+    listener.get('#brett click')(klick(1));
+
+    expect(aktionen.zug).not.toHaveBeenCalled();
+  });
+
+  test('nach Ablauf der Schonfrist wirkt ein Tap wieder', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { nachId, listener } = bereiteVor(aktionen);
+    schliesseDialogUm(nachId, listener, 10_000);
+
+    Date.now.mockReturnValue(10_500);
+    listener.get('#brett click')(klick(1));
+
+    expect(aktionen.zug).toHaveBeenCalledWith(1);
+  });
+
+  test('die Tasten 1 bis 6 (Klick ohne Zeigergerät) bleiben ungesperrt', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { nachId, listener } = bereiteVor(aktionen);
+    schliesseDialogUm(nachId, listener, 10_000);
+
+    Date.now.mockReturnValue(10_050);
+    listener.get('#brett click')(klick(0));
+
+    expect(aktionen.zug).toHaveBeenCalledWith(1);
+  });
+
+  test('eine zurückgestellte Systemuhr sperrt das Brett nicht', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { nachId, listener } = bereiteVor(aktionen);
+    schliesseDialogUm(nachId, listener, 10_000);
+
+    Date.now.mockReturnValue(4_000);
+    listener.get('#brett click')(klick(1));
+
+    expect(aktionen.zug).toHaveBeenCalledWith(1);
+  });
+
+  test('ohne vorherigen Dialog gibt es keine Sperre', () => {
+    const aktionen = { zug: jest.fn(() => true) };
+    const { listener } = bereiteVor(aktionen);
+
+    listener.get('#brett click')(klick(1));
+
+    expect(aktionen.zug).toHaveBeenCalledTimes(1);
   });
 });
 

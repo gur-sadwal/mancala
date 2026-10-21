@@ -320,7 +320,7 @@ describe('Ergebnis nach einem Abbruch', () => {
   });
 });
 
-describe('Rückfrage beim Verlassen (Review B7)', () => {
+describe('Rückfrage beim Verlassen', () => {
   /** Ein abbrechbares beforeunload wie beim Schließen oder Neuladen. */
   function verlasseSeite() {
     const ereignis = new Event('beforeunload', { cancelable: true });
@@ -355,7 +355,7 @@ describe('Rückfrage beim Verlassen (Review B7)', () => {
   });
 });
 
-describe('Voller Server (Review A7)', () => {
+describe('Voller Server', () => {
   test('SERVER_VOLL führt aus dem Warten mit Erklärung zur Anmeldung', async () => {
     starte();
     await beende();
@@ -369,7 +369,7 @@ describe('Voller Server (Review A7)', () => {
   });
 });
 
-describe('Verspätete Nachrichten nach „Suche abbrechen“ (Selbst-Review)', () => {
+describe('Verspätete Nachrichten nach „Suche abbrechen“', () => {
   /** Die Anmeldung schickt den Beitritt; main.js erfährt davon so. */
   function sucheGegner() {
     sende('connect');
@@ -429,7 +429,7 @@ describe('Verspätete Nachrichten nach „Suche abbrechen“ (Selbst-Review)', (
   });
 });
 
-describe('Ergebnisdialog ohne Verbindung (Selbst-Review)', () => {
+describe('Ergebnisdialog ohne Verbindung', () => {
   test('„Neues Spiel suchen“ täuscht ohne Verbindung keine Suche vor', async () => {
     starte();
     await beende();
@@ -471,5 +471,27 @@ describe('Ergebnisdialog ohne Verbindung (Selbst-Review)', () => {
     const [wartet] = ansichten.warten.zeige.mock.invocationCallOrder;
     expect(geschlossen).toBeLessThan(wartet);
     expect(ansichten.warten.zeige).toHaveBeenLastCalledWith(true);
+  });
+});
+
+describe('Verbindungshinweis bei Funkloch', () => {
+  test('„offline“ zeigt den Hinweis sofort, „online“ blendet ihn bei laufendem Socket aus', () => {
+    sende('connect');
+
+    window.dispatchEvent(new Event('offline'));
+    expect(elemente['#verbindungshinweis'].hidden).toBe(false);
+
+    window.dispatchEvent(new Event('online'));
+    expect(elemente['#verbindungshinweis'].hidden).toBe(true);
+  });
+
+  test('„online“ lässt den Hinweis stehen, solange der Socket getrennt ist', () => {
+    sende('connect');
+    socket.connected = false;
+
+    window.dispatchEvent(new Event('offline'));
+    window.dispatchEvent(new Event('online'));
+
+    expect(elemente['#verbindungshinweis'].hidden).toBe(false);
   });
 });

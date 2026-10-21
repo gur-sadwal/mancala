@@ -146,7 +146,7 @@ describe('Client und Server sind sich einig (die eigentliche Probe)', () => {
 });
 
 describe('Häuser im Browser und auf dem Server', () => {
-  test('hausVon nennt dieselben Zellen wie SITZE[sitz].haus (Selbst-Review)', () => {
+  test('hausVon nennt dieselben Zellen wie SITZE[sitz].haus', () => {
     for (const sitz of ['unten', 'oben']) {
       expect(hausVon(sitz)).toEqual(SITZE[sitz].haus);
     }

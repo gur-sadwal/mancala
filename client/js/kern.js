@@ -91,6 +91,13 @@ export function verbinde(rueckrufe) {
     // SCHUTZ: Was Socket.io noch zurückhält, gehört zur alten Verbindung.
     socket.sendBuffer = [];
     rueckrufe.beiTrennung?.(grund);
+    // ACHTUNG: Trennt der Server selbst (disconnect(true) im Gateway), lässt
+    // Socket.io den Socket ruhen. Der Banner verspricht eine Wiederholung,
+    // also verbinden wir nach einer Pause selbst neu. Ohne Pause könnte eine
+    // wiederholte Trennung den Server im Sekundentakt belasten.
+    if (grund === 'io server disconnect') {
+      setTimeout(() => socket.connect(), NEUVERSUCH_MS);
+    }
   });
   // Lehnt der Server selbst ab (etwa SERVER_VOLL), ist der Socket nicht mehr
   // aktiv und Socket.io versucht es nicht neu. Dann später selbst verbinden.
@@ -118,6 +125,17 @@ export function verbinde(rueckrufe) {
   window.addEventListener('pagehide', () => socket.disconnect());
   window.addEventListener('pageshow', (ereignis) => {
     if (ereignis.persisted) socket.connect();
+  });
+
+  // ACHTUNG: Dauerhafte Listener dieser Datei sind pagehide, pageshow, offline
+  // und online; sie werden nie abgemeldet. Der Browser meldet ein Funkloch
+  // sofort. Der Ping-Timeout des Servers erkennt es erst nach etwa 40 s, in
+  // der Zeit sähe der Spieler „Du bist am Zug“, obwohl nichts ankommt.
+  window.addEventListener('offline', () => rueckrufe.beiTrennung?.('offline'));
+  window.addEventListener('online', () => {
+    // Ist der Socket noch verbunden, kommt kein connect-Ereignis, das den
+    // Hinweis ausblendet. Ist er getrennt, blendet es ihn später aus.
+    if (socket.connected) rueckrufe.beiOnline?.();
   });
 
   // Nach einer neuen Verbindung muss die erneute Suche den Namen mitsenden.

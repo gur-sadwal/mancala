@@ -249,4 +249,87 @@ describe('Ergebnisdialog und Bilanz', () => {
 
     expect(elemente.get('#t-ende').focus).not.toHaveBeenCalled();
   });
+
+  /** Zeigt das Ergebnis mit einer eigenen Ansicht und liefert ihre Dialog-Listener. */
+  function zeigeMitEscListenern(beiSchliessen) {
+    const eigene = erzeugeEndeAnsicht({ beiSchliessen });
+    eigene.zeige({
+      ergebnis: regulaer, sitz: 'unten', revanche: 'moeglich', revancheSeit: Date.now(), name: 'Anna',
+    });
+    const dialog = elemente.get('#dialog-ende');
+    const holeListener = (art) => dialog.addEventListener.mock.calls
+      .filter(([name]) => name === art).pop()[1];
+    return { eigene, dialog, abbruch: holeListener('cancel'), zu: holeListener('close') };
+  }
+
+  test('Esc meldet erst im close-Ereignis, wenn der Dialog wirklich zu ist (Fokus der Anmeldung)', () => {
+    // Solange der modale Dialog offen ist, ist der Rest der Seite inert und
+    // der Fokus der Anmeldung ginge verloren (WebKit: auch im cancel-Ereignis).
+    let offenBeimAufruf = null;
+    const beiSchliessen = jest.fn(() => {
+      offenBeimAufruf = elemente.get('#dialog-ende').open;
+    });
+    const { eigene, dialog, abbruch, zu } = zeigeMitEscListenern(beiSchliessen);
+
+    abbruch({});
+    expect(beiSchliessen).not.toHaveBeenCalled();
+
+    dialog.open = false;
+    zu({});
+
+    expect(beiSchliessen).toHaveBeenCalledTimes(1);
+    expect(offenBeimAufruf).toBe(false);
+    eigene.verstecke();
+  });
+
+  test('ein Schließen ohne Esc (neue Suche, Abmelden) führt nicht zu beiSchliessen', () => {
+    const beiSchliessen = jest.fn();
+    const { eigene, zu } = zeigeMitEscListenern(beiSchliessen);
+
+    zu({});
+
+    expect(beiSchliessen).not.toHaveBeenCalled();
+    eigene.verstecke();
+  });
+
+  test('verstecke meldet genau die angemeldeten Dialog-Listener wieder ab', () => {
+    const { eigene, dialog, abbruch, zu } = zeigeMitEscListenern(jest.fn());
+
+    eigene.verstecke();
+
+    expect(dialog.removeEventListener).toHaveBeenCalledWith('cancel', abbruch);
+    expect(dialog.removeEventListener).toHaveBeenCalledWith('close', zu);
+  });
+
+  test('Abbruch ohne Wertung nennt den Stand beim Abbruch', () => {
+    const abbruch = { grund: GRUND.INTERNER_FEHLER, sieger: null, punkte: { unten: 4, oben: 7 } };
+
+    zeigeErgebnis(abbruch, 'unten', null);
+    expect(elemente.get('#ende-text').textContent).toBe('Stand beim Abbruch: 4 zu 7.');
+
+    zeigeErgebnis(abbruch, 'oben', null);
+    expect(elemente.get('#ende-text').textContent).toBe('Stand beim Abbruch: 7 zu 4.');
+  });
+
+  test('Aufgabe nach Extrazug: neutraler Stand statt Glückwunsch oder Trostsatz', () => {
+    // Anna (unten) führt 1:0 durch den Extrazug und gibt auf: Ben (oben) gewinnt.
+    const aufgabe = { grund: GRUND.AUFGEGEBEN, sieger: 'oben', punkte: { unten: 1, oben: 0 } };
+
+    zeigeErgebnis(aufgabe, 'oben');
+    expect(elemente.get('#t-ende').textContent).toBe('Du hast gewonnen!');
+    expect(elemente.get('#ende-text').textContent).toBe('Stand beim Ende: 0 zu 1.');
+
+    zeigeErgebnis(aufgabe, 'unten');
+    expect(elemente.get('#t-ende').textContent).toBe('Du hast verloren');
+    expect(elemente.get('#ende-text').textContent).toBe('Stand beim Ende: 1 zu 0.');
+  });
+
+  test('Gegner weg: ebenfalls neutraler Stand beim Ende', () => {
+    const weg = { grund: GRUND.GEGNER_WEG, sieger: 'unten', punkte: { unten: 2, oben: 5 } };
+
+    zeigeErgebnis(weg, 'unten');
+
+    expect(elemente.get('#t-ende').textContent).toBe('Du hast gewonnen!');
+    expect(elemente.get('#ende-text').textContent).toBe('Stand beim Ende: 2 zu 5.');
+  });
 });

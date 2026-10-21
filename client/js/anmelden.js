@@ -6,13 +6,34 @@
  */
 
 import { $, zeige, setzeText } from './dom.js';
-import { bereinigeName, NAME_VERBOTEN } from '/shared/protokoll.js';
+import {
+  bereinigeName, NAME_VERBOTEN, CODE_ZEICHEN, GRENZEN,
+} from '/shared/protokoll.js';
 
 // == 1. Einrichtung ======================================================
 const SPEICHER_NAME = 'mancala.name';
 
+const UNGUELTIGER_LINK = 'Der Einladungslink ist ungültig oder unvollständig. '
+  + 'Du kannst stattdessen ein neues Spiel suchen.';
+
 const OHNE_VERBINDUNG = 'Ohne Verbindung wurde dein Beitritt nicht gesendet. '
   + 'Versuche es erneut, sobald die Verbindung wieder steht.';
+
+// SCHUTZ: Der Code kommt aus der Adresse und ist frei veränderbar. Nur Codes
+// in Länge und Zeichensatz der Server-Codes werden verwendet; ein 3000-Zeichen-
+// Link würde sonst die Verbindung trennen (Puffergrenze des Servers). Der
+// Server prüft den Code trotzdem selbst. Kleinschreibung nimmt er an, daher
+// wird hier zuerst vergrößert.
+export function leseEinladung(suchtext) {
+  const roh = new URLSearchParams(suchtext).get('spiel');
+  if (!roh) return null;
+
+  // Chat-Programme hängen gern ein Leerzeichen an den Link.
+  const code = roh.trim().toUpperCase();
+  const laengeStimmt = code.length === GRENZEN.CODE_LAENGE;
+  const zeichenStimmen = [...code].every((z) => CODE_ZEICHEN.includes(z));
+  return laengeStimmt && zeichenStimmen ? code : null;
+}
 
 export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const abschnitt = $('#ansicht-anmelden');
@@ -55,10 +76,21 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     }
   }
 
-  // Beim Anzeigen neu lesen: main.js entfernt verbrauchte oder ungültige Links.
+  // SCHUTZ: Ein vorhandener, aber ungültiger Link darf nicht stumm zur
+  // öffentlichen Suche werden. Die Meldung sagt es; die Adresse wird wie bei
+  // main.js (entferneEinladungAusAdresse) bereinigt, damit sie nicht bleibt.
+  function meldeUngueltigenLink() {
+    zeigeFehler(UNGUELTIGER_LINK);
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+
+  // Beim Anzeigen neu lesen: main.js entfernt verbrauchte Links, ungültige
+  // entfernt meldeUngueltigenLink.
   function aktualisiereEinladung() {
-    einladung = new URLSearchParams(window.location.search).get('spiel')
-      || null;
+    const suchtext = window.location.search;
+    einladung = leseEinladung(suchtext);
+    const hatParameter = Boolean(new URLSearchParams(suchtext).get('spiel'));
+    if (hatParameter && !einladung) meldeUngueltigenLink();
 
     zeige(umschalter, !einladung);
     zeige(einladungHinweis, Boolean(einladung));
@@ -132,12 +164,11 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
       }
 
       meldeListenerAn();
-      aktualisiereEinladung();
 
-      if (wirdEingeblendet) {
-        titel.focus();
-        zeigeFehler('');
-      }
+      // Erst alten Fehlertext löschen, dann kann der Link-Check neu melden.
+      if (wirdEingeblendet) zeigeFehler('');
+      aktualisiereEinladung();
+      if (wirdEingeblendet) titel.focus();
     },
 
     melde(text) {
