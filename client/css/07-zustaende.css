@@ -54,7 +54,7 @@ body:not(:has(#ansicht-spiel:not([hidden]))) #knopf-aufgeben {
 
   @media (hover: hover) {
     &:hover {
-      background-color: color-mix(in oklch, var(--farbe-mulde) 75%,
+      background-color: color-mix(in oklab, var(--farbe-mulde) 75%,
         var(--farbe-spielbar));
       transform: translateY(-3px) scale(1.03);
     }
@@ -191,6 +191,15 @@ body:not(:has(#ansicht-spiel:not([hidden]))) #knopf-aufgeben {
 .zuganzeige--hinweis {
   color: var(--farbe-extrazug);
   font-weight: 700;
+}
+
+/* WCAG: Beim eigenen Zug trägt die Anzeige zugleich den roten Grund von
+ * .zuganzeige--ich. Violett erreicht darauf nur etwa 1,2:1; mit weißer Schrift
+ * gilt wieder der geforderte Kontrast von 4,5:1. Die Regel braucht beide
+ * Klassen, weil sonst die spätere der beiden einzelnen Regeln gewinnt.
+ */
+.zuganzeige--ich.zuganzeige--hinweis {
+  color: var(--farbe-hessen-weiss);
 }
 
 /* == 7. Eingabesperre ===================================================== */
