@@ -338,6 +338,20 @@ describe('Rückfrage beim Verlassen', () => {
     expect(verlasseSeite()).toBe(true);
   });
 
+  test('während der Partie ist auch returnValue gesetzt, wie ältere Browser es brauchen', () => {
+    starte();
+    // Im echten BeforeUnloadEvent ist returnValue ein beschreibbares Textfeld;
+    // jsdom bildet das bei einem gewöhnlichen Event nicht nach.
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    Object.defineProperty(ereignis, 'returnValue', {
+      value: '', writable: true,
+    });
+
+    window.dispatchEvent(ereignis);
+
+    expect(ereignis.returnValue).toBeTruthy();
+  });
+
   test('nach dem Ergebnis und nach der Rückkehr zur Anmeldung nicht mehr', async () => {
     starte();
     await beende();
