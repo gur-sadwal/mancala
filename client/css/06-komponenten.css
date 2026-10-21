@@ -29,7 +29,7 @@
   padding-block: var(--abstand-klein);
 
   border: 2px solid transparent;
-  border-radius: var(--radius-rund);
+  border-radius: var(--radius);
 
   font-weight: 600;
   text-decoration: none;
@@ -204,10 +204,14 @@
     accent-color: var(--farbe-hessen-rot);
   }
 
-  /* WCAG: Der Auswahlpunkt ergänzt Randfarbe und fette Schrift. */
+  /* WCAG: Der Auswahlpunkt ergänzt Randfarbe und Hintergrund. Keine fette
+   * Schrift: Sie ist breiter und ließe die Option beim Anklicken umbrechen
+   * und wachsen.
+   */
   &:has(:checked) {
     border-color: var(--farbe-hessen-rot);
-    font-weight: 700;
+    background-color: color-mix(in oklch, var(--farbe-hessen-rot) 8%,
+      transparent);
   }
 }
 
@@ -325,6 +329,7 @@
 
 .dialog__titel {
   margin-block-end: var(--abstand-klein);
+  color: var(--farbe-hessen-rot);
 }
 
 .dialog__grund {

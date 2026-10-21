@@ -7,6 +7,7 @@
  *   == 4. Punktestand und Zuganzeige
  *   == 5. Hilfe und Aktionen
  *   == 6. Kompakter Kopf
+ *   == 7. Anmeldung mit rotem Seitenstreifen
  *
  * Eingebunden über haupt.css; die Reihenfolge steht dort.
  */
@@ -81,6 +82,13 @@
   background-color: var(--farbe-karte);
   border-radius: var(--radius-gross);
   box-shadow: var(--schatten);
+
+  /* Der rote Streifen oben verbindet die Karten mit der Kopfzeile. */
+  border-block-start: 0.5rem solid var(--farbe-hessen-rot);
+
+  & > h2 {
+    font-size: 1.75rem;
+  }
 }
 
 /* Das Brett braucht mehr Breite als die übrigen, kartenartigen Ansichten. */
@@ -88,6 +96,7 @@
   max-inline-size: min(100%, calc(var(--brett-max) + 2 * var(--abstand)));
   background-color: transparent;
   box-shadow: none;
+  border-block-start: none;
   padding-inline: 0;
   padding-block: var(--abstand);
 }
@@ -231,5 +240,49 @@
 
   .stand__spieler {
     padding: 0.25rem var(--abstand-klein);
+  }
+}
+
+/* == 7. Anmeldung mit rotem Seitenstreifen ================================ */
+
+/* EINSTELLBAR: Ab dieser Fenstergröße steht der Kopf in der Anmeldung links
+ * als roter Streifen. :has leitet die Ansicht aus hidden ab; so braucht es
+ * keine zusätzliche Klasse und kein Skript. Niedrige Fenster behalten den
+ * kompakten Kopf aus Abschnitt 6.
+ */
+@media (min-width: 900px) and (min-height: 560px) {
+  body:has(#ansicht-anmelden:not([hidden])) {
+    display: grid;
+    grid-template-columns: minmax(20rem, 1fr) minmax(0, 1fr);
+  }
+
+  body:has(#ansicht-anmelden:not([hidden])) .kopf {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--abstand);
+
+    padding-inline: var(--abstand-gross);
+    text-align: start;
+
+    /* Die Streifen der Kopfzeile stehen hier an der rechten Kante. */
+    border-block-end: none;
+    border-inline-end: 0.4rem solid var(--farbe-hessen-blau);
+    box-shadow: inset -0.4rem 0 0 var(--farbe-hessen-weiss);
+
+    & .kopf__titel {
+      font-size: 4.5rem;
+    }
+
+    & .kopf__untertitel,
+    & .kopf__autor {
+      margin-inline: 0;
+      font-size: 1.25rem;
+    }
+
+    & .knopf--kopf {
+      margin-block-start: var(--abstand);
+    }
   }
 }

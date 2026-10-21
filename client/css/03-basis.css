@@ -109,6 +109,14 @@ kbd {
   border-radius: var(--radius-klein);
 }
 
+/* Überschriften bekommen den Fokus nur per Skript (tabindex="-1") beim
+ * Ansichtswechsel. Sie sind keine Bedienelemente; ein Ring um den Titel
+ * würde wie ein Fehler aussehen.
+ */
+h2[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 /* Auf dem blauen Brett wäre der blaue Standardring kaum zu erkennen. */
 .brett :focus-visible {
   outline-color: var(--farbe-text-hell);
