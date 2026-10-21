@@ -19,8 +19,8 @@ const GRENZE_JE_FENSTER = 20;
 const FENSTER_MS = 1000;
 
 // == 2. Nachrichten zählen ===============================================
-// An der Fenstergrenze sind zwei schnelle Nachrichtengruppen möglich:
-// Der Zähler beginnt dort wieder bei eins.
+// Feste Fenster sind einfach, lassen an der Fenstergrenze aber kurz bis zu
+// doppelt so viele Nachrichten durch: Der Zähler beginnt dort wieder bei eins.
 /** @param {Function} uhr Zeitquelle, damit Tests keine Sekunde warten. */
 export function erzeugeRatenbegrenzer(
   grenze = GRENZE_JE_FENSTER,

@@ -32,7 +32,8 @@ export const istGanzzahlZwischen = (wert, min, max) => Number.isInteger(wert)
   && wert <= max;
 
 // == 2. Spielernamen =====================================================
-// Auf dem Server verbindlich. Der Browser kann seine Vorprüfung weglassen.
+// Verbindlich ist diese Prüfung: Ein veränderter Browser kann seine
+// Vorprüfung einfach weglassen.
 export function ermittleSpielername(wert) {
   if (typeof wert !== 'string') return ERSATZ_NAME;
 

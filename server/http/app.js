@@ -44,7 +44,8 @@ export function erzeugeApp({ manager, lobby }) {
       laufzeitSekunden: Math.round(process.uptime()),
     });
   });
-  // maxAge: 0 verlangt sofortige Nachprüfung; der Browser darf trotzdem cachen.
+  // Mit maxAge: 0 darf der Browser cachen, fragt aber vor jeder Nutzung nach.
+  // So laufen nach einer Änderung keine alten Module weiter.
   app.use(express.static(pfadZu('client'), {
     extensions: ['html'],
     maxAge: 0,

@@ -29,7 +29,8 @@ export const REVANCHE_STATUS = Object.freeze({
   START: 'START',
 });
 
-// EINSTELLBAR: Zeitpuffer für die Übertragung eines Revanchewunschs.
+// EINSTELLBAR: Puffer über die Frist, die der Browser anzeigt. Ein Klick kurz
+// vor Ablauf zählt so trotz Laufzeit im Netz noch.
 const REVANCHE_KULANZ_MS = 2000;
 export const REVANCHE_FRIST_MS = GRENZEN.REVANCHE_SEKUNDEN * 1000
   + REVANCHE_KULANZ_MS;
@@ -146,7 +147,8 @@ export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
   }
 
   /**
-   * Entfernt Wartende ab der Grenze einschließlich und liefert ihre Kennungen.
+   * Entfernt alle, die maxAlterMs oder länger warten, und liefert ihre
+   * Socket-Kennungen.
    * @param {number} maxAlterMs erlaubte Wartezeit
    * @param {number} jetzt Zeitquelle für Grenztests
    */

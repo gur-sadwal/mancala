@@ -166,5 +166,5 @@ export function bereinigeName(text) {
 }
 
 // == 5. Zeichen im Einladungscode ========================================
-// Leicht verwechselbare Zeichen wie 0/O und 1/I fehlen beim Abtippen.
+// 0, O, 1, I und L fehlen: Beim Abtippen verwechselt man sie leicht.
 export const CODE_ZEICHEN = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';

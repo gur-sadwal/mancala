@@ -24,10 +24,14 @@ const START_KUGELN = 4;
 export const KUGELN_GESAMT = MULDEN_JE_SEITE * 2 * START_KUGELN;
 const SPALTEN = MULDEN_JE_SEITE + 1;
 
+// Das obere Haus liegt in Spalte 0, das untere in Spalte 6. So passen beide
+// Reihen samt Haus in ein Array der Form [2][7].
 const HAUS_OBEN = Object.freeze([OBEN, 0]);
 const HAUS_UNTEN = Object.freeze([UNTEN, MULDEN_JE_SEITE]);
 
-// Der Sitz beschreibt die Server-Sicht. Oben sieht der Browser gedreht.
+// SITZE beschreibt die Server-Sicht; für „oben“ dreht der Browser das Brett.
+// Mulde 0 liegt bei beiden Sitzen am weitesten vom eigenen Haus entfernt,
+// oben zählt mulde(n) deshalb von Spalte 6 abwärts.
 // ACHTUNG: tests/sicht.test.js vergleicht beide Abbildungen.
 export const SITZE = Object.freeze({
   unten: Object.freeze({
@@ -99,7 +103,8 @@ export function istInEigenerReihe(sitz, [reihe]) {
   return reihe === SITZE[sitz].reihe;
 }
 
-// REGEL 3.2: In der Server-Sicht geht es unten nach rechts, oben nach links.
+// REGEL 3.2: Gegen den Uhrzeigersinn, in der Server-Sicht also unten nach
+// rechts und oben nach links.
 export function naechsteZelle([reihe, spalte]) {
   if (reihe === UNTEN) {
     if (spalte < MULDEN_JE_SEITE) return [UNTEN, spalte + 1];

@@ -1,8 +1,9 @@
 /**
  * handlers.js – Ereignisse empfangen und Nachrichten senden.
  *
- * Verbindet Lobby, Manager und Engine mit Socket.io. Registrierte
- * Spielereignisse werden begrenzt und geprüft; Handlerfehler werden abgefangen.
+ * Verbindet Lobby, Manager und Engine mit Socket.io. Jedes Spielereignis läuft
+ * durch Ratenbegrenzung und Schema; ein Fehler im Handler trifft nur den
+ * Verursacher oder seine Partie.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Ereignisse registrieren
@@ -40,7 +41,8 @@ const WARTEN_MS = GRENZEN.WARTEN_MINUTEN * 60 * 1000;
 
 /** Die inneren Funktionen teilen io, Lobby, Manager und Ratenbegrenzer. */
 export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
-  // Funktionsdeklarationen gelten schon vor ihrer Textstelle weiter unten.
+  // Das return darf oben stehen: Funktionsdeklarationen sind im ganzen Block
+  // schon bekannt (Hoisting).
   return { registriere, beendeKontrolliert, pruefeRevanchen, raeumeAuf };
 
   // == 1. Ereignisse registrieren ========================================
@@ -112,8 +114,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
 
     lasseRevancheVerfallen(socket.id);
 
-    // SCHUTZ: Jeder Beitritt kann eine Partie starten; der Platz dafür wird
-    // vorher geprüft. Ein abgelehnter Link bleibt so gültig.
+    // SCHUTZ: Ohne freien Partieplatz gar nicht erst einreihen. Die Prüfung
+    // steht vor nimmPrivat, damit ein abgelehnter Link gültig bleibt.
     if (manager.istVoll()) {
       sendeFehler(socket, FEHLER.SERVER_VOLL);
       return;
@@ -209,9 +211,9 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     uebernehmeZug(partie, ergebnis);
   }
 
-  // SCHUTZ: Partie und Sitz immer aus dem Serverzustand lesen. Ein fehlender
-  // Sitz hieße, dass die Zuordnung im Manager kaputt ist; auch dann gilt
-  // für den Verursacher: keine Partie.
+  // SCHUTZ: Partie und Sitz kommen aus dem Serverzustand, nie aus der
+  // Nachricht. Fehlt der Sitz, ist die Zuordnung im Manager kaputt; auch dann
+  // bekommt der Verursacher nur KEINE_PARTIE.
   function partieUndSitz(socket) {
     const partie = manager.holeNachSocket(socket.id);
     const sitz = partie ? sitzVon(partie, socket.id) : null;
@@ -318,7 +320,8 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
   // SCHUTZ: Den Ratenzähler vor Lobby und Partie vergessen. So bleibt er
   // auch bei einem späteren Aufräumfehler nicht liegen.
   function aufTrennen(socket, grund) {
-    // Der getrennte Socket ist bereits aus io.sockets entfernt.
+    // Socket.io hat den Socket schon aus io.sockets entfernt: socketVon findet
+    // ihn nicht mehr, Nachrichten erreichen nur noch den Gegner.
     logger.info('Verbindung getrennt', { socketId: socket.id, grund });
 
     ratenbegrenzer.vergiss(socket.id);

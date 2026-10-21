@@ -60,8 +60,9 @@ function baueServer() {
 }
 
 // == 3. Prozess- und Serverfehler ========================================
-// SCHUTZ: Prozessfehler protokollieren und für andere Partien weiterlaufen.
-// Das behebt den Fehler nicht. Die Handler fangen ihre Fehler vorher selbst ab.
+// SCHUTZ: Ein übersehener Fehler soll nicht alle laufenden Partien beenden.
+// Er wird nur protokolliert, nicht behoben; die Handler fangen ihre Fehler
+// vorher selbst ab.
 function beiUncaughtException(fehler) {
   logger.error('uncaughtException – Prozess läuft bewusst weiter', fehler);
 }
@@ -92,8 +93,8 @@ function meldeBereit() {
   logger.info(`Im Browser öffnen: http://localhost:${port}`);
 }
 
-// SCHUTZ: Auf Socket.io warten. Die Notbremse beendet auch bei hängendem
-// Schließen den Prozess; sie repariert den hängenden Vorgang nicht.
+// SCHUTZ: Erst die Partien beenden und Socket.io schließen lassen. Hängt das,
+// beendet die Notbremse den Prozess nach BEENDEN_MAX_MS trotzdem.
 async function beendeGeordnet(signal) {
   logger.info(`${signal} empfangen, fahre herunter`);
   setTimeout(() => process.exit(0), BEENDEN_MAX_MS).unref();

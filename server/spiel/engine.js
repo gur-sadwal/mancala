@@ -2,7 +2,8 @@
  * engine.js – die Spielregeln auf dem Server.
  *
  * Rechnet einen Zug auf einer Brettkopie und liefert Partie plus Zugbericht.
- * Die Eingabe bleibt erhalten, damit die Animation mit dem alten Brett beginnt.
+ * Die übergebene Partie bleibt unverändert; erst handlers.js übernimmt das
+ * Ergebnis. Ein abgelehnter Zug hinterlässt so keinen halben Stand.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Einen Zug ausführen
@@ -157,8 +158,10 @@ function saee(brett, sitz, startZelle) {
 }
 
 // == 4. Kugeln klauen ====================================================
-// REGEL 3.4: Letzte Kugel in eigener leerer Mulde und Gegenüber besetzt.
-// Die letzte eigene Kugel wird mit ins Haus gelegt. Verändert die Brettkopie.
+// REGEL 3.4: Geklaut wird, wenn die letzte Kugel in einer vorher leeren
+// eigenen Mulde landet und gegenüber Kugeln liegen; sie kommt mit ins Haus.
+// Genau 1 Kugel heißt: Die Mulde war vor der letzten Kugel leer.
+// Verändert die Brettkopie.
 function klaueKugeln(brett, sitz, letzteZelle) {
   if (!istInEigenerReihe(sitz, letzteZelle)) return null;
   if (istHaus(letzteZelle)) return null;
