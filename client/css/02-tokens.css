@@ -38,10 +38,10 @@
 
   --farbe-kugel: var(--farbe-hessen-blau);
   --farbe-kugel-gegner: var(--farbe-hessen-rot);
-  --farbe-aktiv: oklch(52% 0.15 145);
+  --farbe-aktiv: var(--farbe-hessen-rot);
 
-  /* Gold hebt spielbare Ränder vom blauen Brett ab. */
-  --farbe-spielbar: oklch(86% 0.15 85);
+  /* Rot markiert spielbare Mulden; der Rand liegt am hellen Muldeninneren. */
+  --farbe-spielbar: var(--farbe-hessen-rot);
   --farbe-warnung: oklch(45% 0.12 40);
 
   /* Klauen heißt im Protokoll und in den CSS-Klassen weiterhin beute. */

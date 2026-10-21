@@ -201,12 +201,12 @@
   & input {
     inline-size: 1.25rem;
     block-size: 1.25rem;
-    accent-color: var(--farbe-kugel);
+    accent-color: var(--farbe-hessen-rot);
   }
 
   /* WCAG: Der Auswahlpunkt ergänzt Randfarbe und fette Schrift. */
   &:has(:checked) {
-    border-color: var(--farbe-kugel);
+    border-color: var(--farbe-hessen-rot);
     font-weight: 700;
   }
 }
@@ -245,7 +245,7 @@
   inline-size: 0.9rem;
   block-size: 0.9rem;
   border-radius: var(--radius-rund);
-  background-color: var(--farbe-kugel);
+  background-color: var(--farbe-text-leise);
 
   /* Versetzte Starts erzeugen eine umlaufende Wartebewegung. */
   animation: huepfen 1.2s ease-in-out infinite;

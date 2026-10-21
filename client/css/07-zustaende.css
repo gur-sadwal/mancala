@@ -36,7 +36,7 @@
 
 /* == 3. Muldenzustände ==================================================== */
 
-/* Spielbar: goldener Rand; gesperrt: kein sichtbarer Rand.
+/* Spielbar: roter Rand; gesperrt: kein sichtbarer Rand.
  * WCAG: Der Text zur Zugfolge ergänzt die farbliche Rückmeldung.
  */
 .mulde--spielbar {
@@ -85,8 +85,13 @@
   font-weight: 700;
 }
 
+/* WCAG: Weiß auf Rot erreicht den geforderten Kontrast von 4,5:1. */
 .zuganzeige--ich {
-  color: var(--farbe-aktiv);
+  justify-self: center;
+  padding: 0.125rem var(--abstand-gross);
+  border-radius: var(--radius-rund);
+  background-color: var(--farbe-aktiv);
+  color: var(--farbe-hessen-weiss);
 }
 
 .zuganzeige--gegner {

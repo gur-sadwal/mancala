@@ -34,6 +34,8 @@
   background-image: linear-gradient(var(--farbe-brett),
     var(--farbe-brett-tief));
 
+  /* Der rote Rahmen greift die Farbe der Kopfzeile auf. */
+  border: 0.4rem solid var(--farbe-hessen-rot);
   border-radius: calc(var(--radius-gross) * 2);
   box-shadow: var(--schatten);
 
@@ -267,10 +269,9 @@ button.mulde {
   inset-inline-start: -0.2rem;
 
   padding-inline: 0.3em;
-  border: 1px solid var(--farbe-text);
   border-radius: var(--radius-klein);
-  background-color: var(--farbe-karte);
-  color: var(--farbe-text);
+  background-color: var(--farbe-hessen-rot);
+  color: var(--farbe-hessen-weiss);
 
   font-size: 1rem;
   font-weight: 600;
