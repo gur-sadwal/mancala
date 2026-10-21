@@ -154,7 +154,7 @@
     border-color var(--dauer-kurz) ease;
 }
 
-/* Der Zustand entscheidet später, ob eine eigene Mulde spielbar ist. */
+/* Erst .mulde--spielbar in 07-zustaende.css zeigt den Handzeiger. */
 button.mulde {
   cursor: default;
   appearance: none;
@@ -278,7 +278,7 @@ button.mulde {
   line-height: var(--zeilenhoehe);
 }
 
-/* Leere Mulden zeigen weiterhin eine gut lesbare Null. */
+/* Leere Mulden zeigen die Null dünner, aber weiter gut lesbar. */
 .mulde--leer .mulde__zahl {
   font-weight: 400;
 }

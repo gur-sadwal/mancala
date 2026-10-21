@@ -64,7 +64,9 @@
   /* Bei vielen Kugeln verringert 05-brett.css den Durchmesser. */
   --kugel-groesse: clamp(0.6rem, 1.5vw, 1rem);
   --brett-max: 60rem;
-  /* WCAG: Kurze Textblöcke begrenzen lange Hinweise mit Ersatzschrift. */
+  /* WCAG: Absätze höchstens 60ch breit. ch richtet sich nach der gerade
+   * benutzten Schrift, die Grenze passt also auch zur Ersatzschrift.
+   */
   --zeile-max: 60ch;
 
   --abstand-klein: 0.5rem;

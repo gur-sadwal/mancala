@@ -38,7 +38,8 @@
 
   <!--
     Oben stehen Titel und – nur in der Partie – „Partie aufgeben“. Der Knopf
-    behält seine id; spiel.js findet ihn weiter über #knopf-aufgeben.
+    liegt außerhalb der Spielansicht: spiel.js findet ihn über
+    #knopf-aufgeben, 07-zustaende.css blendet ihn außerhalb der Partie aus.
   -->
   <header class="leiste">
     <h1 class="leiste__titel">Mancala</h1>
@@ -241,8 +242,8 @@
   </main>
 
   <!--
-    Der rote Streifen steht unten auf der Seite. Er steht auch im HTML nach
-    dem Inhalt, damit Tab-Reihenfolge und Bildschirmreihenfolge übereinstimmen.
+    Die rote Fußleiste steht auch im HTML nach dem Inhalt, damit
+    Tab-Reihenfolge und Bildschirmreihenfolge übereinstimmen.
   -->
   <footer class="kopf">
     <p class="kopf__untertitel">Kalaha nach den BrainKing-Regeln</p>

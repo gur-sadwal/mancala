@@ -42,7 +42,10 @@
     transform var(--dauer-kurz) ease;
 
   &:disabled {
-    /* WCAG: Die Projektvorgabe verlangt auch hier lesbaren Textkontrast. */
+    /* WCAG: Gesperrte Knöpfe sind von der Kontrastregel ausgenommen, die
+     * Projektvorgabe verlangt ihn trotzdem. Statt Ausgrauen zeigt ein
+     * gestrichelter Rand die Sperre.
+     */
     border-color: currentColor;
     border-style: dashed;
     cursor: not-allowed;
@@ -88,7 +91,9 @@
   color: var(--farbe-hessen-weiss);
 }
 
-/* Ein größerer Knopf ist leichter zu treffen; 18px und mehr Innenabstand. */
+/* Ein größerer Knopf ist leichter zu treffen: mindestens 3,25rem hoch,
+ * Schrift 1,125rem (bei 16px Grundschrift 18px).
+ */
 .knopf--gross {
   min-block-size: 3.25rem;
   padding-inline: var(--abstand-gross);
@@ -321,7 +326,9 @@
 
   text-align: center;
 
-  /* Der Farbwert funktioniert hier auch ohne geerbte Custom Properties. */
+  /* Fester Farbwert statt var(): ::backdrop erbt Custom Properties erst in
+   * neueren Browsern.
+   */
   &::backdrop {
     background-color: oklch(20% 0.02 85 / 0.55);
     backdrop-filter: blur(2px);
@@ -364,7 +371,7 @@
   color: var(--farbe-text-leise);
 }
 
-/* Auf eine Revanche-Anfrage muss der Spieler reagieren können. */
+/* Fett, weil der Spieler auf ein Revanche-Angebot reagieren soll. */
 .dialog__hinweis {
   margin-inline: auto;
   margin-block-end: var(--abstand);
