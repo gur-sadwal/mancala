@@ -2,8 +2,8 @@
  * anmelden.test.js – Anmeldeformular, Namensprüfung und Einladungscode.
  *
  * Die echte Ansicht nutzt DOM- und Speicherattrappen. Geprüft werden die
- * Vorprüfung des Namens, der Weg des Einladungscodes aus der Adresse zum
- * Server und das Verhalten ohne Verbindung.
+ * Vorprüfung des Namens, der Weg des Einladungscodes aus der Adresse und
+ * aus dem Codefeld zum Server und das Verhalten ohne Verbindung.
  *
  * Inhalt:
  *   == 1. Testaufbau
@@ -23,7 +23,9 @@ import * as protokoll from '../shared/protokoll.js';
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 
-const { erzeugeAnmeldeAnsicht, leseEinladung } = await import('../client/js/anmelden.js');
+const {
+  erzeugeAnmeldeAnsicht, leseEinladung, leseCode,
+} = await import('../client/js/anmelden.js');
 
 let elemente;
 let speicher;
@@ -85,6 +87,12 @@ function schickeAb(absenden, name) {
   absenden({ preventDefault: jest.fn() });
 }
 
+/** Liefert den change-Listener des Formulars (Wechsel der Spielart). */
+function wechselListener() {
+  return elemente.get('#form-anmelden').addEventListener.mock.calls
+    .find(([art]) => art === 'change')[1];
+}
+
 // == 2. Testfälle ===========================================================
 
 describe('Einladungscode aus der Adresse', () => {
@@ -114,6 +122,11 @@ describe('Einladungscode aus der Adresse', () => {
 
   test('ein 3000 Zeichen langer Code wird nicht verwendet', () => {
     expect(leseEinladung(`?spiel=${'A'.repeat(3000)}`)).toBeNull();
+  });
+
+  test('ein gruppiert weitergegebener Link funktioniert ebenfalls', () => {
+    expect(leseEinladung('?spiel=ABC-234')).toBe('ABC234');
+    expect(leseEinladung('?spiel=abc%20234')).toBe('ABC234');
   });
 
   test('beim Absenden geht der gültige Code mit dem Namen an den Server', () => {
@@ -178,6 +191,112 @@ describe('Ungültiger Einladungslink', () => {
     ansicht.zeige(true);
 
     expect(elemente.get('#anmelden-fehler').textContent).toBe(UNGUELTIG);
+  });
+});
+
+describe('Raumcode von Hand eingeben', () => {
+  function schickeCodeAb(absenden, code, name = 'Anna') {
+    elemente.get('#feld-code').value = code;
+    schickeAb(absenden, name);
+  }
+
+  test('leseCode nimmt Varianten an und liefert die kanonische Form', () => {
+    expect(leseCode('abc-234')).toBe('ABC234');
+    expect(leseCode(' A b C 2_3-4 ')).toBe('ABC234');
+    expect(leseCode('ABC-23')).toBeNull();
+    expect(leseCode('')).toBeNull();
+  });
+
+  test('das Codefeld erscheint nur bei „Mit Raumcode beitreten“', () => {
+    zeigeAnsicht('code');
+    expect(elemente.get('#code-eingabe').hidden).toBe(false);
+    expect(elemente.get('#knopf-anmelden').textContent).toBe('Spiel beitreten');
+
+    elemente.clear();
+    zeigeAnsicht('privat');
+    expect(elemente.get('#code-eingabe').hidden).toBe(true);
+    expect(elemente.get('#knopf-anmelden').textContent)
+      .toBe('Privates Spiel erstellen');
+  });
+
+  test('der Wechsel der Spielart blendet das Feld ein und wieder aus', () => {
+    zeigeAnsicht('schnell');
+    const spielart = elemente.get('#form-anmelden').elements.spielart;
+
+    spielart.value = 'code';
+    wechselListener()();
+    expect(elemente.get('#code-eingabe').hidden).toBe(false);
+
+    spielart.value = 'schnell';
+    wechselListener()();
+    expect(elemente.get('#code-eingabe').hidden).toBe(true);
+    expect(elemente.get('#knopf-anmelden').textContent).toBe('Gegner suchen');
+  });
+
+  test.each(['ABC234', 'abc234', 'ABC-234', ' abc 234 ', 'a_b-c 2 3 4'])(
+    'die Eingabe „%s“ geht kanonisch an den Server',
+    (eingabe) => {
+      const { absenden } = zeigeAnsicht('code');
+
+      schickeCodeAb(absenden, eingabe);
+
+      expect(aktionen.beitreten)
+        .toHaveBeenCalledWith('Anna', { privat: false, code: 'ABC234' });
+      expect(elemente.get('#anmelden-fehler').hidden).toBe(true);
+    },
+  );
+
+  test('ein leeres Codefeld wird gemeldet, nichts wird gesendet', () => {
+    const { absenden } = zeigeAnsicht('code');
+
+    schickeCodeAb(absenden, ' - ');
+
+    expect(aktionen.beitreten).not.toHaveBeenCalled();
+    expect(beiAnmeldung).not.toHaveBeenCalled();
+    expect(elemente.get('#anmelden-fehler').textContent)
+      .toBe('Bitte gib den Raumcode ein.');
+    expect(elemente.get('#feld-code').focus).toHaveBeenCalled();
+  });
+
+  test('ein Code mit falscher Länge oder falschen Zeichen wird erklärt', () => {
+    const { absenden } = zeigeAnsicht('code');
+
+    for (const falsch of ['ABC-23', 'ABC-2345', 'ABO-234']) {
+      schickeCodeAb(absenden, falsch);
+      expect(elemente.get('#anmelden-fehler').textContent)
+        .toContain('kein gültiger Raumcode');
+    }
+    expect(aktionen.beitreten).not.toHaveBeenCalled();
+  });
+
+  test('ein fehlender Name wird vor dem Code gemeldet', () => {
+    const { absenden } = zeigeAnsicht('code');
+
+    schickeCodeAb(absenden, '', '  ');
+
+    expect(elemente.get('#anmelden-fehler').textContent)
+      .toBe('Bitte gib einen Namen ein.');
+    expect(elemente.get('#feld-name').focus).toHaveBeenCalled();
+  });
+
+  test('ein Code aus dem Link hat Vorrang; das Feld bleibt versteckt', () => {
+    suchtext = '?spiel=ABC234';
+    const { absenden } = zeigeAnsicht('code');
+    expect(elemente.get('#code-eingabe').hidden).toBe(true);
+
+    schickeCodeAb(absenden, 'falsch');
+
+    expect(aktionen.beitreten)
+      .toHaveBeenCalledWith('Anna', { privat: false, code: 'ABC234' });
+  });
+
+  test('schnelles und privates Spiel ignorieren einen alten Feldinhalt', () => {
+    const { absenden } = zeigeAnsicht('privat');
+
+    schickeCodeAb(absenden, 'ABC-234');
+
+    expect(aktionen.beitreten)
+      .toHaveBeenCalledWith('Anna', { privat: true, code: null });
   });
 });
 

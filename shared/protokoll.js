@@ -2,7 +2,7 @@
  * protokoll.js – gemeinsame Begriffe von Server und Browser.
  *
  * Beide Seiten laden dieselbe Datei: Ereignisse, Zugform, Fehlertexte,
- * Gründe und Namensregel. Hier dürfen keine Node-Funktionen oder
+ * Gründe, Namensregel und Coderegel. Hier dürfen keine Node-Funktionen oder
  * Browserzugriffe stehen.
  *
  * Inhalt (Cmd+F nach „== 2.“):
@@ -10,7 +10,7 @@
  *   == 2. Fehler und sichtbare Texte
  *   == 3. Status, Endegründe und Grenzen
  *   == 4. Gemeinsame Namensregel
- *   == 5. Zeichen im Einladungscode
+ *   == 5. Gemeinsame Coderegel
  *
  * Benutzt von: Server und client/js. Wird über /shared/protokoll.js
  * ausgeliefert.
@@ -56,6 +56,7 @@ export const FEHLER = Object.freeze({
   BEREITS_IN_WARTESCHLANGE: 'BEREITS_IN_WARTESCHLANGE',
   BEREITS_IN_PARTIE: 'BEREITS_IN_PARTIE',
   CODE_UNBEKANNT: 'CODE_UNBEKANNT',
+  ZU_VIELE_CODEVERSUCHE: 'ZU_VIELE_CODEVERSUCHE',
   INTERNER_FEHLER: 'INTERNER_FEHLER',
   WARTEZEIT_ABGELAUFEN: 'WARTEZEIT_ABGELAUFEN',
   SERVER_VOLL: 'SERVER_VOLL',
@@ -71,8 +72,12 @@ export const FEHLER_TEXT = Object.freeze({
   [FEHLER.ZU_VIELE_ANFRAGEN]: 'Zu viele Anfragen. Bitte kurz warten.',
   [FEHLER.BEREITS_IN_WARTESCHLANGE]: 'Du suchst bereits nach einem Gegner.',
   [FEHLER.BEREITS_IN_PARTIE]: 'Du bist bereits in einer Partie.',
-  [FEHLER.CODE_UNBEKANNT]:
-    'Dieses private Spiel gibt es nicht mehr. Bitte um einen neuen Link.',
+  // Tippfehler, abgelaufen oder schon benutzt: Für alle gilt derselbe Text.
+  [FEHLER.CODE_UNBEKANNT]: 'Zu diesem Raumcode gibt es kein offenes Spiel. '
+    + 'Prüfe den Code oder bitte um einen neuen Link.',
+  // ACHTUNG: „eine Minute“ wie CODE_FENSTER_MS in server/socket/gateway.js.
+  [FEHLER.ZU_VIELE_CODEVERSUCHE]: 'Zu viele Codeversuche. Bitte warte eine '
+    + 'Minute und versuche es dann erneut.',
   [FEHLER.INTERNER_FEHLER]: 'Es ist ein interner Fehler aufgetreten.',
   [FEHLER.WARTEZEIT_ABGELAUFEN]:
     'Die Wartezeit ist abgelaufen. Bitte starte ein neues Spiel.',
@@ -165,6 +170,32 @@ export function bereinigeName(text) {
   return gekuerzt.trim();
 }
 
-// == 5. Zeichen im Einladungscode ========================================
+// == 5. Gemeinsame Coderegel =============================================
 // 0, O, 1, I und L fehlen: Beim Abtippen verwechselt man sie leicht.
+// SCHUTZ: 31 Zeichen an 6 Stellen ergeben 31^6, rund 887 Millionen Codes.
+// Wer Zeichen streicht, muss CODE_LAENGE so erhöhen, dass es nicht weniger
+// werden; protokoll.test.js prüft das.
 export const CODE_ZEICHEN = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+// \s sind Leerzeichen aller Art, \p{Pd} Binde- und Gedankenstriche. Sie und
+// der Unterstrich trennen beim Abtippen nur Gruppen wie in ABC-234.
+const CODE_TRENNER = /[\s_\p{Pd}]/gu;
+
+/**
+ * Bringt eine Eingabe in die Form, die der Server vergibt: Trennzeichen
+ * fallen weg, Buchstaben werden groß. Prüft nichts; das macht hatCodeForm.
+ * O wird nicht zu 0 und I nicht zu 1: Keines davon steht im Zeichensatz.
+ * @param {string} text
+ * @returns {string}
+ */
+export function normalisiereCode(text) {
+  return text.replace(CODE_TRENNER, '').toUpperCase();
+}
+
+// SCHUTZ: Streng nur die kanonische Form; Kleinbuchstaben oder Trennzeichen
+// müssen vorher durch normalisiereCode.
+export function hatCodeForm(code) {
+  if (typeof code !== 'string') return false;
+  if (code.length !== GRENZEN.CODE_LAENGE) return false;
+  return [...code].every((zeichen) => CODE_ZEICHEN.includes(zeichen));
+}

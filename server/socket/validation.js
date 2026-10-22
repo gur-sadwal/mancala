@@ -2,19 +2,20 @@
  * validation.js – Nutzdaten vor der Spiellogik prüfen.
  *
  * Prüft Typen und Felder der Ereignisse mit Nutzdaten ohne Umwandlung.
- * Namen werden mit derselben Regel wie im Browser bereinigt.
+ * Namen und Raumcodes werden mit derselben Regel wie im Browser bereinigt.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Prüfhilfen
  *   == 2. Spielernamen
- *   == 3. Schema je Ereignis
- *   == 4. Schema anwenden
+ *   == 3. Raumcodes
+ *   == 4. Schema je Ereignis
+ *   == 5. Schema anwenden
  *
  * Benutzt von: Handler. Benutzt shared/protokoll.js; braucht keinen Server.
  */
 
 import {
-  EREIGNIS, GRENZEN, ZUG_TYP, bereinigeName,
+  EREIGNIS, GRENZEN, ZUG_TYP, bereinigeName, normalisiereCode, hatCodeForm,
 } from '../../shared/protokoll.js';
 
 // == 1. Prüfhilfen =======================================================
@@ -41,7 +42,17 @@ export function ermittleSpielername(wert) {
   return bereinigt.length > 0 ? bereinigt : ERSATZ_NAME;
 }
 
-// == 3. Schema je Ereignis ===============================================
+// == 3. Raumcodes ========================================================
+// SCHUTZ: Verbindlich ist auch hier der Server. Die Lobby sieht nur die
+// kanonische Form, wie util/ids.js sie vergibt; alles andere ergibt null.
+export function ermittleEinladungsCode(wert) {
+  if (typeof wert !== 'string') return null;
+
+  const code = normalisiereCode(wert);
+  return hatCodeForm(code) ? code : null;
+}
+
+// == 4. Schema je Ereignis ===============================================
 // Abbrechen, Aufgeben und Revanche brauchen keine Nutzdaten.
 // Beim erneuten Suchen ist das Objekt Pflicht, der Name darin freiwillig.
 const SCHEMA = Object.freeze({
@@ -60,7 +71,7 @@ const SCHEMA = Object.freeze({
   [EREIGNIS.REVANCHE]: () => true,
 });
 
-// == 4. Schema anwenden ==================================================
+// == 5. Schema anwenden ==================================================
 export function istGueltig(ereignis, nutzdaten) {
   const pruefer = SCHEMA[ereignis];
   if (!pruefer) return false;

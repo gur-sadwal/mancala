@@ -24,7 +24,9 @@ import {
   beendeVorzeitig,
   beruehre,
 } from '../spiel/partie.js';
-import { istGueltig, ermittleSpielername } from './validation.js';
+import {
+  istGueltig, ermittleSpielername, ermittleEinladungsCode,
+} from './validation.js';
 import { logger } from '../util/logger.js';
 import {
   EREIGNIS,
@@ -39,8 +41,13 @@ import {
 const PARTIE_RUHE_MS = GRENZEN.PARTIE_RUHE_MINUTEN * 60 * 1000;
 const WARTEN_MS = GRENZEN.WARTEN_MINUTEN * 60 * 1000;
 
-/** Die inneren Funktionen teilen io, Lobby, Manager und Ratenbegrenzer. */
-export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
+/**
+ * Die inneren Funktionen teilen io, Lobby, Manager und die Begrenzer für
+ * Nachrichten und Codeversuche.
+ */
+export function erzeugeHandler({
+  io, lobby, manager, ratenbegrenzer, codeBegrenzer,
+}) {
   // Das return darf oben stehen: Funktionsdeklarationen sind im ganzen Block
   // schon bekannt (Hoisting).
   return { registriere, beendeKontrolliert, pruefeRevanchen, raeumeAuf };
@@ -161,14 +168,23 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     return true;
   }
 
-  // Ein alter oder falscher Link bekommt eine verständliche Fehlermeldung.
-  function betreteMitCode(socket, name, code) {
+  // Ein alter Link oder falsch abgetippter Code bekommt eine verständliche
+  // Fehlermeldung.
+  function betreteMitCode(socket, name, eingabe) {
     if (lobby.enthaelt(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_WARTESCHLANGE);
       return false;
     }
 
-    const ersteller = lobby.nimmPrivat(code.toUpperCase());
+    // SCHUTZ: Jeder Versuch zählt, auch ein formal falscher. So kann eine
+    // Verbindung Codes nur langsam raten.
+    if (!codeBegrenzer.erlaubt(socket.id)) {
+      sendeFehler(socket, FEHLER.ZU_VIELE_CODEVERSUCHE);
+      return false;
+    }
+
+    const code = ermittleEinladungsCode(eingabe);
+    const ersteller = code ? lobby.nimmPrivat(code) : null;
 
     if (!ersteller || !socketVon(ersteller.socketId)) {
       sendeFehler(socket, FEHLER.CODE_UNBEKANNT);
@@ -317,7 +333,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     starteMitPaar(a, b);
   }
 
-  // SCHUTZ: Den Ratenzähler vor Lobby und Partie vergessen. So bleibt er
+  // SCHUTZ: Die Zähler vor Lobby und Partie vergessen. So bleiben sie
   // auch bei einem späteren Aufräumfehler nicht liegen.
   function aufTrennen(socket, grund) {
     // Socket.io hat den Socket schon aus io.sockets entfernt: socketVon findet
@@ -325,6 +341,7 @@ export function erzeugeHandler({ io, lobby, manager, ratenbegrenzer }) {
     logger.info('Verbindung getrennt', { socketId: socket.id, grund });
 
     ratenbegrenzer.vergiss(socket.id);
+    codeBegrenzer.vergiss(socket.id);
 
     if (lobby.entferne(socket.id)) sendePositionen();
     lasseRevancheVerfallen(socket.id);

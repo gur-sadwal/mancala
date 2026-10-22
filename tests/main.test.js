@@ -225,6 +225,27 @@ describe('Sichtbare Serverfehler', () => {
       protokoll.FEHLER_TEXT[protokoll.FEHLER.WARTEZEIT_ABGELAUFEN]);
   });
 
+  test('ein unbekannter Raumcode wird in der Anmeldung erklärt', () => {
+    sende('connect');
+    sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.CODE_UNBEKANNT });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.CODE_UNBEKANNT]);
+    expect(window.history.replaceState).toHaveBeenCalledWith(null, '', '/');
+  });
+
+  test('zu viele Codeversuche werden in der Anmeldung erklärt', () => {
+    sende('connect');
+    sende(protokoll.EREIGNIS.FEHLER, {
+      code: protokoll.FEHLER.ZU_VIELE_CODEVERSUCHE,
+    });
+
+    expect(ansichten.anmelden.zeige).toHaveBeenLastCalledWith(true);
+    expect(ansichten.anmelden.melde).toHaveBeenLastCalledWith(
+      protokoll.FEHLER_TEXT[protokoll.FEHLER.ZU_VIELE_CODEVERSUCHE]);
+  });
+
   test('fehlende Partie führt mit Erklärung zur Anmeldung', () => {
     starte();
     sende(protokoll.EREIGNIS.FEHLER, { code: protokoll.FEHLER.KEINE_PARTIE });

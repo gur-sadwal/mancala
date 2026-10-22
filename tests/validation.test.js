@@ -15,6 +15,7 @@ import {
   istObjekt,
   istGanzzahlZwischen,
   ermittleSpielername,
+  ermittleEinladungsCode,
   istGueltig,
 } from '../server/socket/validation.js';
 
@@ -214,6 +215,31 @@ describe('bereinigeName – Akzente, Normalform und Leserichtung', () => {
   test('Steuerzeichen der Leserichtung werden entfernt (U+2066 bis U+2069)', () => {
     const name = '\u2066Anna\u2069 \u2067Ben\u2068';
     expect(bereinigeName(name)).toBe('Anna Ben');
+  });
+});
+
+describe('ermittleEinladungsCode – verbindliche Prüfung', () => {
+  test('macht aus erlaubten Schreibweisen die kanonische Form', () => {
+    const schreibweisen = ['ABC234', 'abc234', 'ABC-234', ' abc 234 ',
+      'a_b-c 234'];
+    for (const eingabe of schreibweisen) {
+      expect(ermittleEinladungsCode(eingabe)).toBe('ABC234');
+    }
+  });
+
+  test('lehnt falsche Länge und nicht erlaubte Zeichen ab', () => {
+    const falsch = ['', '   ', 'ABC23', 'ABC2345', 'ABC-2345', 'ABC0O1',
+      'ABC.234', '​ABC234', '<b>ABC</b>', 'A'.repeat(1000)];
+    for (const eingabe of falsch) {
+      expect(ermittleEinladungsCode(eingabe)).toBeNull();
+    }
+  });
+
+  test('lehnt falsche Typen ohne Umwandlung ab', () => {
+    const tarnung = { toString: () => 'ABC234' };
+    for (const wert of [null, undefined, 123456, ['ABC234'], tarnung]) {
+      expect(ermittleEinladungsCode(wert)).toBeNull();
+    }
   });
 });
 

@@ -1,5 +1,5 @@
 /**
- * warten.js – Warteposition, privater Einladungslink und Wartezeit.
+ * warten.js – Warteposition, Raumcode, Einladungslink und Wartezeit.
  * Die Suche und ihre Position kommen vom Server; Abbrechen ist sofort sichtbar.
  * Die Wartezeit ist nur Anzeige; die Frist prüft der Server.
  * Inhalt: == 1. Einrichtung · == 2. Aktionen · == 3. Wartezeit
@@ -12,10 +12,24 @@ import { $, zeige, setzeText } from './dom.js';
 // EINSTELLBAR: So oft wird die angezeigte Wartezeit erneuert.
 const UHR_TAKT_MS = 1000;
 
+// EINSTELLBAR: So viele Zeichen stehen im angezeigten Raumcode je Gruppe.
+const CODE_GRUPPE = 3;
+
 export function wartezeitText(sekunden) {
   const minuten = Math.floor(sekunden / 60);
   const rest = String(sekunden % 60).padStart(2, '0');
   return `${minuten}:${rest}`;
+}
+
+// Kurze Gruppen liest man leichter vor und ab: ABC234 wird zu ABC-234.
+// ACHTUNG: normalisiereCode in shared/protokoll.js entfernt den Bindestrich
+// beim Eingeben wieder; der Link enthält den Code ohne Gruppen.
+export function gruppiereCode(code) {
+  const gruppen = [];
+  for (let i = 0; i < code.length; i += CODE_GRUPPE) {
+    gruppen.push(code.slice(i, i + CODE_GRUPPE));
+  }
+  return gruppen.join('-');
 }
 
 // == 1. Einrichtung ======================================================
@@ -27,6 +41,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
   const fehlerAnzeige = $('#warten-fehler');
   const knopfAbbrechen = $('#knopf-abbrechen');
   const privatBlock = $('#warten-privat');
+  const codeAnzeige = $('#warten-code');
   const feldLink = $('#feld-link');
   const knopfKopieren = $('#knopf-kopieren');
   const kopierStatus = $('#kopier-status');
@@ -129,6 +144,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
       zeige(privatBlock, Boolean(einladung));
 
       if (einladung) {
+        setzeText(codeAnzeige, gruppiereCode(einladung));
         // Der eigene Seitenpfad bleibt erhalten; nur der Einladungscode kommt
         // dazu.
         feldLink.value = `${window.location.origin}${

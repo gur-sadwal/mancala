@@ -1,5 +1,5 @@
 /**
- * anmelden.js – Namensformular und Auswahl der Spielart.
+ * anmelden.js – Namensformular, Auswahl der Spielart und Raumcode.
  * Der Client prüft für direkte Rückmeldung; verbindlich prüft der Server.
  * Inhalt: == 1. Einrichtung · == 2. Formularaktionen · == 3. Ansicht
  * Benutzt von main.js; benutzt dom.js und shared/protokoll.js.
@@ -7,7 +7,7 @@
 
 import { $, zeige, setzeText } from './dom.js';
 import {
-  bereinigeName, NAME_VERBOTEN, CODE_ZEICHEN, GRENZEN,
+  bereinigeName, NAME_VERBOTEN, normalisiereCode, hatCodeForm, GRENZEN,
 } from '/shared/protokoll.js';
 
 // == 1. Einrichtung ======================================================
@@ -19,20 +19,28 @@ const UNGUELTIGER_LINK = 'Der Einladungslink ist ungültig oder unvollständig. 
 const OHNE_VERBINDUNG = 'Ohne Verbindung wurde dein Beitritt nicht gesendet. '
   + 'Versuche es erneut, sobald die Verbindung wieder steht.';
 
+const CODE_FEHLT = 'Bitte gib den Raumcode ein.';
+const CODE_UNGUELTIG = 'Das ist kein gültiger Raumcode. Bitte prüfe die '
+  + `${GRENZEN.CODE_LAENGE} Zeichen.`;
+
+// Dieselbe Regel wie auf dem Server (validation.js): erst normalisieren,
+// dann streng prüfen. Liefert den kanonischen Code oder null.
+export function leseCode(text) {
+  const code = normalisiereCode(text);
+  return hatCodeForm(code) ? code : null;
+}
+
 // SCHUTZ: Der Code kommt aus der Adresse und ist frei veränderbar. Nur Codes
 // mit Länge und Zeichensatz der Server-Codes gehen hinaus; ein Link mit 3000
 // Zeichen würde sonst die Verbindung trennen (1 KB Puffergrenze des Servers).
-// Der Server prüft den Code trotzdem selbst. Er nimmt auch Kleinbuchstaben
-// an, deshalb hier zuerst in Großbuchstaben umwandeln.
+// Der Server prüft den Code trotzdem selbst.
 export function leseEinladung(suchtext) {
   const roh = new URLSearchParams(suchtext).get('spiel');
   if (!roh) return null;
 
-  // Chat-Programme hängen gern ein Leerzeichen an den Link.
-  const code = roh.trim().toUpperCase();
-  const laengeStimmt = code.length === GRENZEN.CODE_LAENGE;
-  const zeichenStimmen = [...code].every((z) => CODE_ZEICHEN.includes(z));
-  return laengeStimmt && zeichenStimmen ? code : null;
+  // Chat-Programme hängen gern ein Leerzeichen an den Link; leseCode
+  // entfernt es wie die Bindestriche der gruppierten Anzeige.
+  return leseCode(roh);
 }
 
 export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
@@ -43,6 +51,8 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   const titel = $('#t-anmelden');
   const umschalter = $('#spielart');
   const einladungHinweis = $('#einladung');
+  const codeBlock = $('#code-eingabe');
+  const feldCode = $('#feld-code');
   const knopf = $('#knopf-anmelden');
 
   let einladung = null;
@@ -66,8 +76,15 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     return formular.elements.spielart.value === 'privat';
   }
 
-  function aktualisiereKnopf() {
-    if (einladung) {
+  // Ein Code aus dem Link hat Vorrang; dann bleibt das Codefeld versteckt.
+  function istCodeGewaehlt() {
+    return !einladung && formular.elements.spielart.value === 'code';
+  }
+
+  function aktualisiereAuswahl() {
+    zeige(codeBlock, istCodeGewaehlt());
+
+    if (einladung || istCodeGewaehlt()) {
       setzeText(knopf, 'Spiel beitreten');
     } else if (istPrivatGewaehlt()) {
       setzeText(knopf, 'Privates Spiel erstellen');
@@ -95,13 +112,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
 
     zeige(umschalter, !einladung);
     zeige(einladungHinweis, Boolean(einladung));
-    aktualisiereKnopf();
+    aktualisiereAuswahl();
   }
 
   // SCHUTZ: Die gemeinsame Namensregel vermeidet abweichende Vorprüfungen.
-  function beiAbsenden(ereignis) {
-    ereignis.preventDefault();
-
+  // Liefert den bereinigten Namen oder null; die Meldung steht dann schon.
+  function pruefeName() {
     // Verbotene Zeichen erklären, statt den Namen unbemerkt zu verändern.
     const verboten = [...feldName.value].some(
       (zeichen) => NAME_VERBOTEN.includes(zeichen),
@@ -109,7 +125,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     if (verboten) {
       zeigeFehler('Die Zeichen < und > sind im Namen nicht erlaubt.');
       feldName.focus();
-      return;
+      return null;
     }
 
     const name = bereinigeName(feldName.value);
@@ -117,22 +133,50 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     if (name.length === 0) {
       zeigeFehler('Bitte gib einen Namen ein.');
       feldName.focus();
-      return;
+      return null;
     }
+    return name;
+  }
 
-    feldName.value = name;
-    zeigeFehler('');
+  // Ohne Codefeld gibt es nichts zu prüfen. Ein leeres Feld bekommt eine
+  // eigene, kürzere Meldung als ein falsch abgetippter Code.
+  function pruefeCodeFeld() {
+    if (!istCodeGewaehlt() || leseCode(feldCode.value)) return true;
 
+    const leer = normalisiereCode(feldCode.value) === '';
+    zeigeFehler(leer ? CODE_FEHLT : CODE_UNGUELTIG);
+    feldCode.focus();
+    return false;
+  }
+
+  // Der Code aus dem Link, aus dem Feld oder null für eine neue Suche.
+  function gewaehlterCode() {
+    if (einladung) return einladung;
+    return istCodeGewaehlt() ? leseCode(feldCode.value) : null;
+  }
+
+  function merkeName(name) {
     try {
       window.localStorage.setItem(SPEICHER_NAME, name);
     } catch {
       // Der Name gilt trotzdem für diese Anmeldung; nur das Merken entfällt.
     }
+  }
+
+  function beiAbsenden(ereignis) {
+    ereignis.preventDefault();
+
+    const name = pruefeName();
+    if (name === null || !pruefeCodeFeld()) return;
+
+    feldName.value = name;
+    zeigeFehler('');
+    merkeName(name);
 
     // main.js merkt sich den bereinigten Namen und gibt die Suche wieder frei.
     beiAnmeldung(name);
     const gesendet = aktionen.beitreten(
-      name, { privat: istPrivatGewaehlt(), code: einladung },
+      name, { privat: istPrivatGewaehlt(), code: gewaehlterCode() },
     );
 
     // Ohne Verbindung geht der Beitritt nicht hinaus; die Ansicht sagt das.
@@ -142,12 +186,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   // == 3. Ansicht ==========================================================
   function meldeListenerAn() {
     formular.addEventListener('submit', beiAbsenden);
-    formular.addEventListener('change', aktualisiereKnopf);
+    formular.addEventListener('change', aktualisiereAuswahl);
   }
 
   function meldeListenerAb() {
     formular.removeEventListener('submit', beiAbsenden);
-    formular.removeEventListener('change', aktualisiereKnopf);
+    formular.removeEventListener('change', aktualisiereAuswahl);
   }
 
   // Listener gelten nur für die sichtbare Ansicht. Gleiche Rückrufe werden

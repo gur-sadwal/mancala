@@ -4,7 +4,7 @@
  *   == 1. Schaltflächen
  *   == 2. Formular
  *   == 3. Umschalter
- *   == 4. Einladungslink
+ *   == 4. Raumcode und Einladungslink
  *   == 5. Ladeanzeige
  *   == 6. Anleitung
  *   == 7. Dialog
@@ -145,6 +145,14 @@
   }
 }
 
+/* Großbuchstaben und Abstand wie beim angezeigten Raumcode. Der Wert bleibt
+ * wie getippt; normalisiereCode macht ihn erst beim Absenden groß.
+ */
+.feld__eingabe--code {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .feld__hinweis {
   font-size: 1rem;
   color: var(--farbe-text-leise);
@@ -232,7 +240,7 @@
   }
 }
 
-/* == 4. Einladungslink ==================================================== */
+/* == 4. Raumcode und Einladungslink ======================================= */
 
 .einladungslink {
   inline-size: 100%;
@@ -240,6 +248,30 @@
   flex-direction: column;
   gap: var(--abstand-klein);
   text-align: start;
+}
+
+/* Zum Vorlesen und Abtippen: groß, gesperrt und immer in einer Zeile.
+ * Ein Klick markiert den ganzen Code.
+ */
+.raumcode {
+  display: block;
+  padding: var(--abstand-klein) var(--abstand);
+
+  border: 2px dashed var(--farbe-rand);
+  border-radius: var(--radius);
+  background-color: var(--farbe-grund);
+  color: var(--farbe-text);
+
+  /* WCAG: Auch bei 320px Breite bleibt der Code mindestens 1,75rem groß. */
+  font-size: clamp(1.75rem, 9vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-align: center;
+  white-space: nowrap;
+
+  /* Ältere Safari-Versionen kennen user-select nur mit -webkit-. */
+  -webkit-user-select: all;
+  user-select: all;
 }
 
 /* == 5. Ladeanzeige ======================================================= */

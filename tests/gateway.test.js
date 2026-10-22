@@ -144,6 +144,31 @@ describe('Gateway: Verbindungen', () => {
   });
 });
 
+describe('Gateway: Raten von Raumcodes', () => {
+  test('wer Codes rät, wird gebremst; andere treten bei', async () => {
+    const anna = verbindeRoh();
+    const rater = verbindeRoh();
+    const ben = verbindeRoh();
+    await Promise.all([anna.bereit, rater.bereit, ben.bereit]);
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna', privat: true });
+    const { code } = await anna.erhalte(EREIGNIS.PRIVAT);
+
+    // Sechs Versuche liegen unter der allgemeinen Grenze von 20 je Sekunde.
+    for (let i = 0; i < 6; i += 1) {
+      rater.sende(EREIGNIS.BEITRETEN, { name: 'Rater', code: 'ZZZZZZ' });
+    }
+    const fehler = () => rater.zustand.empfangen
+      .filter(([name]) => name === EREIGNIS.FEHLER)
+      .map(([, daten]) => daten.code);
+    await warteBis(() => fehler().length === 6);
+    expect(fehler()[0]).toBe(FEHLER.CODE_UNBEKANNT);
+    expect(fehler()[5]).toBe(FEHLER.ZU_VIELE_CODEVERSUCHE);
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: code.toLowerCase() });
+    expect((await ben.erhalte(EREIGNIS.START)).gegner.name).toBe('Anna');
+  });
+});
+
 describe('Gateway: Obergrenze für Verbindungen', () => {
   test('über der Grenze lehnt der Server ab; ein freier Platz wird wieder vergeben', async () => {
     await gateway.herunterfahren();

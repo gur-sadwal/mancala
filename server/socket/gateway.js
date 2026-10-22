@@ -27,6 +27,14 @@ const AUFRAEUM_TAKT_MS = 60 * 1000;
 // EINSTELLBAR: Höchstens so viele gleichzeitige Browserverbindungen; passt
 // zu 200 Partien und 100 Wartenden. Tests übergeben eine kleinere Grenze.
 const VERBINDUNGEN_MAX = 500;
+// EINSTELLBAR: Höchstens so viele Raumcodes je Verbindung und Minute; das
+// lässt Platz für ein paar Tippfehler.
+// SCHUTZ: Statt 20 Versuchen je Sekunde sind es so 5 je Minute. Bei
+// höchstens 100 offenen privaten Spielen trifft ein geratener Code mit
+// etwa 1 zu 8,9 Millionen (31^6 / 100).
+// ACHTUNG: Die Minute nennt auch FEHLER_TEXT in shared/protokoll.js.
+const CODE_VERSUCHE_MAX = 5;
+const CODE_FENSTER_MS = 60 * 1000;
 // EINSTELLBAR: Nachrichten höchstens 1 KB, Ping alle 20 s, 20 s Antwortfrist.
 // SCHUTZ: Größere Nachrichten trennen nur diese Verbindung vor dem Handler.
 const SOCKET_OPTIONEN = {
@@ -47,7 +55,12 @@ export function erzeugeGateway(httpServer, {
 }) {
   const io = new Server(httpServer, SOCKET_OPTIONEN);
   const ratenbegrenzer = erzeugeRatenbegrenzer();
-  const handler = erzeugeHandler({ io, lobby, manager, ratenbegrenzer });
+  const codeBegrenzer = erzeugeRatenbegrenzer(
+    CODE_VERSUCHE_MAX, CODE_FENSTER_MS,
+  );
+  const handler = erzeugeHandler({
+    io, lobby, manager, ratenbegrenzer, codeBegrenzer,
+  });
   io.use((socket, weiter) => begrenzeVerbindungen(io, verbindungenMax, weiter));
   io.on('connection', (socket) => registriereVerbindung(socket, handler));
   const aufraeumer = starteTakt(

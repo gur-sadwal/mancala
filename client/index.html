@@ -107,9 +107,43 @@
               name="spielart"
               value="privat"
             />
-            Privates Spiel mit Link
+            Privates Spiel erstellen
+          </label>
+
+          <label class="umschalter__option" for="spielart-code">
+            <input
+              id="spielart-code"
+              type="radio"
+              name="spielart"
+              value="code"
+            />
+            Mit Raumcode beitreten
           </label>
         </fieldset>
+
+        <!-- anmelden.js zeigt das Feld nur bei „Mit Raumcode beitreten“. -->
+        <div id="code-eingabe" class="feld" hidden>
+          <label class="feld__beschriftung"
+            for="feld-code">Raumcode eingeben</label>
+          <!--
+            ACHTUNG: 6 Zeichen wie GRENZEN.CODE_LAENGE in shared/protokoll.js.
+            maxlength lässt Platz für Leerzeichen und Bindestriche.
+          -->
+          <input
+            id="feld-code"
+            class="feld__eingabe feld__eingabe--code"
+            name="code"
+            type="text"
+            maxlength="20"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+          />
+          <p class="feld__hinweis">
+            6 Zeichen, zum Beispiel ABC-234. Groß- und Kleinschreibung,
+            Leerzeichen und Bindestriche spielen keine Rolle.
+          </p>
+        </div>
 
         <p id="einladung" class="meldung meldung--info" hidden>
           Du wurdest zu einem privaten Spiel eingeladen. Gib deinen Namen ein
@@ -180,9 +214,21 @@
         Wartezeit: <time id="warten-zeit" datetime="PT0S">0:00</time>
       </p>
 
+      <!--
+        output lässt sich wie ein Eingabefeld mit label for beschriften. Der
+        Code bleibt normaler Text und lässt sich markieren.
+      -->
       <div id="warten-privat" class="einladungslink" hidden>
+        <label class="feld__beschriftung" for="warten-code">
+          Raumcode für deinen Mitspieler:
+        </label>
+        <output id="warten-code" class="raumcode"></output>
+        <p class="feld__hinweis">
+          Er wählt bei der Anmeldung „Mit Raumcode beitreten“ und tippt ihn ab.
+        </p>
+
         <label class="feld__beschriftung" for="feld-link">
-          Schicke diesen Link an deinen Mitspieler:
+          Oder schicke ihm diesen Link:
         </label>
         <input id="feld-link" class="feld__eingabe" type="text" readonly />
         <button type="button" id="knopf-kopieren" class="knopf knopf--haupt">

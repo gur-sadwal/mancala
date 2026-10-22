@@ -15,7 +15,9 @@ import { erzeugeHandler } from '../server/socket/handlers.js';
 import { erzeugeLobby, REVANCHE_FRIST_MS } from '../server/spiel/lobby.js';
 import { erzeugeManager } from '../server/spiel/manager.js';
 import { erzeugeRatenbegrenzer } from '../server/socket/rateLimit.js';
-import { EREIGNIS, FEHLER, GRUND, GRENZEN, STATUS } from '../shared/protokoll.js';
+import {
+  EREIGNIS, FEHLER, GRUND, GRENZEN, STATUS, hatCodeForm,
+} from '../shared/protokoll.js';
 
 /** Ein Zug in der Form, die der Browser sendet: { type: "MOVE", pitIndex }. */
 const zug = (pitIndex) => ({ type: 'MOVE', pitIndex });
@@ -53,11 +55,13 @@ function imProtokoll(text) {
  *
  * Lobby, Manager und Ratenbegrenzer lassen sich ersetzen – etwa durch eine
  * Lobby, die absichtlich wirft, oder einen Ratenbegrenzer mit kleiner Grenze.
+ * Der Begrenzer für Codeversuche ist ebenso austauschbar.
  */
 function erzeugeUmgebung({
   lobby = erzeugeLobby(),
   manager = erzeugeManager(),
   ratenbegrenzer = erzeugeRatenbegrenzer(),
+  codeBegrenzer = erzeugeRatenbegrenzer(),
 } = {}) {
   const sockets = new Map();   // socketId -> Attrappe, wie io.sockets.sockets
   const raeume = new Map();    // Raum (= Spiel-ID) -> Menge der socketIds
@@ -75,7 +79,9 @@ function erzeugeUmgebung({
     },
   };
 
-  const handler = erzeugeHandler({ io, lobby, manager, ratenbegrenzer });
+  const handler = erzeugeHandler({
+    io, lobby, manager, ratenbegrenzer, codeBegrenzer,
+  });
 
   /** Ein verbundener Browser: merkt sich alles, was bei ihm ankommt. */
   function verbinde(id) {
@@ -126,7 +132,10 @@ function erzeugeUmgebung({
     return socket;
   }
 
-  return { handler, lobby, manager, ratenbegrenzer, io, raeume, verbinde };
+  return {
+    handler, lobby, manager, ratenbegrenzer, codeBegrenzer, io, raeume,
+    verbinde,
+  };
 }
 
 /**
@@ -151,8 +160,8 @@ function schnellesSpiel(optionen) {
 }
 
 /** Anna erstellt ein privates Spiel; `code` ist der Code für den Link. */
-function privatesSpiel() {
-  const umgebung = erzeugeUmgebung();
+function privatesSpiel(optionen) {
+  const umgebung = erzeugeUmgebung(optionen);
   const anna = umgebung.verbinde('a');
 
   anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna', privat: true });
@@ -566,6 +575,146 @@ describe('Handler: privates Spiel', () => {
     ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
 
     expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
+  });
+});
+
+describe('Handler: Raumcode von Hand eingegeben', () => {
+  const vorn = (code) => code.slice(0, 3);
+  const hinten = (code) => code.slice(3);
+
+  test('der Server vergibt nur Codes in kanonischer Form', () => {
+    const { code } = privatesSpiel();
+    expect(hatCodeForm(code)).toBe(true);
+  });
+
+  test.each([
+    ['gruppiert wie in der Anzeige', (c) => `${vorn(c)}-${hinten(c)}`],
+    ['klein mit Leerzeichen', (c) => ` ${vorn(c)} ${hinten(c)} `.toLowerCase()],
+    ['mit Unterstrich', (c) => `${vorn(c)}_${hinten(c)}`],
+    ['mit Gedankenstrich', (c) => `${vorn(c)}–${hinten(c)}`],
+  ])('%s startet die Partie', (titel, schreibweise) => {
+    const { anna, code, lobby, verbinde } = privatesSpiel();
+    const ben = verbinde('b');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: schreibweise(code) });
+
+    expect(anna.letzte(EREIGNIS.START).daten.gegner.name).toBe('Ben');
+    expect(ben.letzte(EREIGNIS.START).daten.gegner.name).toBe('Anna');
+    expect(lobby.anzahl()).toBe(0);
+  });
+
+  test('falsche Formen melden CODE_UNBEKANNT; der Code bleibt gültig', () => {
+    const { anna, code, verbinde } = privatesSpiel();
+    const ben = verbinde('b');
+
+    for (const falsch of ['', '   ', `${code}2`, code.slice(1), `${code}<`]) {
+      ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: falsch });
+      expect(ben.letzte(EREIGNIS.FEHLER).daten.code)
+        .toBe(FEHLER.CODE_UNBEKANNT);
+    }
+    expect(anna.letzte(EREIGNIS.START)).toBeUndefined();
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+    expect(ben.letzte(EREIGNIS.START).daten.gegner.name).toBe('Anna');
+  });
+
+  test('auch eine eingetippte Variante gilt nur einmal', () => {
+    const { code, verbinde } = privatesSpiel();
+    const klein = code.toLowerCase();
+    const gruppiert = `${vorn(code)}-${hinten(code)}`;
+    verbinde('b').sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: klein });
+    const carl = verbinde('c');
+
+    carl.sende(EREIGNIS.BEITRETEN, { name: 'Carl', code: gruppiert });
+
+    expect(carl.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
+  });
+});
+
+describe('Handler: Grenze für Codeversuche je Verbindung', () => {
+  /** Privates Spiel mit höchstens zwei Codeversuchen je Minute. */
+  function mitGrenze() {
+    let jetzt = 0;
+    const codeBegrenzer = erzeugeRatenbegrenzer(2, 60_000, () => jetzt);
+    const umgebung = privatesSpiel({ codeBegrenzer });
+    const spaeter = (ms) => { jetzt += ms; };
+    return { ...umgebung, spaeter };
+  }
+
+  function fehlerVon(spieler) {
+    return spieler.alle(EREIGNIS.FEHLER).map((n) => n.daten.code);
+  }
+
+  test('nach zu vielen Versuchen hilft auch der richtige Code nicht', () => {
+    const { anna, code, lobby, verbinde } = mitGrenze();
+    const ben = verbinde('b');
+
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: 'ZZZZZZ' });
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: 'YYYYYY' });
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+
+    expect(fehlerVon(ben)).toEqual([
+      FEHLER.CODE_UNBEKANNT,
+      FEHLER.CODE_UNBEKANNT,
+      FEHLER.ZU_VIELE_CODEVERSUCHE,
+    ]);
+    expect(anna.letzte(EREIGNIS.START)).toBeUndefined();
+    // Der private Platz bleibt erhalten; der Code wurde nicht verbraucht.
+    expect(lobby.enthaelt('a')).toBe(true);
+  });
+
+  test('die Grenze gilt je Verbindung; andere treten normal bei', () => {
+    const { anna, code, verbinde } = mitGrenze();
+    const ben = verbinde('b');
+    for (let i = 0; i < 3; i += 1) {
+      ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: 'ZZZZZZ' });
+    }
+    const carl = verbinde('c');
+
+    carl.sende(EREIGNIS.BEITRETEN, { name: 'Carl', code });
+
+    expect(anna.letzte(EREIGNIS.START).daten.gegner.name).toBe('Carl');
+  });
+
+  test('nach Ablauf des Zeitfensters darf dieselbe Verbindung wieder', () => {
+    const { anna, code, verbinde, spaeter } = mitGrenze();
+    const ben = verbinde('b');
+    for (let i = 0; i < 3; i += 1) {
+      ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: 'ZZZZZZ' });
+    }
+
+    spaeter(60_000);
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
+
+    expect(anna.letzte(EREIGNIS.START).daten.gegner.name).toBe('Ben');
+  });
+
+  test('wer selbst privat wartet, verbraucht keinen Versuch', () => {
+    const { anna, code, codeBegrenzer } = mitGrenze();
+
+    anna.sende(EREIGNIS.BEITRETEN, { name: 'Anna', code });
+
+    expect(fehlerVon(anna)).toEqual([FEHLER.BEREITS_IN_WARTESCHLANGE]);
+    expect(codeBegrenzer.anzahl()).toBe(0);
+  });
+
+  test('beim Trennen wird der Zähler der Verbindung vergessen', () => {
+    const { verbinde, codeBegrenzer } = mitGrenze();
+    const ben = verbinde('b');
+    ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code: 'ZZZZZZ' });
+    expect(codeBegrenzer.anzahl()).toBe(1);
+
+    ben.trenne();
+
+    expect(codeBegrenzer.anzahl()).toBe(0);
+  });
+
+  test('ohne Code zählt ein Beitritt nicht als Codeversuch', () => {
+    const { verbinde, codeBegrenzer } = mitGrenze();
+
+    verbinde('b').sende(EREIGNIS.BEITRETEN, { name: 'Ben' });
+
+    expect(codeBegrenzer.anzahl()).toBe(0);
   });
 });
 

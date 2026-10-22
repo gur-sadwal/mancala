@@ -3,6 +3,8 @@
  *
  * Zählt in festen Zeitfenstern. Der Handler beantwortet nur die erste
  * abgewiesene Nachricht, damit die Sperre keine Antwortflut erzeugt.
+ * Das Gateway legt einen zweiten Begrenzer mit eigener Grenze für
+ * Raumcodes an.
  *
  * Inhalt (Cmd+F nach „== 2.“):
  *   == 1. Grenzen
