@@ -206,6 +206,16 @@ der Browser versucht es nach fünf Sekunden erneut.
 Wer sofort einen wartenden Gegner findet oder einen Link einlöst, braucht
 keinen zusätzlichen Warteplatz.
 
+Bekannte Grenze: Die Obergrenzen gelten für den ganzen Server, nicht je
+Person. Jede Verbindung belegt höchstens einen Warteplatz. Wer aber mit einem
+Skript 100 Verbindungen öffnet und in jeder einen privaten Platz anlegt,
+füllt die Warteliste, bis die Plätze nach 7,5 Minuten ablaufen; andere
+bekommen so lange „Der Server ist gerade voll“. Der Server bleibt dabei
+stabil. Eine Grenze je IP-Adresse gibt es bewusst nicht: Im IPv4-WLAN teilen
+sich viele Geräte eine Adresse, über IPv6 hat ein Gerät viele wechselnde
+Adressen, und hinter einem Reverse Proxy sieht der Server nur dessen Adresse.
+Echte Spieler würden eher ausgesperrt als ein Angreifer aufgehalten.
+
 ## 6. Weg eines Zuges
 
 1. `spiel.js` ruft für die gewählte Mulde die übergebene Aktion `zug` auf.
