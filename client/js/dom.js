@@ -15,7 +15,6 @@ export function $(auswahl, wurzel = document) {
   return element;
 }
 
-// Erzeugt ein Element mit Klassen, Text, Attributen und Kindern.
 export function erzeuge(
   tag, { klassen = [], text, attribute = {} } = {}, kinder = [],
 ) {

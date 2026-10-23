@@ -115,7 +115,6 @@
   min-block-size: var(--mulde-min);
 }
 
-/* Gemeinsame Ausrichtung steht einmal für beide Feldarten. */
 .mulde,
 .haus {
   inline-size: 100%;
@@ -129,7 +128,6 @@
   box-shadow: var(--schatten-tief);
 }
 
-/* Eigene Mulden sind native Buttons; gegnerische sind keine Eingaben. */
 .mulde {
   /* Bezugspunkt für die Tastennummer in der Ecke. */
   position: relative;
@@ -299,9 +297,9 @@ button.mulde {
   }
 }
 
-/* Schmale und niedrige Fenster: weniger Innenabstand, damit das Brett und
- * „Partie aufgeben“ möglichst ohne Scrollen sichtbar sind. Die 44px
- * Mindesthöhe aus --mulde-min bleiben erhalten.
+/* Schmale und niedrige Fenster: weniger Innenabstand, damit das ganze Brett
+ * möglichst ohne Scrollen passt. Die 44px Mindesthöhe aus --mulde-min
+ * bleiben erhalten.
  */
 @media (max-width: 599px), (max-height: 480px) {
   .mulde {

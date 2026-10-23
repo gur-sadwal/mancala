@@ -189,7 +189,7 @@ function beiFehler({ code, text }) {
 }
 
 // Ein doppelt abgeschickter Beitritt meldet nur, was die Ansicht schon zeigt.
-// Als Text würde sie „Du bist am Zug“ oder den Hinweis zum Link ersetzen.
+// Als Text würde die Meldung „Du bist am Zug“ oder den Linkhinweis ersetzen.
 function istNurBestaetigung(code) {
   const { ansicht } = store.lies();
   const imSpiel = ansicht === ANSICHT.SPIEL;
@@ -222,15 +222,13 @@ function markierePartieVorbei() {
   spielAnsicht.beende();
 }
 
-// Start, neue Suche und Rückkehr zur Anmeldung beginnen einen neuen Ablauf.
 function beginneNeuenAblauf() {
   ablaufNr += 1;
   partieVorbei = false;
   letzteAnimation = Promise.resolve();
 }
 
-// Der Name bleibt erhalten; Partie, Einladung und Revanche werden
-// zurückgesetzt.
+// Der Name bleibt; Partie, Einladung und Revanche werden zurückgesetzt.
 function zurueckZurAnmeldung() {
   sucheBeendet = true;
   beginneNeuenAblauf();

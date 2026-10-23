@@ -40,9 +40,8 @@
   font-size: 1.75rem;
 }
 
-/* Der Kopf steht unten auf der Seite (footer im HTML). Rand und innerer
- * Schatten bilden die Streifen ohne weitere Elemente: oben Blau, darunter
- * Weiß, dann Rot.
+/* Der Kopf steht unten auf der Seite (footer im HTML). Streifen wie bei der
+ * Leiste, nur gespiegelt: oben Blau, darunter Weiß, dann Rot.
  */
 .kopf {
   padding-block: var(--abstand);
@@ -63,7 +62,7 @@
     margin-block-start: var(--abstand-klein);
   }
 
-  /* WCAG: Auf Rot bleibt der weiße Fokusring besser erkennbar. */
+  /* WCAG: Weißer Fokusring aus demselben Grund wie in der Leiste. */
   & :focus-visible {
     outline-color: var(--farbe-hessen-weiss);
   }
@@ -196,9 +195,7 @@
   color: var(--farbe-text-leise);
 }
 
-/* Lange Namen werden gekürzt; Rolle und Punkte bleiben immer ganz sichtbar.
- * overflow: hidden erlaubt dem Namen, in der Karte zu schrumpfen.
- */
+/* Gekürzt wird nur der Name; overflow: hidden lässt ihn schrumpfen. */
 .stand__name {
   font-weight: 600;
   max-inline-size: 12ch;

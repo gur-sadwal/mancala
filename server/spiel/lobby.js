@@ -4,7 +4,7 @@
  * Merkt Wartende und Revanchewünsche. Gibt Ergebnisse zurück; Nachrichten
  * an die Browser sendet ausschließlich handlers.js.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Zustände und Fristen
  *   == 2. Zustand und Schnittstelle
  *   == 3. In die Warteschlange
@@ -44,7 +44,8 @@ export const REVANCHE_TAKT_MS = 1000;
 const WARTENDE_MAX = 100;
 
 // == 2. Zustand und Schnittstelle ========================================
-// Jede neue Lobby hat eigenen Zustand; ihre inneren Funktionen teilen ihn.
+// Jeder Aufruf liefert eine Lobby mit eigenem Zustand; so beginnt jeder Test
+// mit einer leeren.
 export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
   const warteschlange = [];
   const privat = new Map();
@@ -126,7 +127,6 @@ export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
     return findePrivatenCode(socketId) !== null;
   }
 
-  // Ein gemeinsamer Suchweg für enthaelt und entferne.
   function findePrivatenCode(socketId) {
     for (const [einladung, eintrag] of privat) {
       if (eintrag.socketId === socketId) return einladung;
@@ -199,7 +199,7 @@ export function erzeugeLobby({ wartendeMax = WARTENDE_MAX } = {}) {
       };
     }
 
-    // Nur ein Doppelklick ohne Zustimmung des Gegners ist "schon gewünscht".
+    // Nur ein Doppelklick ohne Zustimmung des Gegners ist „schon gewünscht“.
     if (eintrag.gewuenscht && !gegenueber.gewuenscht) {
       return { status: REVANCHE_STATUS.SCHON_GEWUENSCHT };
     }

@@ -5,7 +5,7 @@
  * durch Ratenbegrenzung und Schema; ein Fehler im Handler trifft nur den
  * Verursacher oder seine Partie.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Ereignisse registrieren
  *   == 2. Ein Handler je Ereignis
  *   == 3. Partie starten und beenden
@@ -73,7 +73,9 @@ export function erzeugeHandler({
     });
   }
 
-  // SCHUTZ: Erst Rate, dann Schema, dann Fachlogik innerhalb von try/catch.
+  // SCHUTZ: Die Rate kommt vor dem Schema, sonst bekäme bei einer Flut jede
+  // ungültige Nachricht eine eigene Fehlerantwort. try/catch hält Fehler der
+  // Fachlogik vom Prozess fern.
   function registriereSicher(socket, ereignis, handler) {
     socket.on(ereignis, (nutzdaten) => {
       try {
@@ -168,8 +170,7 @@ export function erzeugeHandler({
     return true;
   }
 
-  // Ein alter Link oder falsch abgetippter Code bekommt eine verständliche
-  // Fehlermeldung.
+  // Alter Link oder Tippfehler: Beides bekommt eine verständliche Meldung.
   function betreteMitCode(socket, name, eingabe) {
     if (lobby.enthaelt(socket.id)) {
       sendeFehler(socket, FEHLER.BEREITS_IN_WARTESCHLANGE);

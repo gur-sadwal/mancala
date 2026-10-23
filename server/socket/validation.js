@@ -4,7 +4,7 @@
  * Prüft Typen und Felder der Ereignisse mit Nutzdaten ohne Umwandlung.
  * Namen und Raumcodes werden mit derselben Regel wie im Browser bereinigt.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Prüfhilfen
  *   == 2. Spielernamen
  *   == 3. Raumcodes
@@ -43,7 +43,7 @@ export function ermittleSpielername(wert) {
 }
 
 // == 3. Raumcodes ========================================================
-// SCHUTZ: Verbindlich ist auch hier der Server. Die Lobby sieht nur die
+// SCHUTZ: Wie beim Namen entscheidet der Server. Die Lobby sieht nur die
 // kanonische Form, wie util/ids.js sie vergibt; alles andere ergibt null.
 export function ermittleEinladungsCode(wert) {
   if (typeof wert !== 'string') return null;

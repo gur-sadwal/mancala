@@ -5,7 +5,7 @@
  * Nachrichten, abgelehnte Züge und ignoriertes Abbrechen erscheinen erst
  * mit LOG_LEVEL=debug.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Ebenen und Schwelle
  *   == 2. Zeitstempel
  *   == 3. Ausgabe und Schnittstelle
@@ -30,7 +30,7 @@ function zeitstempel() {
 }
 
 // == 3. Ausgabe und Schnittstelle ========================================
-// Zusatzdaten als JSON, Fehler auf error mit Stacktrace (Aufrufliste).
+// Zusatzdaten als JSON; ein Error auf Ebene error mit Stacktrace.
 function schreibe(ebene, text, zusatz) {
   if (EBENEN[ebene] < schwelle) return;
 
@@ -45,8 +45,8 @@ function schreibe(ebene, text, zusatz) {
       try {
         teile.push(JSON.stringify(zusatz));
       } catch {
-        // SCHUTZ: Kreisförmige Daten können nicht als JSON geschrieben werden.
-        // Trotzdem die eigentliche Logmeldung ausgeben.
+        // SCHUTZ: Kreisförmige Daten scheitern an JSON.stringify; die
+        // Meldung selbst soll trotzdem im Log landen.
         teile.push('[nicht serialisierbar]');
       }
     }

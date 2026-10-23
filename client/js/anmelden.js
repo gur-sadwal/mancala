@@ -57,13 +57,12 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
 
   let einladung = null;
 
-  // Der gemerkte Name ist optional; gesperrter Speicher darf die Anmeldung
-  // nicht verhindern.
+  // Der gemerkte Name ist optional; gesperrter Speicher blockiert nichts.
   try {
     const gemerkt = window.localStorage.getItem(SPEICHER_NAME);
     if (gemerkt) feldName.value = gemerkt;
   } catch {
-    // Ein Name lässt sich auch ohne gespeicherten Wert eingeben.
+    // Dann bleibt das Feld eben leer.
   }
 
   // == 2. Formularaktionen =================================================
@@ -179,7 +178,6 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
       name, { privat: istPrivatGewaehlt(), code: gewaehlterCode() },
     );
 
-    // Ohne Verbindung geht der Beitritt nicht hinaus; die Ansicht sagt das.
     if (!gesendet) zeigeFehler(OHNE_VERBINDUNG);
   }
 
@@ -198,8 +196,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
   // auch bei wiederholtem Zeichnen nicht doppelt angemeldet.
   return {
     zeige(sichtbar) {
-      // Fokus und Fehlertext nur beim echten Wechsel anfassen, nicht bei jedem
-      // Store-Update.
+      // Fokus und Fehlertext nur beim echten Wechsel, nicht bei Store-Updates.
       const wirdEingeblendet = sichtbar && abschnitt.hidden;
 
       zeige(abschnitt, sichtbar);

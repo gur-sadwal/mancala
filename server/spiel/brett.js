@@ -4,7 +4,7 @@
  * Legt das Brett an und liefert seine Nachbarn, Punkte und Prüfregeln.
  * Die passende Darstellung im Browser steht in client/js/spiel.js.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Größen und Sitze
  *   == 2. Brett aufbauen
  *   == 3. Zellen und Nachbarn
@@ -150,7 +150,7 @@ export function gesamtSumme(brett) {
 
 // == 5. Prüfregeln nach einem Zug ========================================
 /**
- * SCHUTZ: Invarianten sind Prüfregeln, die nach jedem Zug gelten müssen.
+ * SCHUTZ: Diese Invarianten müssen nach jedem Zug gelten.
  * I-1 zählt Kugeln, I-2 verbietet negative Werte, I-3 prüft Form und Zahlen.
  * Falsch verteilte Kugeln erkennt die Summe allein nicht; dafür gibt es Tests.
  */

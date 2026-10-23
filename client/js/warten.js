@@ -12,7 +12,7 @@ import { $, zeige, setzeText } from './dom.js';
 // EINSTELLBAR: So oft wird die angezeigte Wartezeit erneuert.
 const UHR_TAKT_MS = 1000;
 
-// EINSTELLBAR: So viele Zeichen stehen im angezeigten Raumcode je Gruppe.
+// EINSTELLBAR: Zeichen je Gruppe im angezeigten Raumcode.
 const CODE_GRUPPE = 3;
 
 export function wartezeitText(sekunden) {
@@ -64,8 +64,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
     beiAbbrechen();
   }
 
-  // Zuerst markieren: Falls die Zwischenablage fehlt, lässt sich der Link
-  // selbst kopieren.
+  // Zuerst markieren: Fehlt die Zwischenablage, kopiert man den Link selbst.
   async function beiKopieren() {
     feldLink.select();
 
@@ -145,8 +144,7 @@ export function erzeugeWarteAnsicht({ aktionen, beiAbbrechen }) {
 
       if (einladung) {
         setzeText(codeAnzeige, gruppiereCode(einladung));
-        // Der eigene Seitenpfad bleibt erhalten; nur der Einladungscode kommt
-        // dazu.
+        // Der eigene Seitenpfad bleibt erhalten, nur ?spiel= kommt dazu.
         feldLink.value = `${window.location.origin}${
           window.location.pathname
         }?spiel=${einladung}`;

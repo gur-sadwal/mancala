@@ -4,7 +4,7 @@
  * Registriert neue Verbindungen, startet die Fristprüfungen und wartet beim
  * Herunterfahren, bis Socket.io auch den HTTP-Server geschlossen hat.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Grenzen
  *   == 2. Gateway und Herunterfahren
  *   == 3. Neue Verbindung absichern
@@ -27,11 +27,10 @@ const AUFRAEUM_TAKT_MS = 60 * 1000;
 // EINSTELLBAR: Höchstens so viele gleichzeitige Browserverbindungen; passt
 // zu 200 Partien und 100 Wartenden. Tests übergeben eine kleinere Grenze.
 const VERBINDUNGEN_MAX = 500;
-// EINSTELLBAR: Höchstens so viele Raumcodes je Verbindung und Minute; das
-// lässt Platz für ein paar Tippfehler.
-// SCHUTZ: Statt 20 Versuchen je Sekunde sind es so 5 je Minute. Bei
-// höchstens 100 offenen privaten Spielen trifft ein geratener Code mit
-// etwa 1 zu 8,9 Millionen (31^6 / 100).
+// EINSTELLBAR: Raumcodes je Verbindung und Minute, genug für Tippfehler.
+// SCHUTZ: Ohne diese Grenze gälte nur die allgemeine von 20 Nachrichten je
+// Sekunde. Bei höchstens 100 offenen privaten Spielen trifft ein geratener
+// Code mit etwa 1 zu 8,9 Millionen (31^6 / 100).
 // ACHTUNG: Die Minute nennt auch FEHLER_TEXT in shared/protokoll.js.
 const CODE_VERSUCHE_MAX = 5;
 const CODE_FENSTER_MS = 60 * 1000;

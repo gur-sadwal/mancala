@@ -5,7 +5,7 @@
  * Gründe, Namensregel und Coderegel. Hier dürfen keine Node-Funktionen oder
  * Browserzugriffe stehen.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Ereignisnamen und Zugform
  *   == 2. Fehler und sichtbare Texte
  *   == 3. Status, Endegründe und Grenzen
@@ -18,7 +18,7 @@
 
 // == 1. Ereignisnamen und Zugform ========================================
 export const EREIGNIS = Object.freeze({
-  // Vom Browser zum Server. Der Zug enthält nur { type: ZUG_TYP, pitIndex }.
+  // Vom Browser zum Server.
   BEITRETEN: 'spiel:beitreten',
   ABBRECHEN: 'spiel:abbrechen',
   ZUG: 'spiel:zug',
@@ -86,7 +86,8 @@ export const FEHLER_TEXT = Object.freeze({
 });
 
 // == 3. Status, Endegründe und Grenzen ===================================
-// Eine Partie entsteht erst mit zwei Spielern; Wartende stehen in der Lobby.
+// Kein Status „wartet“: Eine Partie entsteht erst mit zwei Spielern, bis
+// dahin führt die Lobby die Wartenden.
 export const STATUS = Object.freeze({
   LAEUFT: 'LAEUFT',
   BEENDET: 'BEENDET',
@@ -105,7 +106,8 @@ export const GRUND = Object.freeze({
 /** Wert von ergebnis.sieger bei gleichen Hauspunkten. */
 export const REMIS = 'remis';
 
-// EINSTELLBAR: Gemeinsame Fristen und Eingabegrenzen stehen an einer Stelle.
+// EINSTELLBAR: Browser und Server lesen diese Werte von hier, damit Texte und
+// Prüfungen nicht auseinanderlaufen.
 export const GRENZEN = Object.freeze({
   // ACHTUNG: Zählt Unicode-Codepunkte. HTML maxlength zählt UTF-16-Einheiten.
   NAME_MAX: 20,
@@ -136,7 +138,7 @@ export const NAME_VERBOTEN = '<>';
 
 /**
  * Entfernt verbotene und unsichtbare Zeichen, begrenzt Akzente und kürzt auf
- * Unicode-Codepunkte. Kann leer liefern: Der Browser meldet es, der Server
+ * NAME_MAX Codepunkte. Kann leer liefern: Der Browser meldet es, der Server
  * setzt einen Ersatz ein. Familien-Emoji zerfallen, weil ihr unsichtbares
  * Verbindungszeichen entfällt.
  * @param {string} text

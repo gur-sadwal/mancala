@@ -23,8 +23,7 @@ function leseBilanz() {
   }
 }
 
-// SCHUTZ: Gespeicherte Daten sind veränderbar; nur sichere ganze Zahlen ab 0
-// übernehmen.
+// SCHUTZ: Gespeichertes ist veränderbar; nur sichere ganze Zahlen ab 0 zählen.
 export function bilanzAusSpeichertext(text) {
   const bilanz = { siege: 0, niederlagen: 0, remis: 0 };
 
@@ -47,7 +46,7 @@ function speichereBilanz(bilanz) {
   try {
     window.sessionStorage.setItem(SPEICHER_BILANZ, JSON.stringify(bilanz));
   } catch {
-    // Speichern ist optional; die Anzeige bleibt im Arbeitsspeicher erhalten.
+    // Ohne Speicher gilt die Bilanz eben nur bis zum Neuladen.
   }
 }
 
@@ -167,8 +166,7 @@ export function erzeugeEndeAnsicht({
     zaehler = null;
   }
 
-  // Der Zähler ist nur Anzeige; der Server entscheidet, ob die Frist abgelaufen
-  // ist.
+  // Der Zähler ist nur Anzeige; ob die Frist um ist, entscheidet der Server.
   function zeichneRevanche() {
     const rest = restSekunden(
       fristBeginn, Date.now(), GRENZEN.REVANCHE_SEKUNDEN,
@@ -226,10 +224,10 @@ export function erzeugeEndeAnsicht({
     beiSchliessen();
   }
 
-  // cancel merkt sich Esc, close meldet es an main.js. Ein Schließen per
-  // dialog.close() löst kein cancel aus und führt deshalb nicht zur Anmeldung;
-  // das gilt für die neue Suche. Ob der Dialog dafür schließt, entscheidet
-  // main.js: Ohne Verbindung bleibt er offen.
+  // cancel merkt sich Esc, close meldet es an main.js. dialog.close() löst
+  // kein cancel aus und führt deshalb nicht zur Anmeldung, etwa bei einer
+  // neuen Suche. Ob der Dialog dafür schließt, entscheidet main.js; ohne
+  // Verbindung bleibt er offen.
   function meldeListenerAn() {
     knopfErneut.addEventListener('click', beiNeuemSpiel);
     knopfAbmelden.addEventListener('click', beiAbmeldenKlick);
@@ -271,8 +269,7 @@ export function erzeugeEndeAnsicht({
     setzeText(text, zahlenText(ergebnis, sitz, meine, seine));
   }
 
-  // WCAG: showModal übernimmt die Fokusbegrenzung. Fokus nur beim Öffnen
-  // setzen.
+  // WCAG: showModal hält den Fokus im Dialog; gesetzt wird er nur beim Öffnen.
   function oeffneDialog() {
     if (dialog.open) return;
     dialog.showModal();

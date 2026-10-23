@@ -6,7 +6,7 @@
  * Bindet IPv4, protokolliert Prozessfehler und beendet bei SIGTERM/SIGINT
  * geordnet.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Grenzen und Start
  *   == 2. Port und Bausteine
  *   == 3. Prozess- und Serverfehler

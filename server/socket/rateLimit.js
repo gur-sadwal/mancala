@@ -6,7 +6,7 @@
  * Das Gateway legt einen zweiten Begrenzer mit eigener Grenze für
  * Raumcodes an.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Grenzen
  *   == 2. Nachrichten zählen
  *   == 3. Erste Sperre erkennen

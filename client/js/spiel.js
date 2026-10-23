@@ -83,8 +83,7 @@ function baueBrett(container, sitz) {
   const zellen = new Map();
 
   for (const anzeigeZelle of ANZEIGE_REIHENFOLGE) {
-    // Eine halbe Drehung ist ihre eigene Umkehrung: Anzeige zurück in
-    // Server-Sicht.
+    // Die halbe Drehung ist ihre eigene Umkehrung, rechnet also auch zurück.
     const zelle = ausSicht(sitz, anzeigeZelle);
     const rolle = rolleVon(sitz, zelle);
 
@@ -96,8 +95,7 @@ function baueBrett(container, sitz) {
   return zellen;
 }
 
-// WCAG: Nur eigene Mulden sind native Buttons; gegnerische Felder sind keine
-// Bedienelemente.
+// WCAG: Nur eigene Mulden sind native Buttons; gegnerische bedient man nicht.
 function erzeugeZelle(zelle, rolle) {
   const istEigeneMulde = rolle.art === 'mulde' && rolle.seite === 'eigen';
 
@@ -232,8 +230,7 @@ function zeichneStand(elemente, spielstand, sitz) {
   schalte(elemente.standEigen, 'stand__spieler--dran', ichBinDran);
   schalte(elemente.standGegner, 'stand__spieler--dran', !ichBinDran);
 
-  // Ohne Namen bleibt der Zugtext kurz und eindeutig, wie lang der Name
-  // auch ist.
+  // Der Zugtext nennt keinen Namen und bleibt so bei jeder Namenslänge kurz.
   setzeText(
     elemente.zuganzeige,
     ichBinDran ? 'Du bist am Zug' : 'Der Gegner ist am Zug',
@@ -243,8 +240,8 @@ function zeichneStand(elemente, spielstand, sitz) {
   schalte(elemente.zuganzeige, 'zuganzeige--hinweis', false);
 }
 
-// REGEL 3.4: beute.anzahl enthält auch die eigene letzte Kugel; der Text nennt
-// den Hauszuwachs.
+// REGEL 3.4: beute.anzahl zählt die eigene letzte Kugel mit, der Text nennt
+// also den ganzen Zuwachs im Haus.
 export function hinweisText(bericht, sitz) {
   const ichWars = bericht.sitz === sitz;
 
@@ -329,8 +326,7 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     const elemente = bild.hervorheben.map(elementVon);
     for (const element of elemente) element.classList.add(bild.klasse);
     await warte(bild.dauer);
-    // Eine alte Pause darf Hervorhebungen einer neueren Animation nicht
-    // entfernen.
+    // Eine alte Pause darf Markierungen einer neueren Animation nicht löschen.
     if (meineNr !== laufNr) return;
     for (const element of elemente) element.classList.remove(bild.klasse);
   }
@@ -343,8 +339,7 @@ function erzeugeAnimator({ brettElement, zellen, sitz }) {
     }
   }
 
-  // SCHUTZ: Die laufende Nummer verhindert Zeichnen einer bereits abgelösten
-  // Animation.
+  // SCHUTZ: laufNr verhindert, dass eine schon abgelöste Animation zeichnet.
   async function spiele(bericht, spielstand) {
     laufNr += 1;
     const meineNr = laufNr;
@@ -410,17 +405,13 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   let animator = null;
   let sitz = null;
 
-  // Lokale Doppelklicks sperren; verbindlich prüft weiterhin der Server jeden
-  // Zug.
+  // Sperrt lokale Doppelklicks; verbindlich prüft der Server jeden Zug.
   let wartetAufAntwort = false;
 
   let letzteMulde = null;
-
-  // Zeitpunkt, an dem der Aufgeben-Dialog zuletzt geschlossen wurde.
   let dialogGeschlossenUm = 0;
 
-  // WCAG: Nur verlorenen Fokus zurückgeben; bewusst gewählter Fokus bleibt
-  // stehen.
+  // WCAG: Nur verlorenen Fokus zurückholen; selbst gewählter Fokus bleibt.
   function stelleFokusWiederHer() {
     const aktiv = document.activeElement;
     const fokusVerloren = !aktiv
@@ -485,8 +476,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
   function beiAufgeben() {
     if (dialogAufgeben.open) return;
 
-    // Alte Wahl löschen: Esc soll nach einem Ansichtswechsel nie versehentlich
-    // aufgeben.
+    // Alte Wahl löschen: Esc darf nach einem Ansichtswechsel nie aufgeben.
     dialogAufgeben.returnValue = '';
     dialogAufgeben.showModal();
   }
@@ -501,8 +491,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     if (!aktionen.aufgeben()) melde(OHNE_VERBINDUNG);
   }
 
-  // Listener nur in der sichtbaren Spielansicht; unter dem Ergebnis bleibt sie
-  // sichtbar.
+  // Listener nur bei sichtbarer Spielansicht, also auch unter dem Ergebnis.
   function meldeListenerAn() {
     brettElement.addEventListener('click', beiKlick);
     document.addEventListener('keydown', beiTaste);
@@ -553,8 +542,7 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     }
   }
 
-  // zeige(true) kommt auch mitten im Zug; dabei keine laufende Animation
-  // zurücksetzen.
+  // zeige(true) kommt auch mitten im Zug und setzt keine Animation zurück.
   function zeige(sichtbar) {
     zeigeElement(abschnitt, sichtbar);
 
@@ -600,8 +588,8 @@ export function erzeugeSpielAnsicht({ aktionen }) {
     schalte(elemente.zuganzeige, 'zuganzeige--hinweis', false);
   }
 
-  // Punkte und „am Zug“ erst nach der Animation wechseln, Sonderregelhinweis
-  // sofort.
+  // Punkte und Zuganzeige erst nach der Animation, den Sonderregel-Hinweis
+  // sofort: Er erklärt, was gerade zu sehen ist.
   async function spieleZug(bericht, spielstand) {
     if (!zellen || !sitz || !animator) return;
 

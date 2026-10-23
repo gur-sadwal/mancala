@@ -124,7 +124,7 @@ h2[tabindex="-1"]:focus-visible {
 
 /* == 5. Sprungmarke ======================================================= */
 
-/* WCAG: Der Rückweg zum Hauptinhalt erscheint beim Tastaturfokus. */
+/* WCAG: Der Sprung zum Hauptinhalt erscheint erst beim Tastaturfokus. */
 .sprungmarke {
   position: absolute;
   inset-block-start: -100%;

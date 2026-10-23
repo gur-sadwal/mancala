@@ -5,7 +5,7 @@
  * Die übergebene Partie bleibt unverändert; erst handlers.js übernimmt das
  * Ergebnis. Ein abgelehnter Zug hinterlässt so keinen halben Stand.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Einen Zug ausführen
  *   == 2. Einen Zug prüfen
  *   == 3. Kugeln säen
@@ -102,7 +102,8 @@ function partieNachZug(partie, brett, sitz, beendet, extrazug) {
 }
 
 // == 2. Einen Zug prüfen =================================================
-// SCHUTZ: Status, Sitz, Zugrecht, Muldennummer und Belegung prüfen.
+// SCHUTZ: Wiederholt die Bereichsprüfung aus validation.js, damit die Engine
+// auch ohne Handler davor nur gültige Züge rechnet.
 export function pruefeZug(partie, sitz, mulde) {
   if (!partie || partie.status !== STATUS.LAEUFT) {
     return { ok: false, code: FEHLER.PARTIE_NICHT_AKTIV };

@@ -11,7 +11,7 @@
 
 /* == 1. Box-Modell ======================================================== */
 
-/* Innenabstand und Rand zählen zur angegebenen Größe. */
+/* So sprengen Rand und Innenabstand keine gesetzte Breite. */
 *,
 *::before,
 *::after {
@@ -50,7 +50,7 @@ svg {
 
 /* == 4. Formulare ========================================================= */
 
-/* Native Eingaben erhalten dieselbe lesbare Schrift wie ihr Umfeld. */
+/* Browser geben Formularfeldern sonst eine eigene, meist kleinere Schrift. */
 input,
 button,
 textarea,

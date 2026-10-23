@@ -42,9 +42,9 @@
     transform var(--dauer-kurz) ease;
 
   &:disabled {
-    /* WCAG: Gesperrte Knöpfe sind von der Kontrastregel ausgenommen, die
-     * Projektvorgabe verlangt ihn trotzdem. Statt Ausgrauen zeigt ein
-     * gestrichelter Rand die Sperre.
+    /* WCAG: Die Richtlinie nimmt gesperrte Knöpfe vom Kontrast aus, die
+     * Projektvorgabe nicht. Statt Ausgrauen zeigt ein gestrichelter Rand
+     * die Sperre.
      */
     border-color: currentColor;
     border-style: dashed;
@@ -82,18 +82,14 @@
   }
 }
 
-/* Die Kopfzeile braucht einen hellen Knopf- und Fokuskontrast.
- * Den Abstand zum Titel regelt 04-layout.css.
- */
+/* Für die roten Leisten oben und unten; Abstände regelt 04-layout.css. */
 .knopf--kopf {
   background-color: transparent;
   border-color: var(--farbe-hessen-weiss);
   color: var(--farbe-hessen-weiss);
 }
 
-/* Ein größerer Knopf ist leichter zu treffen: mindestens 3,25rem hoch,
- * Schrift 1,125rem (bei 16px Grundschrift 18px).
- */
+/* Ein größerer Knopf ist leichter zu treffen. */
 .knopf--gross {
   min-block-size: 3.25rem;
   padding-inline: var(--abstand-gross);
@@ -219,8 +215,7 @@
   }
 
   /* WCAG: Der Auswahlpunkt ergänzt Randfarbe und Hintergrund. Keine fette
-   * Schrift: Sie ist breiter und ließe die Option beim Anklicken umbrechen
-   * und wachsen.
+   * Schrift: Sie ist breiter, die Option würde beim Anklicken umbrechen.
    */
   &:has(:checked) {
     border-color: var(--farbe-hessen-rot);
@@ -358,8 +353,8 @@
 
   text-align: center;
 
-  /* Fester Farbwert statt var(): ::backdrop erbt Custom Properties erst in
-   * neueren Browsern.
+  /* Fester Farbwert statt var(), weil ::backdrop Custom Properties erst
+   * in neueren Browsern erbt.
    */
   &::backdrop {
     background-color: oklch(20% 0.02 85 / 0.55);

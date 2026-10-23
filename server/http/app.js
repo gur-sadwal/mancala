@@ -4,7 +4,7 @@
  * Liefert HTML, CSS und ES-Module direkt aus. Das gemeinsame Protokoll liegt
  * unter /shared; /gesundheit meldet laufende Partien und Wartende.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Pfade und Sicherheitsrichtlinie
  *   == 2. App zusammensetzen
  *   == 3. Pfade und Antworten
@@ -61,9 +61,9 @@ function pfadZu(...teile) {
   return path.join(WURZEL, ...teile);
 }
 
-// SCHUTZ: nosniff sperrt Skripte und Styles mit unpassendem MIME-Typ
-// (dem Dateityp aus der HTTP-Antwort). X-Frame-Options sperrt Einbettung
-// auch in älteren Browsern, die frame-ancestors der CSP nicht kennen.
+// SCHUTZ: nosniff sperrt Skripte und Styles mit unpassendem MIME-Typ.
+// X-Frame-Options verhindert das Einbetten auch in älteren Browsern, die
+// frame-ancestors aus der CSP nicht kennen.
 function sichereAntwort(req, res, next) {
   res.setHeader('Content-Security-Policy', CSP);
   res.setHeader('X-Content-Type-Options', 'nosniff');

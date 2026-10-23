@@ -4,7 +4,7 @@
  * Speichert Kennungen und Namen, keine Socket-Objekte. Tests können eine
  * Partie deshalb ohne laufenden Server anlegen, lesen und beenden.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Neue Partie
  *   == 2. Sitz und öffentlicher Spielstand
  *   == 3. Vorzeitiges Ende und Aktivität

@@ -4,7 +4,7 @@
  * Sucht eine Partie anhand ihrer Socket-Kennung. Die Zuordnung bleibt auf
  * dem Server; eine mitgeschickte Spiel-ID entscheidet niemals über den Zugriff.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Zustand und Schnittstelle
  *   == 2. Partie starten
  *   == 3. Partie eines Sockets
@@ -38,7 +38,8 @@ export function erzeugeManager({ partienMax = PARTIEN_MAX } = {}) {
   };
 
   // == 2. Partie starten =================================================
-  // Projektentscheidung: Unten beginnt; wer dort sitzt, wird neu ausgelost.
+  // Unten beginnt immer (partie.js). Fair wird das, weil der Sitz jedes Mal
+  // neu ausgelost wird.
   function starte(a, b) {
     const [unten, oben] = Math.random() < 0.5 ? [a, b] : [b, a];
 
@@ -69,7 +70,8 @@ export function erzeugeManager({ partienMax = PARTIEN_MAX } = {}) {
     const partie = partien.get(spielId);
     if (!partie) return null;
 
-    // Die Socket-Map durchgehen statt möglicherweise kaputte Spielerfelder.
+    // Über die Socket-Map statt über partie.spieler: So bleibt auch bei
+    // kaputten Spielerfeldern keine Zuordnung zurück.
     for (const [socketId, id] of zuordnung) {
       if (id === spielId) zuordnung.delete(socketId);
     }

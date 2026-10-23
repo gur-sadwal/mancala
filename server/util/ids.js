@@ -1,10 +1,10 @@
 /**
  * ids.js – Kennungen für Partien und Einladungen.
  *
- * Zieht zufällige Kennungen. Manager und Lobby prüfen vor der Vergabe,
- * ob sie schon benutzt werden; die Partiezuordnung bleibt serverseitig.
+ * Zieht zufällige Kennungen. Ob eine schon vergeben ist, prüfen Manager und
+ * Lobby selbst.
  *
- * Inhalt (Cmd+F nach „== 2.“):
+ * Inhalt:
  *   == 1. Spiel-ID
  *   == 2. Einladungscode
  *
@@ -16,15 +16,15 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { CODE_ZEICHEN, GRENZEN } from '../../shared/protokoll.js';
 
 // == 1. Spiel-ID =========================================================
-// Eine Spiel-ID ist kein Zugangsschlüssel; die Zuordnung Socket zu Partie
-// liegt im Manager (zuordnung), handlers.js fragt dort holeNachSocket.
+// Acht Hexzeichen reichen: Die Spiel-ID ist kein Zugangsschlüssel, denn
+// welcher Socket zu welcher Partie gehört, weiß nur der Manager.
 export function neueSpielId() {
   return `g-${randomUUID().slice(0, 8)}`;
 }
 
 // == 2. Einladungscode ===================================================
-// SCHUTZ: Der Einladungscode ist der Schlüssel zum privaten Warteplatz.
-// randomInt liefert dafür kryptografischen Zufall statt Math.random.
+// SCHUTZ: Anders als die Spiel-ID öffnet dieser Code einen privaten
+// Warteplatz. Deshalb randomInt mit kryptografischem Zufall statt Math.random.
 export function neuerEinladungsCode() {
   let code = '';
   for (let i = 0; i < GRENZEN.CODE_LAENGE; i += 1) {
