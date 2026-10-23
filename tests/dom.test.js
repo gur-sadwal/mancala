@@ -24,9 +24,9 @@ describe('Restzeit der Revanche', () => {
   });
 
   test('angebrochene Sekunden werden aufgerundet', () => {
-    // 2,3 s vergangen, 12,7 s übrig: Anzeige "13".
+    // 2,3 s vergangen, 12,7 s übrig: Anzeige „13“.
     expect(restSekunden(0, 2300, 15)).toBe(13);
-    // 14,6 s vergangen, 0,4 s übrig: Anzeige "1", noch nicht "0".
+    // 14,6 s vergangen, 0,4 s übrig: Anzeige „1“, noch nicht „0“.
     expect(restSekunden(0, 14600, 15)).toBe(1);
   });
 
@@ -36,18 +36,12 @@ describe('Restzeit der Revanche', () => {
   });
 
   test('eine zurückgestellte Uhr ergibt nie mehr als die volle Dauer', () => {
-    // Eine zurückgestellte Uhr darf die Revanchefrist nicht verlängern.
+    // Start bei 5 s, jetzt erst 1 s: Die Frist darf dadurch nicht wachsen.
     expect(restSekunden(5000, 1000, 15)).toBe(15);
   });
 });
 
-/*
- * Die übrigen Helfer fassen DOM-Elemente an. Statt eines Browsers bekommen
- * sie hier einfache Attrappen: Objekte, die nur die benutzten Eigenschaften
- * haben und sich merken, was mit ihnen passiert.
- */
-
-/** Speichert Elementänderungen, ohne echte DOM-Elemente zu erzeugen. */
+/** Attrappe für createElement: merkt sich Klassen, Attribute und Kinder. */
 function falschesElement(tag) {
   const klassen = [];
   const attribute = {};

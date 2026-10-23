@@ -3,7 +3,7 @@
  *
  * Die Uhr ist nur Anzeige: Sie startet beim Einblenden, läuft bei
  * Positionsänderungen weiter und steht still, sobald die Ansicht weg ist.
- * Der Raumcode erscheint gruppiert, der Link bleibt unverändert.
+ * Der Raumcode erscheint gruppiert, der Link enthält ihn ohne Bindestrich.
  * Jest ersetzt Zeit und Takt, Elemente sind einfache Attrappen.
  *
  * Inhalt:
@@ -58,7 +58,7 @@ function neueAnsicht() {
 // == 2. Testfälle ===========================================================
 
 describe('Text der Wartezeit', () => {
-  test('Minuten und zweistellige Sekunden', () => {
+  test('zeigt Minuten und zweistellige Sekunden', () => {
     expect(wartezeitText(0)).toBe('0:00');
     expect(wartezeitText(59)).toBe('0:59');
     expect(wartezeitText(60)).toBe('1:00');
@@ -151,7 +151,7 @@ describe('Raumcode in der Warteansicht', () => {
     }
   });
 
-  test('privat: Code gruppiert, Link wie bisher ohne Bindestrich', () => {
+  test('privat: Code gruppiert, im Link ohne Bindestrich', () => {
     const ansicht = neueAnsicht();
     ansicht.zeige(true);
 

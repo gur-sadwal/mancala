@@ -32,6 +32,8 @@ function ansicht() {
   };
 }
 
+// Browserpfade umlenken wie in kern.test.js. Jede Ansicht wird zur Attrappe,
+// die ihre Rückrufe aus main.js für den Test aufhebt.
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 jest.mock('/socket.io/socket.io.esm.min.js', () => ({}), { virtual: true });
@@ -84,6 +86,7 @@ afterEach(() => {
   delete global.window;
 });
 
+/** Spielt eine Servernachricht ein, indem es den Listener aus kern.js ruft. */
 function sende(name, daten) {
   const eintrag = socket.on.mock.calls.find(([ereignis]) => ereignis === name);
   return eintrag[1](daten);
@@ -203,7 +206,7 @@ describe('Nachrichten während der Schlussanimation', () => {
     [protokoll.EREIGNIS.REVANCHE_WEG, 'weg'],
     [protokoll.EREIGNIS.REVANCHE_ABGELAUFEN, 'abgelaufen'],
     [protokoll.EREIGNIS.REVANCHE_ANGEBOT, 'angeboten'],
-  ])('bewahrt %s bis zum Ergebnis', async (ereignis, stand) => {
+  ])('%s während der Schlussanimation geht nicht verloren', async (ereignis, stand) => {
     starte();
     const fertig = halteAnimationAn();
     const ende = beende();
@@ -266,7 +269,7 @@ describe('Sichtbare Serverfehler', () => {
     });
   });
 
-  test.each(['anmelden', 'warten', 'ende'])('zeigt Fehler in %s an der sichtbaren Ansicht', async (name) => {
+  test.each(['anmelden', 'warten', 'ende'])('ein Fehler erscheint in der sichtbaren Ansicht %s', async (name) => {
     if (name === 'warten') sende(protokoll.EREIGNIS.WARTESCHLANGE, { position: 1 });
     if (name === 'ende') {
       starte();
@@ -311,7 +314,7 @@ describe('Doppelt abgeschickter Beitritt', () => {
       protokoll.FEHLER_TEXT[protokoll.FEHLER.BEREITS_IN_PARTIE]);
   });
 
-  test('außerhalb des Wartens führt dieselbe Meldung ins Warten', () => {
+  test('BEREITS_IN_WARTESCHLANGE außerhalb des Wartens führt ins Warten', () => {
     sende(protokoll.EREIGNIS.FEHLER, {
       code: protokoll.FEHLER.BEREITS_IN_WARTESCHLANGE,
     });
@@ -362,7 +365,7 @@ describe('Rückfrage beim Verlassen', () => {
   test('während der Partie ist auch returnValue gesetzt, wie ältere Browser es brauchen', () => {
     starte();
     // Im echten BeforeUnloadEvent ist returnValue ein beschreibbares Textfeld;
-    // jsdom bildet das bei einem gewöhnlichen Event nicht nach.
+    // das Event aus Node kennt es nicht, also hier nachbauen.
     const ereignis = new Event('beforeunload', { cancelable: true });
     Object.defineProperty(ereignis, 'returnValue', {
       value: '', writable: true,
@@ -373,7 +376,7 @@ describe('Rückfrage beim Verlassen', () => {
     expect(ereignis.returnValue).toBeTruthy();
   });
 
-  test('nach dem Ergebnis und nach der Rückkehr zur Anmeldung nicht mehr', async () => {
+  test('nach dem Ergebnis und zurück in der Anmeldung fragt der Browser nicht mehr', async () => {
     starte();
     await beende();
     expect(verlasseSeite()).toBe(false);

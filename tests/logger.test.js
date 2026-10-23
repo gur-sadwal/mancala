@@ -99,7 +99,7 @@ describe('Logger: Schwelle aus LOG_LEVEL', () => {
     return lauf.stdout;
   }
 
-  test('debug macht die Ausgabe gesprächiger', () => {
+  test('mit LOG_LEVEL=debug erscheinen auch debug-Zeilen', () => {
     expect(protokolliereMit('debug')).toContain('[DEBUG] fein');
   });
 
@@ -113,10 +113,10 @@ describe('Logger: Schwelle aus LOG_LEVEL', () => {
     expect(ausgabe).toContain('[INFO] normal');
     expect(ausgabe).not.toContain('[DEBUG]');
   });
+
   test.each(['constructor', '__proto__'])('geerbter Schlüssel %s ist keine Protokollebene', (wert) => {
     const ausgabe = protokolliereMit(wert);
     expect(ausgabe).toContain('[INFO] normal');
     expect(ausgabe).not.toContain('[DEBUG]');
   });
-
 });

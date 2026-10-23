@@ -93,7 +93,7 @@ describe('Hinweis zu den Sonderregeln', () => {
   const extrazug = { sitz: 'unten', extrazug: true, beute: null };
 
   test('Klauen: nennt die Kugeln, die ins Haus wandern – die eigene mitgezählt', () => {
-    // 4 Kugeln gegenüber + die eigene letzte Kugel = anzahl 5 (Regelwerk 3.4).
+    // 4 Kugeln gegenüber + die eigene letzte Kugel = anzahl 5 (Regel 3.4).
     expect(hinweisText(klauen, 'unten')).toBe('Du klaust! 5 Kugeln wandern in dein Haus.');
     expect(hinweisText(klauen, 'oben')).toBe('Gegner klaut! 5 Kugeln wandern in sein Haus.');
   });
@@ -109,7 +109,7 @@ describe('Hinweis zu den Sonderregeln', () => {
 });
 
 describe('Tastenkürzel und Häuser', () => {
-  test('nur die vollständigen Tasten 1 bis 6 spielen eine Mulde', () => {
+  test('nur die Tasten 1 bis 6 spielen eine Mulde; hausVon kennt beide Häuser', () => {
     for (let nummer = 1; nummer <= 6; nummer += 1) {
       expect(muldeAusTaste(String(nummer))).toBe(nummer - 1);
     }
@@ -206,7 +206,7 @@ describe('Rollen, Zugtext und Feldbeschreibungen', () => {
     expect(nachId.get('#name-gegner').textContent).toBe('Du');
   });
 
-  test('gleiche Namen werden nicht mehr durch „Du“ ersetzt', () => {
+  test('gleiche Namen stehen unverändert auf beiden Karten', () => {
     const { ansicht, nachId } = baueEchteAnsicht();
     ansicht.starte(startstand('Anna', 'Anna'), 'oben');
 

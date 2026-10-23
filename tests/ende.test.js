@@ -15,11 +15,9 @@ import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
 
 /*
- * ende.js lädt das Protokoll über den Browserpfad '/shared/protokoll.js'.
- * Diesen Pfad liefert nur der Server aus, unter Node gibt es ihn nicht. Die
- * zwei Zeilen sagen Jest: Wer diesen Pfad lädt, bekommt die echte Datei aus
- * shared/. (Bei ES-Modulen braucht Jest beide Zeilen: die erste meldet den
- * Pfad an, die zweite liefert den Inhalt.)
+ * ende.js lädt das Protokoll über den Browserpfad '/shared/protokoll.js', den
+ * es unter Node nicht gibt. Jest bekommt stattdessen die echte Datei aus
+ * shared/; warum es dafür zwei Zeilen sind, steht in kern.test.js.
  */
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
@@ -184,7 +182,7 @@ describe('Ergebnisdialog und Bilanz', () => {
     ansicht.zeige({ ergebnis, sitz, revanche, revancheSeit: Date.now(), name: 'Anna' });
   }
 
-  test.each(['unten', 'oben'])('Timeout zählt für %s auch bei ungleichem Stand nicht als Niederlage', (sitz) => {
+  test.each(['unten', 'oben'])('zu lange kein Zug zählt für %s auch bei ungleichem Stand nicht', (sitz) => {
     zeigeErgebnis({
       grund: GRUND.ZU_LANGE_KEIN_ZUG,
       sieger: null,
@@ -324,7 +322,7 @@ describe('Ergebnisdialog und Bilanz', () => {
     expect(elemente.get('#ende-text').textContent).toBe('Stand beim Ende: 1 zu 0.');
   });
 
-  test('Gegner weg: ebenfalls neutraler Stand beim Ende', () => {
+  test('Gegner weg: neutraler Stand statt Glückwunsch', () => {
     const weg = { grund: GRUND.GEGNER_WEG, sieger: 'unten', punkte: { unten: 2, oben: 5 } };
 
     zeigeErgebnis(weg, 'unten');

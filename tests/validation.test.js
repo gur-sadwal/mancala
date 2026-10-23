@@ -31,8 +31,7 @@ describe('istObjekt', () => {
   });
 
   test('lehnt null, Arrays und Grundwerte ab', () => {
-    // null und Arrays sind vom typeof her ebenfalls "object" – der häufigste
-    // Fallstrick bei selbstgebauten Prüfungen.
+    // typeof liefert auch für null und Arrays „object“.
     expect(istObjekt(null)).toBe(false);
     expect(istObjekt([])).toBe(false);
     expect(istObjekt('x')).toBe(false);
@@ -76,7 +75,7 @@ describe('ermittleSpielername', () => {
     expect(ermittleSpielername(lang)).toHaveLength(20);
   });
 
-  test('ersetzt leere und falsch getypte Eingaben durch "Spieler"', () => {
+  test('ersetzt leere und falsch getypte Eingaben durch „Spieler“', () => {
     expect(ermittleSpielername('')).toBe('Spieler');
     expect(ermittleSpielername('   ')).toBe('Spieler');
     expect(ermittleSpielername(null)).toBe('Spieler');
@@ -107,8 +106,8 @@ describe('ermittleSpielername', () => {
 
 describe('bereinigeName – dieselbe Regel im Browser und auf dem Server', () => {
   test('liefert eine leere Zeichenkette, wenn nichts übrig bleibt', () => {
-    // Der Browser meldet dann "Bitte gib einen Namen ein.", der Server setzt
-    // "Spieler" ein – das entscheidet jede Seite selbst.
+    // Der Browser meldet dann „Bitte gib einen Namen ein.“, der Server setzt
+    // „Spieler“ ein – das entscheidet jede Seite selbst.
     expect(bereinigeName('')).toBe('');
     expect(bereinigeName('   ')).toBe('');
     expect(bereinigeName(String.fromCharCode(0, 7, 10))).toBe('');
@@ -206,7 +205,7 @@ describe('bereinigeName – Akzente, Normalform und Leserichtung', () => {
   });
 
   test('die Grenze gilt je Buchstabe, nicht für den ganzen Namen', () => {
-    // Muhammad mit Vokalzeichen: vier Zeichen insgesamt, höchstens zwei je
+    // Muhammad mit Vokalzeichen: vier Akzente insgesamt, höchstens zwei je
     // Buchstabe. Alle müssen bleiben.
     const name = 'مُحَمَّد';
     expect(bereinigeName(name)).toBe(name.normalize('NFC'));
@@ -261,7 +260,7 @@ describe('Schemaprüfung der Ereignisse', () => {
 
   test('spiel:beitreten verlangt eine Zeichenkette als Name', () => {
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 'Anna' })).toBe(true);
-    // wird zu "Spieler"
+    // wird zu „Spieler“
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: '' })).toBe(true);
 
     expect(istGueltig(EREIGNIS.BEITRETEN, { name: 42 })).toBe(false);

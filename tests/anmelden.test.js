@@ -15,11 +15,7 @@
 import { jest } from '@jest/globals';
 import * as protokoll from '../shared/protokoll.js';
 
-/*
- * anmelden.js lädt das Protokoll über den Browserpfad '/shared/protokoll.js'.
- * Diesen Pfad liefert nur der Server aus; die zwei Zeilen sagen Jest, dass es
- * stattdessen die echte Datei aus shared/ nehmen soll.
- */
+// Browserpfad des Protokolls auf die echte Datei umlenken, wie in kern.test.js.
 jest.mock('/shared/protokoll.js', () => ({}), { virtual: true });
 jest.unstable_mockModule('/shared/protokoll.js', () => protokoll, { virtual: true });
 
@@ -376,7 +372,7 @@ describe('Lebensdauer der Anmeldeansicht', () => {
     expect(titel.focus).toHaveBeenCalledTimes(1);
   });
 
-  test('melde zeigt einen Serverfehler in der Anmeldung', () => {
+  test('ein Serverfehler erscheint in der Anmeldung', () => {
     const { ansicht } = zeigeAnsicht();
 
     ansicht.melde('Der Server ist gerade voll.');

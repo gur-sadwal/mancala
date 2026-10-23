@@ -113,7 +113,7 @@ describe('Wartefrist (die Zeit wird hereingereicht)', () => {
     expect(lobby.enthaelt('b')).toBe(true);
   });
 
-  test('ein privater Link läuft ebenso ab', () => {
+  test('auch ein privater Link läuft zur Frist ab', () => {
     const lobby = erzeugeLobby();
     const { einladung } = lobby.erstellePrivat('a', 'Anna', 0);
 
@@ -130,7 +130,7 @@ describe('Privates Spiel', () => {
 
     expect(ergebnis.ok).toBe(true);
     expect(ergebnis.einladung).toHaveLength(GRENZEN.CODE_LAENGE);
-    // Jedes Zeichen stammt aus dem erlaubten Alphabet (kein 0/O, 1/I).
+    // Jedes Zeichen stammt aus dem erlaubten Alphabet (ohne 0, O, 1, I und L).
     for (const zeichen of ergebnis.einladung) {
       expect(CODE_ZEICHEN).toContain(zeichen);
     }
@@ -291,7 +291,7 @@ describe('Revanche-Frist direkt beim Wunsch', () => {
   });
 });
 
-describe('Revanche-Frist', () => {
+describe('Revanche-Frist im Prüftakt', () => {
   const anna = { socketId: 'a', name: 'Anna' };
   const ben = { socketId: 'b', name: 'Ben' };
 
@@ -639,7 +639,7 @@ describe('Obergrenzen für Warteplätze und Partien', () => {
     expect(lobby.nimmPrivat(einladung).socketId).toBe('a');
   });
 
-  test('ohne Angabe gelten großzügige Standardgrenzen', () => {
+  test('ohne Angabe passen 99 private Plätze in die Lobby', () => {
     const lobby = erzeugeLobby();
     for (let i = 0; i < 99; i += 1) {
       expect(lobby.erstellePrivat(`p${i}`, 'P').ok).toBe(true);

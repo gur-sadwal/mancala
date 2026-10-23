@@ -63,8 +63,6 @@ describe('T-03: Startbrett', () => {
 
 describe('T-01: naechsteZelle läuft im Ring', () => {
   test('14 Schritte führen von jeder Zelle wieder zum Ausgangspunkt', () => {
-    // Das Brett hat 14 Felder. Wer 14-mal weitergeht, ist wieder da – sonst
-    // stimmt der Ring der Zellen nicht.
     for (const reihe of [OBEN, UNTEN]) {
       for (let spalte = 0; spalte < 7; spalte += 1) {
         const start = [reihe, spalte];
@@ -89,8 +87,7 @@ describe('T-01: naechsteZelle läuft im Ring', () => {
   });
 
   test('geht vom Haus unten in die obere Reihe und umgekehrt', () => {
-    // Die beiden Übergangsstellen einzeln, weil dort die
-    // Fallunterscheidung greift.
+    // Die Übergänge einzeln, weil dort die Fallunterscheidung greift.
     expect(naechsteZelle([UNTEN, 6])).toEqual([OBEN, 6]);
     expect(naechsteZelle([OBEN, 0])).toEqual([UNTEN, 0]);
   });
@@ -117,7 +114,7 @@ describe('T-02: gegenueber', () => {
     expect(gegenueber(unten)).toEqual(oben);
   });
 
-  test('ist beidseitig: gegenueber(gegenueber(x)) === x', () => {
+  test('zweimal gegenüber führt zurück zur Ausgangsmulde', () => {
     for (const [unten, oben] of paare) {
       expect(gegenueber(oben)).toEqual(unten);
       expect(gegenueber(gegenueber(unten))).toEqual(unten);
@@ -151,7 +148,7 @@ describe('T-21: Sitzabbildung', () => {
   });
 
   test('Mulde 5 liegt bei beiden Sitzen direkt neben dem eigenen Haus', () => {
-    // "Direkt neben dem Haus" heißt: die nächste Zelle ist das eigene Haus.
+    // „Direkt neben dem Haus“ heißt: Die nächste Zelle ist das eigene Haus.
     expect(naechsteZelle(SITZE.unten.mulde(5))).toEqual([...SITZE.unten.haus]);
     expect(naechsteZelle(SITZE.oben.mulde(5))).toEqual([...SITZE.oben.haus]);
   });
@@ -190,7 +187,7 @@ describe('istHaus und muldenZellen', () => {
 });
 
 describe('kopiereBrett', () => {
-  test('erzeugt eine echte Tiefenkopie', () => {
+  test('eine Änderung an der Kopie lässt das Original unberührt', () => {
     const original = neuesBrett();
     const kopie = kopiereBrett(original);
 
@@ -216,7 +213,7 @@ describe('Invarianten des Bretts', () => {
     expect(ergebnis.verletzungen.join(' ')).toContain('I-1');
   });
 
-  test('I-2 schlägt bei negativen Feldern an', () => {
+  test('I-2 schlägt an, wenn ein Feld negativ ist', () => {
     const brett = neuesBrett();
     brett[UNTEN][0] = -4;
     brett[UNTEN][1] = 12;   // Summe bleibt 48, nur I-2 ist verletzt
@@ -226,7 +223,7 @@ describe('Invarianten des Bretts', () => {
     expect(ergebnis.verletzungen.join(' ')).toContain('I-2');
   });
 
-  test('I-2 schlägt schon bei einem Feld mit -1 an', () => {
+  test('I-2 erkennt schon -1, den kleinsten Fehlbetrag', () => {
     const brett = neuesBrett();
     brett[UNTEN][0] = -1;
     brett[UNTEN][1] = 9;   // Summe bleibt 48, nur I-2 ist verletzt
@@ -242,7 +239,7 @@ describe('Invarianten des Bretts', () => {
   });
 });
 
-describe('Sicherheitsnetz vor dem Umbau', () => {
+describe('Ganzzahlen, Muldensummen und Sitznamen', () => {
   test('I-3 schlägt an, wenn ein Feld keine ganze Zahl ist', () => {
     const brett = neuesBrett();
     brett[UNTEN][0] = 3.5;

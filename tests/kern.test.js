@@ -265,7 +265,7 @@ describe('Netzverbindung: was beim Client ankommt', () => {
   });
 });
 
-describe('Netzverbindung beim Zurück-Cache', () => {
+describe('Netzverbindung: Zurück-Cache des Browsers', () => {
   test.each([false, true])('pagehide trennt vor dem Verlassen (Cache: %s)', (persisted) => {
     verbinde({});
     seitenwechsel('pagehide', persisted);

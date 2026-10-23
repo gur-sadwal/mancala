@@ -98,12 +98,11 @@ describe('schluessel', () => {
   });
 });
 
-describe('Client und Server sind sich einig (die eigentliche Probe)', () => {
+describe('Client und Server meinen dieselbe Mulde', () => {
   /**
    * Der Server adressiert Mulden über SITZE[sitz].mulde(n), der Client über
-   * die Drehung. Wenn beide auseinanderlaufen, klickt ein Spieler auf Mulde 3
-   * und der Server bewegt eine andere – ein Fehler, der im Spiel wie ein
-   * Regelfehler aussieht und sehr schwer zu finden wäre.
+   * die Drehung. Laufen beide auseinander, klickt man auf Mulde 3 und der
+   * Server bewegt eine andere; im Spiel sähe das wie ein Regelfehler aus.
    */
   test('SITZE[sitz].mulde(n) ist für den Client die eigene Mulde n', () => {
     for (const sitz of ['unten', 'oben']) {
@@ -127,8 +126,7 @@ describe('Client und Server sind sich einig (die eigentliche Probe)', () => {
 
         expect(rolle.art).toBe('mulde');
         expect(rolle.seite).toBe('gegner');
-        // Die Muldennummer bleibt gleich, obwohl die Darstellung
-        // für den Gegner gedreht wird.
+        // Gleiche Nummer, obwohl der Gegner das Brett gedreht sieht.
         expect(rolle.pos).toBe(n);
       }
     }

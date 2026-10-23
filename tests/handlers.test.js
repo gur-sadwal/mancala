@@ -108,7 +108,7 @@ function erzeugeUmgebung({
       },
 
       // --- Hilfen für die Tests ---
-      /** Schickt ein Ereignis "vom Browser" an den Server. */
+      /** Schickt ein Ereignis „vom Browser“ an den Server. */
       sende(ereignis, daten) {
         angemeldet.get(ereignis)(daten);
       },
@@ -298,7 +298,7 @@ describe('Handler: Revanche nach jedem Spiel', () => {
     }
   });
 
-  test('nach dem regulären Ende eines schnellen Spiels ebenso', () => {
+  test('auch nach dem regulären Ende wird beiden eine Revanche angeboten', () => {
     const { anna, ben, manager } = schnellesSpiel();
 
     // Wer unten sitzt, beginnt. Das Brett wird so gestellt, dass sein Zug aus
@@ -409,7 +409,7 @@ describe('Handler: Absturzsicherung', () => {
     const { anna, ben, manager } = schnellesSpiel();
     const muell = [
       undefined, null, 42, 'zug', [], zug('3'), zug(99), zug(-1), zug(2.5),
-      // Die frühere Form ohne Typangabe gilt ebenfalls nicht mehr.
+      // Ohne type: 'MOVE' oder klein geschrieben: ebenfalls ungültig.
       { mulde: 0 }, { type: 'move', pitIndex: 0 },
     ];
 
@@ -745,7 +745,7 @@ describe('Handler: Abbrechen', () => {
     expect(ben.letzte(EREIGNIS.FEHLER).daten.code).toBe(FEHLER.CODE_UNBEKANNT);
   });
 
-  test('im Ergebnisdialog nimmt es die Revanche zurück – der Gegner erfährt es', () => {
+  test('Abbrechen im Ergebnisdialog nimmt die Revanche zurück, der Gegner erfährt das', () => {
     const { anna, ben } = schnellesSpiel();
     anna.sende(EREIGNIS.AUFGEBEN);
 
@@ -773,7 +773,7 @@ describe('Handler: Abbrechen', () => {
     expect(imProtokoll('ignoriert')).toBe(false);
   });
 
-  test('ebenso nach dem Start einer Revanche (Esc im Ergebnisdialog)', () => {
+  test('kommt Esc erst nach dem Start der Revanche an, läuft auch sie weiter', () => {
     const { anna, ben, manager } = schnellesSpiel();
     anna.sende(EREIGNIS.AUFGEBEN);
     anna.sende(EREIGNIS.REVANCHE);
@@ -786,7 +786,7 @@ describe('Handler: Abbrechen', () => {
     expect(manager.holeNachSocket('b')).not.toBeNull();
   });
 
-  test('privat: Abbrechen nach dem Beitritt des Freundes wird ebenso ignoriert', () => {
+  test('privat: Abbrechen nach dem Beitritt des Freundes wird ignoriert', () => {
     const { anna, code, verbinde, manager } = privatesSpiel();
     const ben = verbinde('b');
     ben.sende(EREIGNIS.BEITRETEN, { name: 'Ben', code });
@@ -962,7 +962,7 @@ describe('Handler: Erneut (nach der Partie neu suchen)', () => {
     expect(dora.letzte(EREIGNIS.START).daten.gegner.name).toBe('Spieler');
   });
 
-  test('während einer Partie wird es abgelehnt', () => {
+  test('erneutes Suchen während einer Partie wird abgelehnt', () => {
     const { anna } = schnellesSpiel();
 
     anna.sende(EREIGNIS.ERNEUT, { name: 'Anna' });
@@ -972,7 +972,7 @@ describe('Handler: Erneut (nach der Partie neu suchen)', () => {
 });
 
 describe('Handler: Revanche – Sonderfälle', () => {
-  test('wer schon wieder spielt, braucht keine Revanche', () => {
+  test('wer noch in einer Partie ist, bekommt auf Revanche BEREITS_IN_PARTIE', () => {
     const { anna } = schnellesSpiel();
 
     anna.sende(EREIGNIS.REVANCHE);
@@ -1344,7 +1344,7 @@ describe('Handler: Aufräumen nach Fristen', () => {
     expect(lobby.anzahl()).toBe(1);
   });
 
-  test('danach erfahren die übrigen Wartenden ihre neue Position', () => {
+  test('nach der Wartefrist erfahren die übrigen Wartenden ihre neue Position', () => {
     const { verbinde, handler, lobby } = erzeugeUmgebung();
     verbinde('a');
     const ben = verbinde('b');

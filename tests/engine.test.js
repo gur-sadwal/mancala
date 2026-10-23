@@ -61,7 +61,7 @@ function zug(partie, sitz, mulde) {
 describe('T-04: einfacher Zug innerhalb der eigenen Reihe', () => {
   test('vier Mulden bekommen je eine Kugel, die Startmulde wird leer', () => {
     // Startbrett, Sitz unten spielt Mulde 0 = [1,0] mit 4 Kugeln.
-    // Bestreut werden [1,1], [1,2], [1,3], [1,4].
+    // Besät werden [1,1], [1,2], [1,3], [1,4].
     const { partie, bericht } = zug(startPartie(), 'unten', 0);
 
     expect(partie.brett[UNTEN]).toEqual([0, 5, 5, 5, 5, 4, 0]);
@@ -179,7 +179,7 @@ describe('T-11: Klauen mit gefüllter Gegenmulde (Beispiel B3)', () => {
 
     const { partie: neu, bericht } = zug(partie, 'unten', 0);
 
-    // 6 gegnerische + 1 eigene = 7 Kugeln ins Haus (Regelwerk 3.4).
+    // 6 gegnerische + 1 eigene = 7 Kugeln ins Haus (Regel 3.4).
     expect(bericht.beute).toEqual({
       eigeneZelle: [1, 1],
       gegnerZelle: [0, 2],
@@ -199,7 +199,7 @@ describe('T-11: Klauen mit gefüllter Gegenmulde (Beispiel B3)', () => {
 });
 
 describe('T-12: Klauen mit leerer Gegenmulde', () => {
-  test('kein Diebstahl, die Kugel bleibt liegen (Randfall R-03)', () => {
+  test('kein Klauen, die Kugel bleibt liegen (Randfall R-03)', () => {
     const partie = partieMit([
       [0, 4, 0, 4, 4, 4, 4],
       [1, 0, 4, 4, 4, 4, 11],
@@ -244,7 +244,7 @@ describe('T-09: Mulde mit genau 13 Kugeln (Randfall R-01)', () => {
 
     const { partie: neu, bericht } = zug(partie, 'unten', 0);
 
-    // Die Startmulde zählt als "war leer" – sie wurde ja zu Beginn geleert.
+    // Die Startmulde zählt als „war leer“ – sie wurde ja zu Beginn geleert.
     expect(bericht.beute).toEqual({
       eigeneZelle: [1, 0],
       gegnerZelle: [0, 1],
@@ -295,7 +295,7 @@ describe('T-13: Zug leert die eigene Reihe bei gleichzeitigem Extrazug', () => {
     // Entscheidend: kein Extrazug mehr, obwohl die letzte Kugel im Haus lag.
     expect(bericht.extrazug).toBe(false);
 
-    // Restkugeln des Gegners gehen an den Gegner (Regelwerk 3.5.2).
+    // Restkugeln des Gegners gehen an den Gegner (Regel 3.5).
     expect(bericht.abrechnung).toEqual({ unten: 0, oben: 12 });
     expect(neu.brett[UNTEN][6]).toBe(36);
     expect(neu.brett[OBEN][0]).toBe(12);
@@ -304,7 +304,7 @@ describe('T-13: Zug leert die eigene Reihe bei gleichzeitigem Extrazug', () => {
 });
 
 describe('T-14: Zug leert die gegnerische Reihe', () => {
-  test('Diebstahl der letzten gegnerischen Kugeln beendet die Partie (R-07)', () => {
+  test('Klauen der letzten gegnerischen Kugeln beendet die Partie (R-07)', () => {
     // Oben hat nur [0,2] = 3 Kugeln. Unten klaut sie weg.
     const partie = partieMit([
       [0, 0, 3, 0, 0, 0, 0],
@@ -493,7 +493,7 @@ describe('pruefeZug ohne Seiteneffekte', () => {
     expect(JSON.stringify(partie.brett)).toBe(vorher);
   });
 
-  test('moeglicheZuege liefert im Startzustand alle sechs Mulden', () => {
+  test('zu Beginn sind für den Sitz am Zug alle sechs Mulden spielbar, sonst keine', () => {
     expect(moeglicheZuege(startPartie(), 'unten')).toEqual([0, 1, 2, 3, 4, 5]);
     expect(moeglicheZuege(startPartie(), 'oben')).toEqual([]);   // nicht am Zug
   });
@@ -545,7 +545,7 @@ describe('T-24 bis T-26: Klauen und Spielende für den Sitz oben', () => {
     expect(neu.amZug).toBe('unten');
   });
 
-  test('T-26: oben leert mit einem Extrazug die eigene Reihe – Spielende', () => {
+  test('T-26: oben leert die eigene Reihe ins Haus – Spielende statt Extrazug', () => {
     const partie = partieMit([
       [30, 1, 0, 0, 0, 0, 0],
       [3, 3, 3, 3, 3, 2, 0],

@@ -63,7 +63,7 @@ describe('Zeichensatz der Raumcodes', () => {
     expect(new Set(CODE_ZEICHEN).size).toBe(CODE_ZEICHEN.length);
   });
 
-  test('der Schlüsselraum ist mindestens so groß wie heute', () => {
+  test('der Schlüsselraum fällt nicht unter 31^6 Codes', () => {
     const schluesselraum = CODE_ZEICHEN.length ** GRENZEN.CODE_LAENGE;
     expect(schluesselraum).toBeGreaterThanOrEqual(SCHLUESSELRAUM_HEUTE);
   });

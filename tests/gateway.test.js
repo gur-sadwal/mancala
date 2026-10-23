@@ -30,6 +30,7 @@ beforeAll(() => {
   console.warn = () => {};
   console.error = (zeile) => fehlerzeilen.push(zeile);
 });
+
 afterAll(() => {
   Object.assign(console, echteKonsole);
 });
@@ -73,11 +74,13 @@ function verbindeRoh() {
     empfangen: [], dabei: false, getrennt: false, abgelehnt: null,
   };
 
+  // Engine.IO: 0 öffnet, 2 und 3 sind Ping und Pong. Hinter der 4 folgt das
+  // Socket.io-Paket: 40 Verbinden, 42 Ereignis, 44 Ablehnung.
   ws.addEventListener('message', ({ data }) => {
     if (data === '2') ws.send('3');
     else if (data.startsWith('0')) ws.send('40');
     else if (data.startsWith('40')) zustand.dabei = true;
-    // 44 ist die Ablehnung durch eine Middleware, mit Grund als message.
+    // 44 kommt von einer Middleware, der Grund steht in message.
     else if (data.startsWith('44')) zustand.abgelehnt = JSON.parse(data.slice(2)).message;
     else if (data.startsWith('42')) zustand.empfangen.push(JSON.parse(data.slice(2)));
   });

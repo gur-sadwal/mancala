@@ -37,6 +37,8 @@ beforeEach(() => {
     prozess.set(name, handler);
     return process;
   });
+  // process.exit wirft hier, statt zu beenden: Der Code bricht an derselben
+  // Stelle ab wie im echten Prozess, Jest selbst läuft weiter.
   jest.spyOn(process, 'exit').mockImplementation(() => {
     throw new Error('Prozessende');
   });
@@ -45,6 +47,7 @@ beforeEach(() => {
   process.argv = [argvVorher[0], 'server/index.js'];
   delete process.env.PORT;
 });
+
 afterEach(() => {
   jest.restoreAllMocks();
   process.argv = [...argvVorher];
@@ -55,6 +58,7 @@ afterEach(() => {
 async function lade() {
   await import('../server/index.js');
 }
+
 function serverfehler(code) {
   return server.on.mock.calls.find(([name]) => name === 'error')[1]({ code });
 }
@@ -89,7 +93,7 @@ test.each(['abc', '3000abc', '0', '65536', '3.5', ''])('weist ungültigen Port %
   expect(createServer).not.toHaveBeenCalled();
 });
 
-test.each(['EADDRINUSE', 'EACCES'])('Startfehler %s ergibt verständliche Meldung und Code1', async (code) => {
+test.each(['EADDRINUSE', 'EACCES'])('Startfehler %s ergibt verständliche Meldung und Code 1', async (code) => {
   await lade();
   expect(() => serverfehler(code)).toThrow('Prozessende');
   expect(process.exit).toHaveBeenCalledWith(1);
