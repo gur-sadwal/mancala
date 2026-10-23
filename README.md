@@ -99,7 +99,10 @@ eigenen Haus zählt einen Punkt.
 Wer am Zug ist, wählt eine besetzte eigene Mulde, nimmt alle Kugeln heraus und
 verteilt sie einzeln gegen den Uhrzeigersinn. Das eigene Haus wird mitbesät,
 das gegnerische immer übersprungen. Reichen die Kugeln für mehrere Runden,
-wird einfach weitergesät.
+wird einfach weitergesät. Die Richtung gilt für das Brett ab 600 Pixeln
+Breite. Darunter steht es hochkant (eigene Reihe rechts, eigenes Haus unten),
+und die Kugeln laufen auf dem Bildschirm im Uhrzeigersinn; die Regel bleibt
+dieselbe, nur die Darstellung ist gedreht.
 
 ### 3.3 Extrazug
 
