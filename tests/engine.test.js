@@ -440,12 +440,27 @@ describe('T-22: fuehreZugAus verändert die Eingabe nicht', () => {
   });
 });
 
+// Kleiner Zufallsgenerator mit festem Startwert (mulberry32): Ein Fehlschlag
+// lässt sich so mit denselben Zügen wiederholen.
+function erzeugeZufall(startwert) {
+  let zustand = startwert;
+  return () => {
+    zustand = (zustand + 0x6D2B79F5) | 0;
+    let t = Math.imul(zustand ^ (zustand >>> 15), 1 | zustand);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 describe('T-20: Zufallstest über vollständige Partien', () => {
   /**
    * Zufällige gültige Züge verbinden mehrere Regeln in einem Ablauf.
    * Nach jedem Zug müssen Kugelzahl, Feldwerte und Sitz weiterhin stimmen.
+   * Die Züge stammen aus einer Folge mit festem Startwert, der Test ist
+   * also bei jedem Lauf derselbe.
    */
   test('die Invarianten halten über 200 Züge', () => {
+    const zufall = erzeugeZufall(20);
     let partie = startPartie();
     let gespielteZuege = 0;
     let beendetePartien = 0;
@@ -462,7 +477,7 @@ describe('T-20: Zufallstest über vollständige Partien', () => {
       // können – sonst hätte die Endeerkennung versagt.
       expect(zuege.length).toBeGreaterThan(0);
 
-      const gewaehlt = zuege[Math.floor(Math.random() * zuege.length)];
+      const gewaehlt = zuege[Math.floor(zufall() * zuege.length)];
       const ergebnis = fuehreZugAus(partie, partie.amZug, gewaehlt);
 
       expect(ergebnis.ok).toBe(true);
