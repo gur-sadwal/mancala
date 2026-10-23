@@ -43,7 +43,7 @@
 /* Der Kopf steht unten auf der Seite (footer im HTML). Streifen wie bei der
  * Leiste, nur gespiegelt: oben Blau, darunter Weiß, dann Rot.
  */
-.kopf {
+.fuss {
   padding-block: var(--abstand);
   padding-inline: var(--abstand);
   text-align: center;
@@ -53,7 +53,7 @@
   border-block-start: 0.4rem solid var(--farbe-hessen-blau);
   box-shadow: inset 0 0.4rem 0 var(--farbe-hessen-weiss);
 
-  & .kopf__untertitel {
+  & .fuss__untertitel {
     margin-inline: auto;
     font-size: 1rem;
   }
@@ -68,7 +68,7 @@
   }
 }
 
-.kopf__autor {
+.fuss__autor {
   margin-inline: auto;
   font-size: 1rem;
   font-weight: 600;
@@ -232,15 +232,15 @@
  * Höhe für das Brett; reicht sie trotzdem nicht, kann man scrollen.
  */
 @media (max-height: 480px), (max-width: 599px) {
-  .kopf {
+  .fuss {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--abstand-klein);
     padding-block: var(--abstand-klein);
 
-    & .kopf__untertitel,
-    & .kopf__autor {
+    & .fuss__untertitel,
+    & .fuss__autor {
       display: none;
     }
 
