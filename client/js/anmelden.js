@@ -62,7 +62,7 @@ export function erzeugeAnmeldeAnsicht({ aktionen, beiAnmeldung }) {
     const gemerkt = window.localStorage.getItem(SPEICHER_NAME);
     if (gemerkt) feldName.value = gemerkt;
   } catch {
-    // Dann bleibt das Feld eben leer.
+    // Dann bleibt das Feld leer.
   }
 
   // == 2. Formularaktionen =================================================

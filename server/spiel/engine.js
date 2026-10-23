@@ -102,8 +102,9 @@ function partieNachZug(partie, brett, sitz, beendet, extrazug) {
 }
 
 // == 2. Einen Zug prüfen =================================================
-// SCHUTZ: Wiederholt die Bereichsprüfung aus validation.js, damit die Engine
-// auch ohne Handler davor nur gültige Züge rechnet.
+// SCHUTZ: Prüft Status, Sitz und Zugrecht, Muldennummer und Belegung selbst.
+// Den Bereich der Muldennummer prüft validation.js schon einmal; die Engine
+// wiederholt das, damit sie auch ohne Handler davor nur gültige Züge rechnet.
 export function pruefeZug(partie, sitz, mulde) {
   if (!partie || partie.status !== STATUS.LAEUFT) {
     return { ok: false, code: FEHLER.PARTIE_NICHT_AKTIV };

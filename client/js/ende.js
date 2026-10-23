@@ -46,7 +46,7 @@ function speichereBilanz(bilanz) {
   try {
     window.sessionStorage.setItem(SPEICHER_BILANZ, JSON.stringify(bilanz));
   } catch {
-    // Ohne Speicher gilt die Bilanz eben nur bis zum Neuladen.
+    // Ohne Speicher gilt die Bilanz nur bis zum Neuladen.
   }
 }
 

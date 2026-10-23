@@ -36,7 +36,8 @@ export function erzeugeRatenbegrenzer(
     const eintrag = zaehler.get(socketId);
 
     // ACHTUNG: Springt die Uhr zurück (jetzt < fensterStart), wäre die
-    // Differenz negativ und das Fenster würde nie enden: neu beginnen.
+    // Differenz negativ und das Fenster liefe, bis die Uhr wieder aufholt.
+    // Dann lieber neu beginnen.
     const neuesFenster = !eintrag
       || jetzt < eintrag.fensterStart
       || jetzt - eintrag.fensterStart >= fensterMs;

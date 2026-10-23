@@ -639,7 +639,7 @@ describe('Obergrenzen für Warteplätze und Partien', () => {
     expect(lobby.nimmPrivat(einladung).socketId).toBe('a');
   });
 
-  test('ohne Angabe passen 99 private Plätze in die Lobby', () => {
+  test('ohne Angabe nimmt die Lobby mindestens 99 private Plätze an', () => {
     const lobby = erzeugeLobby();
     for (let i = 0; i < 99; i += 1) {
       expect(lobby.erstellePrivat(`p${i}`, 'P').ok).toBe(true);
